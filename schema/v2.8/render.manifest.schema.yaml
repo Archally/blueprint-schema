@@ -34,6 +34,7 @@ required: [model, stamp, targets]
 properties:
   model:
     type: string
+    pattern: "^(?![/\\\\])\\S(?:.*\\S)?$"
     description: "Path to the project's model directory, relative to this file."
   out:
     type: string
@@ -45,6 +46,9 @@ properties:
       suits a manifest at the project root; declare it explicitly anywhere else.
   stamp:
     type: string
+    anyOf:
+      - format: date
+      - format: date-time
     description: >
       The single build stamp ("as of" date or instant) shared by every target in the run, so a
       partial re-render overwrites the same files a full run would rather than adding new
@@ -106,7 +110,7 @@ properties:
       - type: object
         additionalProperties: false
         properties:
-          name: { type: string }
+          name: { type: string, pattern: "^\\S(?:.*\\S)?$" }
           url: { type: string }
         required: [name]
     description: >
@@ -187,6 +191,7 @@ $defs:
           to a nested output subfolder (`gantt/checkout/`).
       tool:
         type: string
+        pattern: "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
         description: "Which renderer produces this target."
       kind:
         type: string

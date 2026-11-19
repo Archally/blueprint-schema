@@ -1,0 +1,16 @@
+engineVersion: "0.1"
+rules:
+  - id: inquiry-pins-itself
+    severity: error
+    description: >-
+      An inquiry that names its own id in `affects.element_refs`. A pin places the inquiry beside
+      the element it is about, and an inquiry is not about itself, so the pin relates nothing and
+      draws no edge. Naming another inquiry is valid: a question about another question. Reads
+      `element_refs` and the inquiry's id only. One finding per inquiry.
+    find:
+      entity_type: Inquiry
+    check:
+      custom:
+        module: ./inquiry-pins-itself.mjs
+        export: inquiryPinsItself
+    message: 'Inquiry "{displayId}" names its own id in `affects.element_refs`. Remove it, or name the element the question is about.'

@@ -10,6 +10,22 @@ node cli.mjs --model <model-dir> [--schemas <version-root>] [--tracked-register 
 
 Exit codes: `0` no errors (warnings may exist) · `1` errors · `2` runner failure.
 
+## Text structure warnings
+
+`model-text-paragraphs` reports a configured narrative field of a modeled entity when its trimmed
+text exceeds 400 UTF-16 code units without blank-line paragraphs or a Markdown list. It names the
+source file, subject and authored field path. The fields are `description`, `definition`,
+`rationale`, `statement`, `intent`, `purpose`, `summary`, `context`, `consequences` and `notes`.
+Nested payload properties, schema properties and provenance prose are excluded.
+
+Preserve the wording and meaning while adding blank-line paragraphs or a genuine Markdown list
+in a YAML literal block (`|`). A folded block (`>`) joins ordinary wrapped lines into prose, and a
+terminal newline alone adds no paragraph. Fenced code and thematic breaks do not count as lists.
+
+These findings appear in `Gap Warnings`. They do not change schema or reference validity, and a
+model with warnings alone exits 0. The model server reports the same warning through its validation
+metadata. Per-file browser schema validation reports schema errors only.
+
 ## Layout
 
 | Path | Role |

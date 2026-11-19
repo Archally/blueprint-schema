@@ -45,6 +45,34 @@ function environmentWith(displayId: string, data: Record<string, unknown>): Enti
 }
 
 describe('extractInfrastructureRelations', () => {
+  it('links a shared-data contract to its exact store with the field evidence and origin', () => {
+    const source = contract('reader.shareddata', { _contractType: 'shareddata', store_ref: 'data.IR001',
+      link_provenance: { store_ref: { 'data.IR001': { certainty: 'confirmed' } } } });
+    const relations = extractInfrastructureRelations([source, infra('IR001'), infra('data.IR001')]);
+    expect(relations).toHaveLength(1);
+    expect(relations[0]).toMatchObject({ type: 'contract_store', source_entity_id: source.id,
+      target_entity_id: 'p-infrastructure.yaml-data.IR001', data: { provenance: { certainty: 'confirmed' } },
+      origin_ref: { file: 'arch.yaml' } });
+    expect(relations[0].origin_ref?.path).toMatch(/\.store_ref$/);
+    source.data!.link_provenance = {};
+    expect(extractInfrastructureRelations([source, infra('data.IR001')])[0].data).not.toHaveProperty('provenance');
+  });
+
+  it('does not invent store links for absent, dangling, ambiguous, wrong-type or unqualified references', () => {
+    for (const data of [{}, { store_ref: 'missing.IR001' }, { store_ref: 'IR001' }, { store_ref: 1 }]) {
+      expect(extractInfrastructureRelations([
+        contract('reader.shareddata', { _contractType: 'shareddata', ...data }), infra('data.IR001'),
+      ])).toEqual([]);
+    }
+    expect(extractInfrastructureRelations([
+      contract('reader.shareddata', { _contractType: 'shareddata', store_ref: 'IR001' }),
+      infra('IR001'), infra('IR001', {}, 'other.yaml'),
+    ])).toEqual([]);
+    expect(extractInfrastructureRelations([
+      contract('reader.openapi', { _contractType: 'openapi', store_ref: 'IR001' }), infra('IR001'),
+    ])).toEqual([]);
+  });
+
   it('emits TOSCA edges from resource.relations[] with distinct types', () => {
     const rels = extractInfrastructureRelations([
       infra('IR001', { relations: [
@@ -103,7 +131,7 @@ describe('extractInfrastructureRelations', () => {
     });
   });
 
-  it('two servers in one environment are one edge, and a scope prefix is part of the environment id', () => {
+  it('two server declarations retain separate origins, and a scope prefix is part of the environment id', () => {
     const rels = extractInfrastructureRelations([
       service('SVC001', { servers: [
         { url: 'https://a', environment: 'ENV001' },
@@ -113,7 +141,7 @@ describe('extractInfrastructureRelations', () => {
       environment('ENV001'),
     ]);
     const deployed = rels.filter((r) => r.type === RELATION_TYPE.DeployedInEnvironment);
-    expect(deployed).toHaveLength(1);
+    expect(deployed).toHaveLength(2);
     expect(deployed[0]!.source_entity_id).toContain('SVC001');
   });
 

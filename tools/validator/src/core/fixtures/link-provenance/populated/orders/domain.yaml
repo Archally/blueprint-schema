@@ -1,0 +1,117 @@
+version: "1.0.0"
+name: Orders domain
+scope: orders
+operations:
+  placeOrder:
+    id: orders.CMD001
+    kind: command
+    name: Place Order
+    provenance:
+      certainty: confirmed
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders
+        method: POST
+      provenance:
+        discovery_stage: validated
+        certainty: confirmed
+        evidence:
+          - kind: codebase-analysis
+            source: services/orders/routes.ts
+            date: "2026-11-02"
+            summary: The router registers POST /orders for this command.
+            confidence_impact: supports
+  cancelOrder:
+    id: orders.CMD002
+    kind: command
+    name: Cancel Order
+    exchange:
+      protocol: http
+      endpoint:
+        path: /orders/{id}/cancel
+        method: POST
+  listOrders:
+    id: orders.QRY001
+    kind: query
+    name: List Orders
+    exchange:
+      protocol: graphql
+      graphql:
+        type: query
+        field: orders
+      provenance:
+        certainty: probable
+  orderPlaced:
+    id: orders.EVT001
+    kind: event
+    name: Order Placed
+    exchange:
+      protocol: amqp
+      topic:
+        name: OrderPlaced
+        channel_ref: MCH001
+        link_provenance:
+          channel_ref:
+            MCH001:
+              evidence:
+                - kind: documentation
+                  source: Order events guide
+                  summary: The guide names the order event bus as where order events are published.
+      queue:
+        name: order-audit
+        channel_ref: MCH002
+        link_provenance:
+          channel_ref:
+            MCH002:
+              discovery_stage: exploring
+      provenance: {}
+  orderStatus:
+    id: orders.QRY002
+    kind: query
+    name: Order Status
+    exchange:
+      protocol: json-rpc
+      method:
+        name: getOrderStatus
+  trackOrder:
+    id: orders.CMD003
+    kind: command
+    name: Track Order
+    exchange:
+      protocol: grpc
+      method:
+        name: orders.Orders/Track
+        streaming: server
+  placeOrderTool:
+    id: orders.CMD004
+    kind: command
+    name: Place Order Tool
+    exchange:
+      protocol: stdio
+      endpoint:
+        group: tool
+        path: place_order
+        method: CALL
+  exportOrdersCommand:
+    id: orders.CMD005
+    kind: command
+    name: Export Orders Command
+    exchange:
+      protocol: cli
+      endpoint:
+        path: orders export
+        method: EXEC
+  reserveLines:
+    id: orders.CMD006
+    kind: command
+    name: Reserve Lines
+    dispatch: inprocess
+  orderLedger:
+    id: orders.DOC001
+    kind: document
+    name: Order Ledger
+  orderExport:
+    id: orders.DOC002
+    kind: document
+    name: Order Export

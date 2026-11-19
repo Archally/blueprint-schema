@@ -51,6 +51,7 @@ $defs:
         description: "Unique capability identifier (CAP + NNN)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Capability name in business language (e.g. 'Order Management', 'Payment Processing')."
       kind:
         type: string
@@ -152,6 +153,20 @@ $defs:
       owned_by:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
         description: "Capability-level ownership override."
+      products:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/product_ref"
+        description: >
+          The products this capability is available in, each by the id a product declares in
+          `blueprint.yaml` `products[]`. Several products may be listed, so per-product counts can
+          overlap. Without the field, a capability takes the whole list of the nearest capability
+          above it in `children` that states one. A stated list replaces the inherited list
+          instead of adding to it, and an empty list is a stated replacement that assigns no
+          product. When neither the capability nor any capability above it states a list, its
+          products are not stated.
+        examples: [[PDT001], [PDT001, PDT002]]
       value_stream_refs:
         type: array
         items:

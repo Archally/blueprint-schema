@@ -25,6 +25,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph - each entity 
 | `CMP` | `compliance_ref` | Reference to a compliance requirement (e.g. CMP001 or billing.CMP001). |
 | `CN` | `concept_ref` | Reference to a concept (e.g. CN001 or billing.CN001). |
 | `CNC` | `concern_ref` | Reference to a stakeholder concern (e.g. CNC001 or orders.CNC001). A concern is a durable expectation a view of the model has to satisfy, not a task to close. |
+| `CS` | `change_stream_ref` | Reference to a change stream declared in blueprint.yaml `change_streams[]` (e.g. CS001). Model-wide, so no context prefix. |
 | `DC` | `decision_ref` | Reference to a decision (e.g. DC001 or billing.DC001). `D###` is the band's retired spelling: it still validates on this line and stops validating in the next… |
 | `DMN` | `domain_ref` | Reference to a domain declared in blueprint.yaml `domains[]` (e.g. DMN001). Model-wide, so no context prefix. |
 | `DOC` | `document_ref` | Document operation identifier. Documents represent full state transfers. |
@@ -50,6 +51,7 @@ Metamodel `*_ref` definitions turn a model into a navigable graph - each entity 
 | `ORD` | `ordering_ref` | Reference to a dynamics ordering constraint (e.g. ORD001 or billing.ORD001). |
 | `PA` | `process_activity_ref` | Reference to a process activity (e.g. PA001 or billing.PA001). |
 | `PAR` | `parallelism_ref` | Reference to a dynamics parallelism opportunity (e.g. PAR001 or billing.PAR001). |
+| `PDT` | `product_ref` | Reference to a product declared in blueprint.yaml `products[]` (e.g. PDT001). Model-wide, so no context prefix. |
 | `PER` | `persona_ref` | Reference to a persona (e.g. PER001 or shop.PER001). A persona is a named archetype of an actor: the same role can be lived very differently by two people, and… |
 | `PKG` | `package_ref` | Reference to a third-party package by its typed id (e.g. PKG001 or platform.PKG001): a library the organization obtains from a supplier or a public registry ra… |
 | `PRB` | `probe_ref` | Reference to a probe - an instrument that reads an artifact the model does not author and reports an observation about it (e.g. PRB001 or integration.PRB001).… |
@@ -90,7 +92,7 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub - 
 
 | Schema file | Inbound refs |
 | --- | --- |
-| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 845 |
+| [`metamodel.schema.yaml`](./entity-catalog.md#metamodel) | 969 |
 | [`design/arch.schema.yaml`](./entity-catalog.md#design-arch) | 1 |
 | [`design/concepts.schema.yaml`](./entity-catalog.md#design-concepts) | 1 |
 | [`design/domain.schema.yaml`](./entity-catalog.md#design-domain) | 1 |
@@ -121,28 +123,29 @@ Aggregated `$ref` edges between schema files. The metamodel is the shared hub - 
 | `blueprint.schema.yaml` | `governance/roadmap.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/test-cases.schema.yaml` | 1 |
 | `blueprint.schema.yaml` | `governance/value-stream.schema.yaml` | 1 |
-| `blueprint.schema.yaml` | `metamodel.schema.yaml` | 20 |
+| `blueprint.schema.yaml` | `metamodel.schema.yaml` | 22 |
 | `blueprint.schema.yaml` | `migration.schema.yaml` | 1 |
-| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 82 |
+| `design/arch.schema.yaml` | `metamodel.schema.yaml` | 157 |
 | `design/concepts.schema.yaml` | `metamodel.schema.yaml` | 44 |
-| `design/domain.schema.yaml` | `metamodel.schema.yaml` | 56 |
+| `design/domain.schema.yaml` | `metamodel.schema.yaml` | 62 |
 | `design/dynamics.schema.yaml` | `metamodel.schema.yaml` | 29 |
-| `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 28 |
+| `design/infrastructure.schema.yaml` | `metamodel.schema.yaml` | 37 |
 | `design/interactions.schema.yaml` | `metamodel.schema.yaml` | 33 |
-| `design/models.schema.yaml` | `metamodel.schema.yaml` | 14 |
+| `design/models.schema.yaml` | `metamodel.schema.yaml` | 15 |
 | `design/quality.schema.yaml` | `metamodel.schema.yaml` | 88 |
 | `design/rules.schema.yaml` | `metamodel.schema.yaml` | 26 |
-| `design/story.schema.yaml` | `metamodel.schema.yaml` | 78 |
-| `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 23 |
-| `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 50 |
+| `design/story.schema.yaml` | `metamodel.schema.yaml` | 84 |
+| `governance/capability.schema.yaml` | `metamodel.schema.yaml` | 24 |
+| `governance/decisions.schema.yaml` | `metamodel.schema.yaml` | 53 |
 | `governance/leverage.schema.yaml` | `metamodel.schema.yaml` | 29 |
-| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 112 |
+| `governance/motivation.schema.yaml` | `metamodel.schema.yaml` | 115 |
 | `governance/organization.schema.yaml` | `metamodel.schema.yaml` | 21 |
 | `governance/roadmap.schema.yaml` | `metamodel.schema.yaml` | 38 |
 | `governance/test-cases.schema.yaml` | `metamodel.schema.yaml` | 40 |
 | `governance/value-stream.schema.yaml` | `metamodel.schema.yaml` | 19 |
-| `migration.schema.yaml` | `metamodel.schema.yaml` | 9 |
-| `migrations.schema.yaml` | `metamodel.schema.yaml` | 6 |
+| `migration.schema.yaml` | `metamodel.schema.yaml` | 15 |
+| `migrations.schema.yaml` | `metamodel.schema.yaml` | 13 |
+| `tracked-migrations.schema.yaml` | `metamodel.schema.yaml` | 5 |
 
 ---
 

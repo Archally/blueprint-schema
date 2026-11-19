@@ -1,0 +1,8 @@
+version: "1.0.0"
+migrations:
+  - id: MIG001
+    name: Split the parcel store
+    status: planned
+    changes:
+      - type: modify
+        description: The parcel store is split by region.

@@ -126,12 +126,17 @@ metrics:
       corpus p50=100% (n=8); golden 100%, largest brownfield model 51%
 
   domain.command.produces:
-    title: Command — produces
+    title: Command - stated outcome
+    description: >-
+      A command states its outcome through produces (events or documents),
+      materializes (create, update, delete or archive a concept), or
+      side_effects.writes (activity-log records or external sink writes).
+      Any nonempty outcome counts once; an event is not required.
     layer: domain
     threshold: 0.5
     patch_threshold: 0.85
     calibration: >-
-      corpus p50=50% (n=10); golden 91%
+      Historical produces-only calibration: corpus p50=50% (n=10); golden 91%
 
   domain.command.exchange:
     title: Command — exchange/dispatch binding
@@ -334,3 +339,19 @@ structure:
   identity_fields: [id, name, title, term]
   prose_fields: [description, summary, statement]
   reference_text_fields: [description, logic]
+
+# Advisory limits do not affect coverage, baselines, verdicts or strict exit codes.
+text_length:
+  description:
+    max_chars: 400
+    calibration: "archally 324/4722 (6.86%); prestashop 158/5686 (2.78%); ecommerce 79/778 (10.15%); realestate-en 11/1058 (1.04%)."
+  summary:
+    max_chars: 240
+    max_sentences: 1
+    calibration: "archally 154/932 (16.52%); prestashop 178/700 (25.43%); ecommerce 32/162 (19.75%); realestate-en 4/20 (20.00%). Counts include either over 240 characters or over one sentence."
+  rationale:
+    max_chars: 600
+    calibration: "archally 0/32 (0.00%); prestashop 1/13 (7.69%); ecommerce 0/6 (0.00%); realestate-en 0/0 (N/A)."
+  context:
+    max_chars: 600
+    calibration: "archally 0/0 (N/A); prestashop 0/0 (N/A); ecommerce 0/1 (0.00%); realestate-en 0/0 (N/A)."

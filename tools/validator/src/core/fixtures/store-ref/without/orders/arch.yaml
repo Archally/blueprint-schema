@@ -1,0 +1,23 @@
+version: "1.0.0"
+name: Orders architecture
+scope: orders
+contexts:
+  - id: orders.BC001
+    name: Orders
+    kind: core
+    services:
+      - id: orders.SVC001
+        name: Order Service
+        kind: service
+        resource_refs: [IR001, IR002]
+        contracts:
+          shareddata:
+            contract_name: order-ledger
+            write: [orders.DOC001]
+      - id: orders.SVC002
+        name: Reporting Service
+        kind: service
+        contracts:
+          shareddata:
+            contract_name: order-ledger
+            read: [orders.DOC001]

@@ -117,15 +117,22 @@ function buildSubprocessCalls(story: Entity, entities: Entity[]): Relation[] {
   return relations;
 }
 
+/** An `owner_ref` names an actor or a team. */
+const OWNER_TYPES = [ENTITY_TYPE.Actor, ENTITY_TYPE.Team] as const;
+/** A `rule_ref` names a rule of any of the five prefixed kinds. */
+const RULE_TYPES = [ENTITY_TYPE.StructuralRule, ENTITY_TYPE.ClassificationRule, ENTITY_TYPE.DerivationRule,
+  ENTITY_TYPE.EquivalenceRule, ENTITY_TYPE.ValidationRule] as const;
+
 /** Activity facts join their containing process to typed declarations, never to a name-only item. */
 function buildWorkProcessRelations(process: Entity, entities: Entity[]): Relation[] {
   const data = (process.data ?? {}) as Record<string, unknown>;
   const relations: Relation[] = [];
   const records = (value: unknown): Record<string, unknown>[] => Array.isArray(value)
     ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object') : [];
-  const link = (reference: unknown, targetType: string, type: string, identity: string, details: Record<string, unknown>, selector?: string) => {
+  const link = (reference: unknown, targetType: string | readonly string[], type: string, identity: string, details: Record<string, unknown>, selector?: string) => {
     if (typeof reference !== 'string' || !reference) return;
-    const resolution = resolveRefDetailed(reference, entities.filter(entity => entity.type === targetType));
+    const targetTypes: readonly string[] = typeof targetType === 'string' ? [targetType] : targetType;
+    const resolution = resolveRefDetailed(reference, entities.filter(entity => targetTypes.includes(entity.type)));
     if (resolution.status !== 'resolved') return;
     relations.push({
       id: `${process.id}--${type}--${identity}--${resolution.handle}`,
@@ -170,6 +177,24 @@ function buildWorkProcessRelations(process: Entity, entities: Entity[]): Relatio
       }
       link(handover.process, ENTITY_TYPE.Process, RELATION_TYPE.ActivityHandsOverTo, `${activityId}-${position}-process`, details);
       link(handover.team, ENTITY_TYPE.Team, RELATION_TYPE.ActivityHandsOverTo, `${activityId}-${position}-team`, details);
+    }
+    // A stage question or a gate is cited as `<activity>/<key>`; each typed field it names is one edge
+    // whose data carries the activity, the key and the field, so a reader can list them per activity.
+    for (const [position, question] of records(activity.questions).entries()) {
+      const details = (role: string) => ({ activity: activityId, key: question.key, role });
+      const identity = (role: string) => `${activityId}-${position}-${role}`;
+      link(question.asked_by, ENTITY_TYPE.Actor, RELATION_TYPE.ActivityQuestion, identity('asked_by'), details('asked_by'));
+      link(question.asked_of, OWNER_TYPES, RELATION_TYPE.ActivityQuestion, identity('asked_of'), details('asked_of'));
+      const answer = question.answer as Record<string, unknown> | undefined;
+      link(answer?.concept, ENTITY_TYPE.Concept, RELATION_TYPE.ActivityQuestion, identity('answer'), details('answer'));
+    }
+    for (const [position, gate] of records(activity.gates).entries()) {
+      const details = (role: string) => ({ activity: activityId, key: gate.key, role });
+      const identity = (role: string) => `${activityId}-${position}-${role}`;
+      link(gate.evaluated_by, OWNER_TYPES, RELATION_TYPE.ActivityGate, identity('evaluated_by'), details('evaluated_by'));
+      link(gate.rule, RULE_TYPES, RELATION_TYPE.ActivityGate, identity('rule'), details('rule'));
+      const evidence = gate.evidence as Record<string, unknown> | undefined;
+      link(evidence?.concept, ENTITY_TYPE.Concept, RELATION_TYPE.ActivityGate, identity('evidence'), details('evidence'));
     }
   }
   return relations;

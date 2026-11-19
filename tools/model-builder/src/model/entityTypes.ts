@@ -55,6 +55,7 @@ export const ENTITY_TYPE = {
   // function asserts something about the whole graph. It was referenced before it was
   // extracted, so every `fitness_function_refs` entry resolved to a Missing placeholder.
   FitnessFunction: 'FitnessFunction',
+  Product: 'Product',
   Capability: 'Capability',
   Metric: 'Metric',
   KPI: 'KPI',
@@ -94,6 +95,9 @@ export const ENTITY_TYPE = {
   WorkItem: 'WorkItem',
   ValueStream: 'ValueStream',
   LeveragePoint: 'LeveragePoint',
+  // A watchlist entry of a leverage file (WCH###): a signal monitored and not yet promoted to a
+  // leverage point. A graph entity so an inquiry can pin it and its risks and findings are edges.
+  WatchItem: 'WatchItem',
   CodeFile: 'CodeFile',
   Missing: 'Missing',
   // v2.8.6 problem-space registry (blueprint.yaml root `domains:`). Domain (DMN###) and, nested
@@ -107,6 +111,9 @@ export const ENTITY_TYPE = {
   // One type for both, with `_genre` on the node saying which - the reader-facing facts are
   // the same facts, and the two `status` vocabularies are not, which is what `_genre` is for.
   Migration: 'Migration',
+  // A named line of planned change that groups migrations (blueprint.yaml root `change_streams:`,
+  // CS###). It states no team and no scope: both are read from the migrations that name it.
+  ChangeStream: 'ChangeStream',
 } as const;
 
 export type EntityType = (typeof ENTITY_TYPE)[keyof typeof ENTITY_TYPE];

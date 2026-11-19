@@ -19,6 +19,8 @@
 schemaVersion: "2.8.0"
 migration:
   id: MIG007
+  owned_by: { team: TM003 }
+  change_stream_ref: CS002
   name: storefront-closes-accounts
   date: "2026-09-20"
   status: pending

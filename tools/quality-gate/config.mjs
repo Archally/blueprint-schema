@@ -98,3 +98,40 @@ export function writeBaseline(configPath, baseline, slice) {
   document.set('baseline', nextBaselineBlock);
   fs.writeFileSync(configPath, String(document));
 }
+
+/** Merge and validate advisory text limits. Project entries override individual settings. */
+export function resolveTextLength(spec, config) {
+  const result = {};
+  for (const [source, block] of [['spec', spec.text_length], ['project', config.text_length]]) {
+    const owner = source === 'spec' ? spec : config;
+    if (!Object.hasOwn(owner, 'text_length')) continue;
+    if (!block || typeof block !== 'object' || Array.isArray(block)) {
+      throw new Error(`text_length in ${source} must be a field map`);
+    }
+    for (const [field, value] of Object.entries(block)) {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        throw new Error(`text_length.${field} in ${source} must be a limit map`);
+      }
+      for (const [key, setting] of Object.entries(value)) {
+        if (!['max_chars', 'max_sentences', 'off', 'calibration'].includes(key)) {
+          throw new Error(`text_length.${field}: unknown setting ${key}`);
+        }
+        if (['max_chars', 'max_sentences'].includes(key) && (!Number.isSafeInteger(setting) || setting < 1)) {
+          throw new Error(`text_length.${field}.${key} must be a positive integer`);
+        }
+        if (key === 'off' && typeof setting !== 'boolean') {
+          throw new Error(`text_length.${field}.off must be boolean`);
+        }
+        if (key === 'calibration' && typeof setting !== 'string') {
+          throw new Error(`text_length.${field}.calibration must be text`);
+        }
+      }
+      const merged = { ...result[field], ...value, source };
+      if (!merged.off && merged.max_chars === undefined && merged.max_sentences === undefined) {
+        throw new Error(`text_length.${field} needs max_chars or max_sentences`);
+      }
+      result[field] = merged;
+    }
+  }
+  return result;
+}

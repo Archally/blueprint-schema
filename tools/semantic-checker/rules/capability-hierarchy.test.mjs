@@ -91,3 +91,24 @@ test('event placement follows its producer capability, common parent, and exact 
   separateRoots.relations.push({ source: 'OTHER_ROOT', target: 'CMD2', type: 'capability_operation' });
   assert.equal(eventPlacedWithProducerCapability(separateRoots, separateRoots.entities[5]).ok, true);
 });
+
+
+test('a feature at depth three has no nesting finding', () => {
+  const model = fixture();
+  model.entities[2].data.kind = 'feature';
+  assert.equal(capabilityNestedDeeperThanTwoLevels(model, model.entities[2]).ok, true);
+});
+
+test('a capability at depth three retains its nesting finding', () => {
+  const model = fixture();
+  model.entities[2].data.kind = 'capability';
+  assert.equal(capabilityNestedDeeperThanTwoLevels(model, model.entities[2]).ok, false);
+});
+
+test('a depth-four feature is silent while its depth-three capability parent is reported', () => {
+  const model = fixture();
+  model.entities[2].data.kind = 'capability';
+  model.entities[3].data.kind = 'feature';
+  const findings = model.entities.filter(entity => !capabilityNestedDeeperThanTwoLevels(model, entity).ok);
+  assert.deepEqual(findings.map(entity => entity.id), ['CAP003']);
+});

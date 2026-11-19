@@ -1,0 +1,8 @@
+version: "1.0.0"
+scope: delivery
+components:
+  schemas:
+    Parcel:
+      x-model-id: delivery.MDL001
+      description: A parcel as the courier app reads it.
+      type: object

@@ -68,12 +68,14 @@ $defs:
         description: "Unique concept identifier (e.g. CN001 or billing.CN001)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Display name for this concept (e.g. Order, Customer, Payment)."
       description:
         type: string
         description: "Human-readable description of the concept."
       term:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Optional formal DDD term. Use when it differs from name. Prefer properties.term for v2.3+."
       summary:
         type: string
@@ -134,6 +136,7 @@ $defs:
           properties:
             name:
               type: string
+              pattern: "^\\S(?:.*\\S)?$"
               description: "Example instance name."
             description:
               type: string
@@ -156,6 +159,7 @@ $defs:
               properties:
                 name:
                   type: string
+                  pattern: "^\\S(?:.*\\S)?$"
                   description: "State name."
                 description:
                   type: string
@@ -286,6 +290,7 @@ $defs:
         description: "Unique actor identifier (e.g. ACT001 or billing.ACT001)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Actor name (e.g. Customer, Payment Gateway)."
       type:
         type: string
@@ -317,9 +322,11 @@ $defs:
           properties:
             target:
               type: string
+              pattern: "^(?:([a-z][a-z0-9-]*\\.)?(?:CN\\d{3}|(?:CMD|EVT|QRY|DOC)\\d{3,})|[a-z][a-z0-9-]*:[a-z][a-zA-Z0-9]*)$"
               description: "concept_ref or operation_ref identifying the interaction target."
             verb:
               type: string
+              pattern: "^\\S(?:.*\\S)?$"
               description: "Action verb (e.g. creates, reads, approves)."
             description:
               type: string
@@ -379,6 +386,7 @@ $defs:
           inline persona referenceable without moving it.
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Persona archetype name (e.g., 'Impulse Buyer', 'Research Shopper')."
       actor_ref:
         $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
@@ -460,9 +468,11 @@ $defs:
         description: "Unique enumeration identifier (e.g. EN001 or billing.EN001)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Display name for this enumeration (e.g. Order Status, Payment Type)."
       term:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Optional formal DDD term. Use when it differs from name."
       description:
         type: string
@@ -488,6 +498,7 @@ $defs:
               properties:
                 name:
                   type: string
+                  pattern: "^\\S(?:.*\\S)?$"
                   description: "Value name."
                 description:
                   type: string
@@ -529,6 +540,7 @@ $defs:
         description: "Concept attribute identifier (CAT### pattern)."
       description:
         type: string
+        pattern: "\\S"
         description: "What this attribute represents in the domain."
       example:
         type: string

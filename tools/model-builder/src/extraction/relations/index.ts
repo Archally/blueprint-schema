@@ -1,4 +1,5 @@
 import type { Entity, Relation, DocumentsBySchemaType } from '../../model/types.js';
+import { extractProductRelations } from './products.js';
 import { extractConceptRelations } from './concepts.js';
 import { extractRuleRelations } from './rules.js';
 import { extractDomainRelations } from './domain.js';
@@ -46,6 +47,7 @@ import { extractPersonaConcernRelations } from './personaConcern.js';
 import { extractCoverageRelations } from './coverage.js';
 import { extractContextLanguageRelations } from './language.js';
 import { extractMigrationRelations } from './migrations.js';
+import { extractMigrationReachRelations } from './migrationReach.js';
 import { extractContractTrafficRelations } from './contractTraffic.js';
 
 /**
@@ -71,6 +73,7 @@ export function buildRelations(
   const { relations: codeRefRelations, codeFileEntities } = extractCodeRefRelations(entities);
 
   const allRelations: Relation[] = [
+    ...extractProductRelations(entities, _documentsByType),
     ...extractConceptRelations(entities, placeholders),
     ...extractPersonaConcernRelations(entities, placeholders),
     ...extractRuleRelations(entities, placeholders),
@@ -157,7 +160,20 @@ export function buildRelations(
     return true;
   });
 
-  const relations = [...bound, ...derived];
+  // A migration's reach reads the finished membership: `handled_by` after the domain hop, `scoped_to`,
+  // `contains` and the derived `context_uses_concept`, so it runs once both passes are done.
+  const migrationDocuments = new Map<string, Record<string, unknown>>();
+  for (const document of _documentsByType.migration ?? []) {
+    if (!document.filePath || !document.data || typeof document.data !== 'object') continue;
+    migrationDocuments.set(document.filePath, document.data as Record<string, unknown>);
+  }
+  const reach = extractMigrationReachRelations(entities, [...bound, ...derived], migrationDocuments).filter((r) => {
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
+
+  const relations = [...bound, ...derived, ...reach];
 
   return {
     relations,

@@ -1,0 +1,18 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Parcel Delivery
+description: >-
+  A synthetic parcel delivery model that declares one element of every typed id family, so an
+  inquiry can pin each of them.
+domains:
+  - id: DMN001
+    name: Last-mile delivery
+    subdomains:
+      - id: SDM001
+        name: Route planning
+products:
+  - id: PDT001
+    name: Courier app
+change_streams:
+  - id: CS001
+    name: Night export

@@ -1,0 +1,8 @@
+version: "1.0.0"
+name: Orders domain
+scope: orders
+operations:
+  orderLedger:
+    id: orders.DOC001
+    kind: document
+    name: Order Ledger

@@ -20,6 +20,13 @@ break rather than a parallel opinion about it.)
 **Design premise:** an authoring loop's output floor is set by what its feedback
 loop measures. Prose guidance raises the ceiling; only a gate raises the floor.
 
+The `domain.command.produces` metric measures a command's stated outcome. A nonempty
+`produces` reference (event or document), `materializes` entry (create, update, delete
+or archive a concept), or `side_effects.writes` target (an activity-log record or an
+external sink) covers the command. Each command counts once, including when it
+states several outcomes. Empty containers and `produces.mode` alone leave a gap.
+An activity-log record is modeled as a write; a command need not invent an event.
+
 ## Quick start
 
 ```bash
@@ -91,6 +98,49 @@ The slice is accountable for the slice.
 
 ## What it measures
 
+### Evidence census, contract version 1
+
+Each JSON `runs[]` entry adds `evidence` without changing any existing metric, threshold,
+baseline or exit mapping. `raw.entities` inventories schema-routed typed declarations (including
+owned typed parts); arbitrary example payload IDs are excluded. `raw.relations` inventories
+schema reference occurrences and local relation records. A raw relation declaration is not a
+graph edge: extraction may expand, collapse or omit it. Companion evidence joins the exact
+field and target. A metadata-shaped dictionary key remains an ordinary declaration key.
+
+`graph` is unavailable unless `--graph-census <file>` supplies the serialized
+`GraphCensusInput` from the new projection adapter. Its `contractVersion`, `scope.project`,
+`modelState`, `schemaVersion`, content-based `fileSetIdentity` and `selection` must match the
+current raw run. A mismatch refuses with gate exit 2 (CLI FATAL). The snapshot is an explicit
+handover, not a persistent cache. The adapter accepts explicit schema-assessed entity and
+relation carrier maps; omitted entries stay unknown.
+
+Each available population carries `total`, `carrierCapable`, `cannotState`, `carrierUnknown`,
+`withEvidence`, `directEvidenceItems`, `noItems` and `withTraceableSource`. `allObjectShare`
+and `carrierEligibleShare` expose integer `numerator`/`denominator`, a ratio and an N/D label;
+zero denominators have `value: null` and `label: N/A`. `byType`, `bySlice` and relation
+`byFamily` are overlapping dimensions, not parts of one summed partition. Raw types are
+schema definition names; graph types and families are the extractor's names. `--evidence-type`
+and `--evidence-family` filter those exact names only in the census. Existing quality metrics
+keep their original scope. The ordinary slice, file, entity and changed-file selections apply
+to both; the full content file-set identity still pins the whole input.
+
+Direct evidence, declaring-record evidence and recorded derivation witnesses are separate.
+Endpoint evidence never supplies link support. Relation `origin`, carrier capability and
+`evidenceStates` remain independent; a locator in `origin_ref` is not inference. An explicit
+builder `derived` marker establishes derived origin. Source counts distinguish nonempty
+locators, absence and unavailable/broken/ambiguous/resolved registered identities. SRC resolution
+is unavailable in ordinary gate runs until its owning integration lands. A locator establishes
+neither accessibility nor truth. Certainty/stage without evidence, kind/impact distributions,
+field completeness and open knowledge remain separate. `codeReferences` counts locators but
+does not audit them; validation levels V0-V5 say `not-checked` because this census runs no
+validation. No freshness or source-identity schema fields are introduced here.
+
+`scope` names the project, AS-IS state, declared schema version, SHA-256 of sorted relative
+collected YAML paths and content hashes, selection, evaluation instant and excluded unrouted
+documents. The portable gate can take `--project-id <id>` explicitly; `bp quality` forwards its
+resolved project identity. Existing collector exclusions (generated trees, migrations overlay,
+Git, dependencies and quality/lint config) remain outside that file set.
+
 Every metric resolves each observed item into exactly one of three states:
 
 | State | Meaning |
@@ -109,6 +159,54 @@ the gate was answered rather than the question.
 Content rules are deterministic — minimum length, a placeholder denylist, and an
 echo check that normalizes case, punctuation, articles and words like "field" before
 comparing prose against the name it describes. No model is involved.
+
+## Text length (advisory)
+
+Text limits measure configured string fields at any depth of every entity in the
+per-entity rollup, including operations, events, models, inquiries and migrations.
+Nested parts belong to their observed owner; a separately observed child is measured
+under its own entity. Only strings within observed entities are counted.
+
+| Field | Maximum characters | Maximum sentences |
+|---|---|---|
+| `description` | 400 | - |
+| `summary` | 240 | 1 |
+| `rationale` | 600 | - |
+| `context` | 600 | - |
+
+Characters are Unicode code points after trimming surrounding whitespace; Markdown
+markers count. A string exactly at its limit passes. Sentence counting ignores full
+stops inside numbers, inline code, URLs and the abbreviations `e.g.`, `i.e.`, `etc.`
+and `vs.`. Each exception has a false-positive guard fixture with a two-sentence
+counterpart. These are deterministic text heuristics.
+
+The whole-model, patch and slice reports show a table per field: limits, their source
+(`spec` or `project`), measured strings, offenders and longest length. The longest
+offending fields follow, capped by `--worst`. Entity and file reports list each offending
+field under its entity, for example `description 812 chars, limit 400 (advisory)`.
+A sentence-only offender also shows its sentence count and limit.
+
+JSON carries `runs[].entities[].textLength[]` for offenders, each with `field`, `path`,
+`length`, `limit`, and, when counted, `sentences` and `sentenceLimit`. Paths are document
+paths with slash-separated, JSON Pointer-escaped segments. `runs[].textLength` carries
+`limits` and `fields`: the effective settings and source, measured counts, combined
+`overLimit` counts, separate `overChars` and `overSentences` counts, and `longest`.
+A field exceeding both limits counts once in `overLimit`. Disabled fields show zero
+measured strings; an enabled field absent from the selected entities also measures zero.
+
+A project overrides individual settings or adds fields in `.blueprint-quality.yaml`:
+
+```yaml
+text_length:
+  description: { max_chars: 500 }
+  summary: { off: true }
+  note: { max_chars: 120 }
+```
+
+Omitted settings inherit the spec. Limits must be positive integers; `off` must be a
+boolean. Malformed blocks, unknown settings and enabled fields without any limit are
+configuration errors (exit 2). Text warnings never change a metric, score, baseline,
+verdict or exit code, including under `--strict`.
 
 ## Structure: facts in fields or only in prose
 
@@ -315,7 +413,8 @@ lets one copy serve every version.
 | `git-changes.mjs` | `--since` changed-file resolution |
 | `slice.mjs` | `--slice` scoping — derives a file's slice from its path |
 | `entities.mjs` | `--entity` and `--file` selection; the per-entity rollup |
-| `structure.mjs` | the structure signals: schema lookup, references held only in prose, fields used |
+| `structure.mjs` | advisory text limits and structure signals: schema lookup, references held only in prose, fields used |
+| `text-length.test.mjs` | text limit configuration, sentence guards, nested measurement and CLI advisory contracts |
 | `config.mjs` | spec + project-config loading, baseline writing (flat + per-slice) |
 | `quality-spec.yaml` | metric definitions, content rules, calibrated thresholds |
 

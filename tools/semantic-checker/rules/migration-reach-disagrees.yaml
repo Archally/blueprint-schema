@@ -1,0 +1,22 @@
+engineVersion: "0.1"
+rules:
+  - id: migration-reach-disagrees
+    severity: warn
+    description: >-
+      A migration states its reach (`reach`: the bounded contexts and domains it changes) and the
+      statement disagrees with what its changes show. The reach is derived from each typed change
+      target: the entity it names, that entity's one bounded context, and the domain that context
+      realizes. A context or domain the changes reach that the statement leaves out is reported. A
+      stated one the changes never reach is reported only when every change was traced; while some
+      change names no entity, or one with no single context, the statement may describe that change
+      and is neither confirmed nor reported, and the message counts the untraced changes. A migration
+      that states no `reach` is not checked: its reach is the derived one. One finding per migration,
+      naming each disagreeing id. Override per project via .blueprint-lint.yaml (e.g.
+      `migration-reach-disagrees: off`).
+    find:
+      entity_type: Migration
+    check:
+      custom:
+        module: ./migration-stream.mjs
+        export: migrationReachDisagrees
+    message: 'Migration "{displayId}" ({name|''unnamed''}): {finding}'

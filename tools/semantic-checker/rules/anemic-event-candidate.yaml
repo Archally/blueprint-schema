@@ -1,0 +1,12 @@
+engineVersion: "0.1"
+rules:
+  - id: anemic-event-candidate
+    severity: info
+    description: An event produced only by ungoverned commands, with no reactor, publication or translation, is a review candidate.
+    find:
+      entity_type: Operation
+    check:
+      custom:
+        module: ./command-outcomes.mjs
+        export: eventHasCausalEvidence
+    message: 'Event "{displayId}" ({name|''unnamed''}) is an anemic-event review candidate: every producer is an ungoverned command, no operation reacts and no translation is stated; derived reach is {reach}. Unstated reach is uncertainty. Review the fact; an activity-log record can use side_effects.writes. This hint does not recommend automatic deletion.'

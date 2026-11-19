@@ -1,0 +1,16 @@
+engineVersion: "0.1"
+rules:
+  - id: use-case-step-order
+    severity: error
+    description: >-
+      A use case's main scenario must have unique local step ids and acyclic precedence.
+      Omitted after uses the preceding source occurrence; an explicit array replaces that edge.
+      All explicit targets must name steps of this scenario. Optional participation and repetition
+      never remove graph errors. Rule references are checked by the existing reference validator.
+    find:
+      entity_type: UseCase
+    check:
+      custom:
+        module: ./use-case-step-order.mjs
+        export: useCaseStepOrder
+    message: '{findings}'

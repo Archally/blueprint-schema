@@ -1,0 +1,19 @@
+engineVersion: "0.1"
+rules:
+  - id: inquiry-pin-ambiguous
+    severity: warn
+    description: >-
+      An inquiry whose `affects.element_refs` names an id that several elements declare, so the pin
+      names no single element and the graph draws it to an ambiguous placeholder listing them. In
+      practice two processes that declare one activity id: an activity id is unique within its
+      process, not within the model. Reads the placeholder the model builder draws for the pin, so
+      the rule and the graph resolve the id one way. An id also named in a kind list is that list's
+      pin and is not reported here. One finding per inquiry, naming every ambiguous id. Override per
+      project via .blueprint-lint.yaml (e.g. `inquiry-pin-ambiguous: off`).
+    find:
+      entity_type: Inquiry
+    check:
+      custom:
+        module: ./inquiry-pin-ambiguous.mjs
+        export: inquiryPinAmbiguous
+    message: 'Inquiry "{displayId}" pins {ids}, which several elements declare ({candidates}). Name an id one element declares, or give the elements distinct ids.'

@@ -38,6 +38,8 @@ _Source: `schema/v2.8/blueprint.schema.yaml` · root type `object`_
 | `default_tracker` | `string` | - |  | Tracker id (a key of `trackers`) used to resolve a bare `tracker_ref` key that carries no `<tracker>:` prefix. Omit if refs always carry a prefix or a full URL. |
 | `layout` | `union` | - |  | Blueprint file layout. Omit for legacy single-folder layout using design/governance paths. |
 | `domains` | `array<ref → domain>` | - |  | The model's top-level region registry, each entry with the subdomains it divides into. Most entries are the problem-space domains the system exists for, which… |
+| `products` | `array<ref → product>` | - |  | The products the system's capabilities are built into, each declared once here and named by id everywhere else. A capability states the products it is availabl… |
+| `change_streams` | `array<ref → change_stream>` | - |  | The model's change streams, each declared once here and named by id from the migrations that belong to it. A migration names at most one stream with `change_st… |
 | `constitution` | `object` | - |  | Core design principles and conventions governing this blueprint. Machine-readable codification of architectural standards. |
 | `migrations` | `array<union>` | - |  | Ordered list of model migrations. Loader applies pending migrations on top of AS-IS model to produce TO-BE state. Each item is either an inline migration or a… |
 | `design` | `object` | - |  | What the system is and how it works: domain model, behavior, and quality attributes. |
@@ -110,6 +112,34 @@ A partition of one domain, classified on the same axis as the domain that contai
 | `owner` | `ref → owned_by` | - |  | The accountable unit when it differs from the domain's: a team, department or party by reference, a name for a unit the model does not declare yet, or both. |
 
 _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/subdomain`_
+
+#### `product`
+
+A product: an offering the system's capabilities are built into, such as an edition, an application or a separately sold tool. Declared once in `products` and named by capabilities through their `products` list.
+
+**Required:** `id`, `name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → product_ref` | ✓ |  | Product id. Model-wide, so it carries no context prefix (PDT001). |
+| `name` | `string` | ✓ |  | Product name as its users know it, on one line. |
+| `description` | `string` | - |  | What the product is and whom it serves. |
+
+_Source: `schema/v2.8/blueprint.schema.yaml#/$defs/product`_
+
+#### `change_stream`
+
+A named line of planned change that groups migrations for a reader, such as a module being separated or a platform effort. It states no team and no scope: its teams are the owners of its migrations, and the contexts and domains it reaches are those its migrations change.
+
+**Required:** `id`, `name`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `id` | `ref → change_stream_ref` | ✓ |  | Change stream id. Model-wide, so it carries no context prefix (CS001). |
+| `name` | `string` | ✓ |  | Change stream name as its readers know it, on one line. |
+| `description` | `string` | - |  | What this line of change achieves and why it is grouped. |
+
+_Source: `schema/v2.8/blueprint.schema.yaml#/$defs/change_stream`_
 
 #### `slice`
 
@@ -224,6 +254,49 @@ One entry of a bounded context's `covers[]`: a problem-space domain the context 
 
 _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/domain_coverage`_
 
+#### `migration_reach`
+
+The bounded contexts and domains this migration changes, stated by hand only where its changes cannot show them: a change described in prose, or a planned migration whose changes are not written yet. Otherwise they are derived from the changes. A stated context or domain the changes never reach, or one they reach that is not stated, is reported by semantic validation.
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `bounded_context_refs` | `array<ref → bounded_context_ref>` | - |  | The bounded contexts (BC###) this migration changes, by arch id. An id no arch file declares is a cross-reference error. |
+| `domain_refs` | `array<ref → domain_ref>` | - |  | The domains (DMN###) this migration changes, declared in blueprint.yaml `domains[]`. An id the registry does not declare is a cross-reference error. |
+
+_Source: `schema/v2.8/metamodel.schema.yaml#/$defs/migration_reach`_
+
+#### `migration_dependency_reason`
+
+Why this migration waits for one migration it lists in `depends_on`.
+
+**Required:** `migration`, `reason`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `migration` | `ref → migration_ref` | ✓ |  | The migration waited for. It is listed in this migration's `depends_on`; one that is not, or one named in two entries, is reported by semantic validation. |
+| `reason` | `string` | ✓ |  | Why this migration waits for that one, in plain language, for example a table both change or a decision that must be taken first. |
+
+_Source: `schema/v2.8/metamodel.schema.yaml#/$defs/migration_dependency_reason`_
+
+#### `migration_business_case`
+
+The forecast economics of one migration: what carrying it out costs and what it is expected to return over a stated horizon, in one currency. It is an estimate made by its author, not a measured outcome. It is stated on the migration, the unit people and time are given to; the decisions and goals the migration serves give its reasons and carry no amounts. A migration without a business case state…
+
+**Required:** `horizon_months`, `currency`, `initial_cost`, `recurring_cost`, `recurring_benefit`, `period`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `horizon_months` | `integer` | ✓ |  | The number of whole months the estimate covers: a finite whole number, at least 1. |
+| `currency` | `string` | ✓ |  | The currency of every amount in this business case, as an ISO 4217 alphabetic code: three uppercase letters such as EUR, USD or PLN. The pattern checks the sha… |
+| `initial_cost` | `number` | ✓ |  | The one-time cost of carrying out the migration, in `currency`: a finite number, zero or more. |
+| `recurring_cost` | `number` | ✓ |  | The running cost the migration adds in each `period`, in `currency`: a finite number, zero or more. A running cost the migration removes is a benefit, stated i… |
+| `recurring_benefit` | `number` | ✓ |  | The benefit the migration is expected to yield in each `period`, in `currency`, including running costs it removes: a finite number, zero or more. A forecast,… |
+| `period` | `string` | ✓ | `month`, `year` | The period `recurring_cost` and `recurring_benefit` are each stated per: a month or a year. |
+| `assumption_refs` | `array<ref → assumption_ref>` | - |  | Assumptions (ASM###) the estimate rests on, each listed once: if one proves wrong, the estimate is at risk. An id no motivation file declares is a cross-refere… |
+| `evidence` | `ref → evidence` | - |  | The sources the estimate is drawn from, such as a supplier quote, a benchmark or measured usage. |
+
+_Source: `schema/v2.8/metamodel.schema.yaml#/$defs/migration_business_case`_
+
 #### `logic_tuple`
 
 When/then/else structure for rule logic. 'when' omitted for invariants; 'then' always required.
@@ -337,6 +410,8 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `migration_ref` | `string` |  | Reference to a blueprint model migration (e.g. MIG001 or billing.MIG001). |
 | `domain_ref` | `string` |  | Reference to a domain declared in blueprint.yaml `domains[]` (e.g. DMN001). Model-wide, so no context prefix. |
 | `subdomain_ref` | `string` |  | Reference to a subdomain declared under its domain in blueprint.yaml `domains[].subdomains[]` (e.g. SDM001). SOFT-DEPRECATED (v2.8.17). A subdomain is a partit… |
+| `product_ref` | `string` |  | Reference to a product declared in blueprint.yaml `products[]` (e.g. PDT001). Model-wide, so no context prefix. |
+| `change_stream_ref` | `string` |  | Reference to a change stream declared in blueprint.yaml `change_streams[]` (e.g. CS001). Model-wide, so no context prefix. |
 | `model_ref` | `union` |  | Reference to a model component. Four forms supported: (1) Typed ID: MDL + digits with optional context prefix (MDL001, billing.MDL003). (2) PascalCase name mat… |
 | `attribute_ref` | `string` |  | Concept attribute identifier (e.g. CAT001 or catalog.CAT001). Optional context prefix for cross-context disambiguation. |
 | `screen_ref` | `string` |  | Reference to a UI screen (e.g. SCR001 or orders.SCR001). |
@@ -356,6 +431,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `question_ref` | `string` |  | Reference to a domain competency question (e.g. QN001 or billing.QN001). Questions are first-class entities representing knowledge requirements of a bounded co… |
 | `x_model_id` | `string` |  | Model identifier as JSON Schema x-extension (e.g. MDL001 or orders.MDL001). |
 | `service_kind` | `string` | `service`, `worker`, `api`, `webapp`, `cli`, `library` … (7) | Architectural component type: service=backend, worker=job processor, api=endpoint, webapp=frontend, cli=command-line, library=a library the organization builds… |
+| `service_role` | `string` | `gateway`, `bff` | The responsibility a service takes in front of other services, stated beside its `kind` and independent of it. `gateway`: an entry point that receives requests… |
 | `value_stream_ref` | `string` |  | Reference to a value stream (e.g. VS001 or orders.VS001). |
 | `capability_ref` | `string` |  | Reference to a business capability (e.g. CAP001 or billing.CAP001). |
 | `non_goal_ref` | `string` |  | Reference to a motivation non-goal (e.g. NG001 or billing.NG001). |
@@ -363,6 +439,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `finding_ref` | `string` |  | Reference to a quality finding - an AS-IS internal-quality defect (e.g. FN001 or ordering.FN001). |
 | `leverage_ref` | `string` |  | Reference to a leverage point - a prioritized cross-cutting intervention that bundles findings / risks / decisions / fitness-functions and is delivered via mig… |
 | `probe_ref` | `string` |  | Reference to a probe - an instrument that reads an artifact the model does not author and reports an observation about it (e.g. PRB001 or integration.PRB001).… |
+| `model_element_ref` | `string` |  | Reference to any element this model declares by a typed id: an entity such as IR003, orders.CMD001 or BC002, or a part of one that carries its own id, such as… |
 | `message_channel_ref` | `string` |  | Reference to a message channel by its typed id (e.g. MCH001 or orders.MCH001): a topic producers publish to, or a queue a consumer reads from, declared once in… |
 | `quality_characteristic` | `string` | `functional-suitability`, `performance-efficiency`, `compatibility`, `usability`, `reliability`, `security` … (9) | ISO/IEC 25010:2011 top-level product-quality characteristic - the eight 2011 characteristics plus `safety` (the one clearly-useful 2023 addition). Names the to… |
 | `quality_subcharacteristic` | `string` | `modularity`, `reusability`, `analysability`, `modifiability`, `testability`, `confidentiality` … (37) | ISO/IEC 25010 sub-characteristic - the finer grain under a `quality_characteristic`. The pairing of a sub-characteristic to its top-level is a CONVENTION the a… |
@@ -386,6 +463,7 @@ _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/impacts_links`_
 | `spec_path` | `string` |  | Addressable path to any blueprint element. Format: [context.]layer[.category].ID[.field]. Examples: rules.classification.CR003, billing.rules.classification.CR… |
 | `change_kind` | `string` | `add`, `modify`, `deprecate`, `remove`, `rename`, `split` … (7) | Change type for change-impact analysis, as a decision records what it did to a spec path. Semver impact: add is minor, modify is minor or major, deprecate is m… |
 | `semver_impact` | `string` | `major`, `minor`, `patch` | Semantic versioning impact: major=breaking, minor=backward-compatible addition, patch=docs or clarification. |
+| `parameter_location` | `string` | `path`, `query`, `header`, `cookie` | Where a request parameter travels: in the path, the query string, a header or a cookie. The four locations OpenAPI names. |
 | `gateway_kind` | `string` | `and`, `xor`, `or` | How several branches of a process relate to one another: `and` takes every branch, `xor` exactly one, `or` one or more. The same three words describe a fork an… |
 | `sbvr_modality` | `string` | `necessary`, `obligatory`, `prohibited`, `permitted` | SBVR deontic modality expressing rule strength. |
 | `decision_status` | `string` | `open`, `proposed`, `rfc`, `accepted`, `landed`, `rejected` … (7) | Decision lifecycle: open -> proposed -> rfc -> accepted -> landed; rejected or deprecated at any stage. open: A question is open with no proposed direction yet… |
@@ -431,6 +509,17 @@ _Source: `schema/v2.8/migration.schema.yaml` · root type `object`_
 
 #### Definitions
 
+#### `entity_placement`
+
+Where an entity is declared once a change applies: a slice folder, a file of the model, or both. With a slice alone, the entity is read from the one file of that slice that holds its layer, or from the layer's plain file name in that slice (`billing/infrastructure.yaml`) when the slice holds none; a slice with several such files needs `file`. With both, the file sits in the slice. Without a place…
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `slice` | `string` | - |  | The slice the entity is declared in, by its folder name under the model root. |
+| `file` | `string` | - |  | The file the entity is declared in, relative to the model directory, with forward slashes. Its name routes to the layer that holds the entity. It need not exis… |
+
+_Source: `schema/v2.8/migration.schema.yaml#/$defs/entity_placement`_
+
 #### `entity_change`
 
 A change to a whole entity (node in the graph).
@@ -441,13 +530,15 @@ A change to a whole entity (node in the graph).
 | --- | --- | --- | --- | --- |
 | `kind` | `ref → entity_change_kind` | ✓ |  |  |
 | `entity_type` | `string` | ✓ | `concept`, `actor`, `enumeration`, `association`, `operation`, `error` … (47) | Blueprint entity type. Routes validation to the appropriate schema. |
-| `target` | `string` | ✓ |  | Entity identifier (typed ref, e.g., CN005, CMD012) or SpecPath. For add: new entity ID. For merge: comma-separated source IDs. |
+| `target` | `string` | ✓ |  | Entity identifier (typed ref, e.g., CN005, CMD012) or SpecPath. For add: new entity ID. For merge: comma-separated source IDs. For move: the entity that moves. |
 | `description` | `string` | - |  | Human-readable description of this change. |
 | `before` | `object` | - |  | Entity state before change. REQUIRED for modify, remove, merge. Enables rollback. |
 | `after` | `any` | - |  | Entity state after change. REQUIRED for add, modify, split. For split: array of entities. |
 | `reason` | `string` | - |  | Why this specific entity change is needed. |
 | `group` | `string` | - |  | Atomic group name. All changes with the same group must apply together or not at all. |
 | `order` | `integer` | - |  | Explicit ordering within this migration. Lower numbers apply first. |
+| `placement` | `ref → entity_placement` | - |  | Where the entity lands. Allowed on add, on split (every new piece lands there) and on merge (the result); required on move; not allowed on modify, deprecate, r… |
+| `placement_before` | `ref → entity_placement` | - |  | Move only: where the entity is declared before this change. Applying the move fails when the entity is declared elsewhere. Absent: the move applies wherever th… |
 
 _Source: `schema/v2.8/migration.schema.yaml#/$defs/entity_change`_
 
@@ -518,7 +609,7 @@ _Source: `schema/v2.8/migration.schema.yaml#/$defs/meta_change`_
 
 | Definition | Type | Values | Description |
 | --- | --- | --- | --- |
-| `entity_change_kind` | `string` | `add`, `modify`, `deprecate`, `remove`, `rename`, `split` … (7) | What this migration does to one entity. add: a new entity. modify: replace it. deprecate: mark it for removal. remove: delete it. rename: it keeps its identity… |
+| `entity_change_kind` | `string` | `add`, `modify`, `deprecate`, `remove`, `rename`, `split` … (8) | What this migration does to one entity. add: a new entity. modify: replace it. deprecate: mark it for removal. remove: delete it. rename: it keeps its identity… |
 
 <a id="migrations"></a>
 
@@ -560,6 +651,13 @@ One migration in the register.
 | `inverse_summary` | `string` | - |  | How to undo this migration, in prose. Present when `reversible` is true and the steps are worth stating. |
 | `date` | `string` | - |  | When this migration was carried out, or is planned for (YYYY-MM-DD). |
 | `depends_on` | `array<ref → migration_ref>` | - |  | Migrations that apply before this one. |
+| `depends_on_reasons` | `array<ref → migration_dependency_reason>` | - |  | Why this migration waits for a migration in `depends_on`: one entry per dependency with a stated reason. A dependency without an entry states no reason. |
+| `related_decisions` | `array<ref → decision_ref>` | - |  | Decisions (DC###) that motivated this migration, each listed once: the link a migration document states in `migration.related_decisions`. An id no decisions fi… |
+| `owned_by` | `ref → owned_by` | - |  | The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct f… |
+| `change_stream_ref` | `ref → change_stream_ref` | - |  | The change stream this migration belongs to. At most one; absent means none. An id that `change_streams` in blueprint.yaml does not declare is a cross-referenc… |
+| `reach` | `ref → migration_reach` | - |  | The bounded contexts and domains this migration changes, stated by hand only where its changes cannot show them. Otherwise they are derived from the changes, a… |
+| `tracker_ref` | `ref → tracker_ref` | - |  | The item that stands for this migration in an external issue tracker, resolved to a link like every other `tracker_ref`. |
+| `business_case` | `ref → migration_business_case` | - |  | The forecast cost and benefit of carrying out this migration over a stated horizon. Optional: an entry without it states no estimate. A model declares each mig… |
 | `tags` | `ref → tags` | - |  | Free-form tags for this entry. |
 | `changes` | `array<ref → register_change>` | ✓ |  | The changes this migration makes, each described for a reader. An entry with no changes says nothing, so at least one is required. |
 
@@ -754,6 +852,19 @@ _Source: `schema/v2.8/tracked-migrations.schema.yaml` · root type `array`_
 
 #### Definitions
 
+#### `tracked_dependency_reason`
+
+Why this migration waits for one migration it lists in `depends_on`.
+
+**Required:** `migration`, `reason`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `migration` | `ref → tracked_migration_ref` | ✓ |  | The migration waited for. It is listed in this migration's `depends_on`; one that is not, or one named in two entries, is reported by validation. |
+| `reason` | `string` | ✓ |  | Why this migration waits for that one, in plain language, for example a table both change or a decision that must be taken first. |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_dependency_reason`_
+
 #### `patch_op`
 
 One change, expressed so that it can be replayed against the model. Which properties an operation carries is decided by its `op`, and each `op` is checked against its own shape alone, so a fault is reported against the operation it is in rather than against every shape it is not.
@@ -762,7 +873,7 @@ One change, expressed so that it can be replayed against the model. Which proper
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
-| `op` | `string` | ✓ | `rename`, `patch`, `tag`, `rewrite-ref`, `new`, `delete` | What this operation does to the model. |
+| `op` | `string` | ✓ | `rename`, `patch`, `tag`, `rewrite-ref`, `new`, `delete` … (7) | What this operation does to the model. |
 
 _Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op`_
 
@@ -853,6 +964,21 @@ Remove one entity, addressed by id or by name.
 
 _Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_delete`_
 
+#### `patch_op_move`
+
+Move one entity, with its text unchanged, into another file of the same layer and slice. Its id and every reference to it stay as they are. A destination that does not exist is created, and a source file the move empties keeps its empty container.
+
+**Required:** `op`, `target`, `file`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `op` | `any` | ✓ |  | Names this operation. |
+| `target` | `string` | ✓ |  | The entity to move, by id or by name. |
+| `file` | `string` | ✓ |  | The file to move it into, relative to the model directory. |
+| `from` | `string` | - |  | The file the entity is declared in when the move is staged, relative to the model directory. Applying the move fails when the entity is declared elsewhere. Abs… |
+
+_Source: `schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_move`_
+
 #### `json_patch_op`
 
 One field change, in JSON Patch terms (RFC 6902).
@@ -928,6 +1054,12 @@ One migration: a named set of changes with a status, and once applied, a record 
 | `description` | `string` | - |  | What this migration does and why, in plain language. |
 | `breaking` | `boolean` | - |  | Whether applying this migration breaks readers of the model as it stands. |
 | `depends_on` | `array<ref → tracked_migration_ref>` | - |  | Migrations that must apply before this one. |
+| `depends_on_reasons` | `array<ref → tracked_dependency_reason>` | - |  | Why this migration waits for a migration in `depends_on`: one entry per dependency with a stated reason. A dependency without an entry states no reason. |
+| `related_decisions` | `array<ref → decision_ref>` | - |  | Decisions (DC###) that motivated this migration, each listed once. An id no decisions file of the model declares is a cross-reference error. Without the list,… |
+| `owned_by` | `ref → owned_by` | - |  | The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct f… |
+| `change_stream_ref` | `ref → change_stream_ref` | - |  | The change stream this migration belongs to. At most one; absent means none. An id that `change_streams` in the model's blueprint.yaml does not declare is a cr… |
+| `reach` | `ref → migration_reach` | - |  | The bounded contexts and domains this migration changes, stated by hand only where its changes cannot show them. Otherwise they are derived from the changes, a… |
+| `tracker_ref` | `ref → tracker_ref` | - |  | The item that stands for this migration in an external issue tracker, resolved to a link like every other `tracker_ref`. |
 | `variant_group` | `string` | - |  | Names a set of mutually exclusive alternatives. Migrations sharing a group are competing answers to the same question: accepting one rejects its siblings, and… |
 | `change_set` | `array<ref → patch_op>` | ✓ |  | The changes this migration makes, in the order they apply. Empty while the migration is still collecting them. |
 | `inverse_change_set` | `array<ref → patch_op>` | - |  | The changes that undo this migration, recorded when it was applied. It describes the rollback rather than performing it: rolling back restores the recorded `ed… |
@@ -1030,6 +1162,8 @@ A named destination on a message broker. A `topic` is where a producer publishes
 | `kind` | `string` | ✓ | `topic`, `queue` | `topic`: published to by producers, each subscriber receives every message. `queue`: read by one consumer, its competing instances sharing the messages. |
 | `address` | `string` | - |  | The name the broker knows the channel by on the wire: the exchange name of an AMQP topic, the queue name, the Kafka topic name. Absent, it is the channel's `na… |
 | `broker_ref` | `ref → infra_resource_ref` | - |  | The message broker this channel lives on: the infrastructure resource (IR###) that declares it, conventionally with `kind: broker`. Absent, the channel lives o… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this channel exists as stated - its kind and its address - and on what evidence. It is about the channel itself: evidence for the br… |
+| `link_provenance` | `object` | - |  | Evidence for the broker this channel names. `broker_ref` holds at most one entry, keyed by the broker reference exactly as written in `broker_ref`, and its val… |
 | `description` | `string` | - |  | What travels on this channel and why it exists. |
 | `bindings` | `object` | - |  | Protocol-specific details of the channel, keyed by protocol, after the AsyncAPI bindings. Each key describes the channel on that protocol only. |
 
@@ -1120,6 +1254,7 @@ Dependency on another bounded context or external system. Technical connections 
 | `description` | `string` | - |  | Human-readable description. |
 | `properties` | `ref → entity_properties` | - |  |  |
 | `tags` | `ref → tags` | - |  |  |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this dependency holds as stated - its target, relationship, direction and coupling - and on what evidence. It is about this dependen… |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency`_
 
@@ -1147,9 +1282,11 @@ A deployable service or component within a bounded context.
 | `id` | `ref → service_ref` | ✓ |  | Stable service id (SVC###) - makes the service a first-class, referenceable graph node. |
 | `name` | `string` | ✓ |  | Service name (e.g. order-api, payment-worker). |
 | `kind` | `ref → service_kind` | - |  | Architectural component type. Determines applicable contract patterns. |
+| `role` | `ref → service_role` | - |  | The responsibility this service takes in front of other services: `gateway` for an entry point that forwards client requests to backend services, `bff` for a g… |
 | `system_ref` | `ref → party_ref` | - |  | The system party (PRT###) this service is a component of. A service nested under a party is a component of that party and may omit it; naming a different party… |
 | `imports` | `array<union>` | - |  | The libraries this service is built on: a package it imports or a component it embeds, so that its build contains them. Each item names, by its exact declared… |
 | `uses` | `array<ref → service_ref>` | - |  | The services this one depends on while running, stated at the level of a container diagram ("orders uses payments"): the statement to make before the contracts… |
+| `routes_to` | `array<ref → service_ref>` | - |  | The backend services this one forwards requests to: it receives a request and passes it on to each named service, the statement a gateway or a backend for fron… |
 | `summary` | `string` | - |  | Brief description of what this service does. |
 | `description` | `string` | - |  | Full description of this service's purpose, responsibilities, and domain role. |
 | `properties` | `ref → entity_properties` | - |  |  |
@@ -1164,6 +1301,7 @@ A deployable service or component within a bounded context.
 | `code_refs` | `ref → code_refs` | - |  |  |
 | `implementation` | `ref → implementation` | - |  | Whether this service exists yet. Absent means unclear. |
 | `provenance` | `ref → provenance` | - |  | Epistemic provenance for this service (brownfield modeling confidence). |
+| `link_provenance` | `object` | - |  | Evidence for individual links this service states in `imports`, `uses`, `routes_to` and `resource_refs`. Under the name of the list, each key is a target exact… |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service`_
 
@@ -1180,6 +1318,7 @@ An abstract infrastructure need declared by a service (Score `type`/`class`/`id`
 | `id` | `string` | - |  | Optional logical need id distinguishing shared-vs-dedicated instances. The same id shared across services ⇒ a shared resource; distinct ids ⇒ dedicated. NOT an… |
 | `params` | `object` | - |  | Optional type-level parameters (Score `params`) - e.g. {version: '16', size: small}. The environment `param_overlay` and the binding `params` refine these at r… |
 | `description` | `string` | - |  | Optional human note on why this need exists. |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that the service has this need, and on what evidence. It is about the need, not about the service or about a binding that realizes it. |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service_need`_
 
@@ -1218,6 +1357,8 @@ OpenAPI endpoint contract: what the service exposes over HTTP.
 | `cross_cutting` | `ref → contract_cross_cutting` | - |  |  |
 | `output` | `ref → contract_output` | - |  |  |
 | `expose` | `array<ref → operation_ref>` | - |  | Operations exposed by this HTTP contract. |
+| `link_provenance` | `object` | - |  | Evidence for individual operations this contract lists. Under the name of the list, each key is an operation reference exactly as written there, in either of i… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this contract is declared as stated, and on what evidence. It is about the contract as a whole and is not evidence for any one opera… |
 | `input_structures` | `ref → contract_structures` | - |  | Named input data structures accepted by this contract. |
 | `output_structures` | `ref → contract_structures` | - |  | Named output data structures produced by this contract. |
 
@@ -1235,6 +1376,8 @@ Outbound HTTP client contract: what endpoints this service calls.
 | `cross_cutting` | `ref → contract_cross_cutting` | - |  |  |
 | `output` | `ref → contract_output` | - |  |  |
 | `call` | `array<ref → operation_ref>` | - |  | Operations this service calls via HTTP. |
+| `link_provenance` | `object` | - |  | Evidence for individual operations this contract lists. Under the name of the list, each key is an operation reference exactly as written there, in either of i… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this contract is declared as stated, and on what evidence. It is about the contract as a whole and is not evidence for any one opera… |
 | `input_structures` | `ref → contract_structures` | - |  | Named input structures sent to the dependency. |
 | `output_structures` | `ref → contract_structures` | - |  | Named output structures received from the dependency. |
 
@@ -1251,11 +1394,13 @@ AsyncAPI messaging contract: topics and channels this service publishes to or co
 | `slice` | `ref → contract_slice` | - |  |  |
 | `cross_cutting` | `ref → contract_cross_cutting` | - |  |  |
 | `output` | `ref → contract_output` | - |  |  |
-| `send` | `array<ref → operation_ref>` | - |  | Operations this service publishes via messaging. |
-| `receive` | `array<ref → operation_ref>` | - |  | Operations this service consumes via messaging. |
+| `send` | `array<ref → operation_ref>` | - |  | Operations this service publishes via messaging. Events bind to the sender; a sent command binds to its unique receiving service, retaining the sender when no… |
+| `receive` | `array<ref → operation_ref>` | - |  | Operations this service consumes via messaging. A sent command binds to this service when it is the only receiving service; events remain bound to their sender… |
 | `broker_ref` | `ref → infra_resource_ref` | - |  | The message broker this contract publishes to and receives from: the infrastructure resource (IR###) that declares it, conventionally with `kind: broker`. One… |
 | `brokerId` | `string` | - |  | SUPERSEDED by `broker_ref`. A free-string broker name (e.g. rabbitmq-prod), which resolves to nothing in the model. Still accepted on this line, and never besi… |
 | `subscription` | `object` | - |  | How this service receives the messages it consumes: its own durable subscription, which receives every message published to the channels its `receive:` operati… |
+| `link_provenance` | `object` | - |  | Evidence for individual links this contract states in `send`, `receive` and `broker_ref`. Under the name of the field, each key is a reference exactly as writt… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this contract is declared as stated, and on what evidence. It is about the contract as a whole and is not evidence for any one link… |
 | `input_structures` | `ref → contract_structures` | - |  | Named message structures received (consumed). |
 | `output_structures` | `ref → contract_structures` | - |  | Named message structures sent (published). |
 
@@ -1274,6 +1419,8 @@ OpenRPC contract: remote methods exposed or called.
 | `output` | `ref → contract_output` | - |  |  |
 | `expose` | `array<ref → operation_ref>` | - |  | Operations exposed via RPC by this service. |
 | `call` | `array<ref → operation_ref>` | - |  | Operations this service calls via RPC. |
+| `link_provenance` | `object` | - |  | Evidence for individual operations this contract lists. Under the name of the list, each key is an operation reference exactly as written there, in either of i… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this contract is declared as stated, and on what evidence. It is about the contract as a whole and is not evidence for any one opera… |
 | `input_structures` | `ref → contract_structures` | - |  | Named input structures for RPC calls. |
 | `output_structures` | `ref → contract_structures` | - |  | Named output structures from RPC results. |
 
@@ -1293,6 +1440,8 @@ Protocol Buffers contract: the remote procedures of a service defined in a `.pro
 | `cross_cutting` | `ref → contract_cross_cutting` | - |  |  |
 | `expose` | `array<ref → operation_ref>` | - |  | Operations this service serves as methods of the Protocol Buffers service. |
 | `call` | `array<ref → operation_ref>` | - |  | Operations this service calls as methods of another service's Protocol Buffers definition. |
+| `link_provenance` | `object` | - |  | Evidence for individual operations this contract lists. Under the name of the list, each key is an operation reference exactly as written there, in either of i… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this contract is declared as stated, and on what evidence. It is about the contract as a whole and is not evidence for any one opera… |
 | `input_structures` | `ref → contract_structures` | - |  | Named request messages. |
 | `output_structures` | `ref → contract_structures` | - |  | Named response messages. |
 
@@ -1312,6 +1461,8 @@ Model Context Protocol contract: the tools an MCP server exposes to its clients,
 | `cross_cutting` | `ref → contract_cross_cutting` | - |  |  |
 | `expose` | `array<ref → operation_ref>` | - |  | Operations this service exposes as MCP tools. |
 | `call` | `array<ref → operation_ref>` | - |  | Operations this service calls as tools of another MCP server. |
+| `link_provenance` | `object` | - |  | Evidence for individual operations this contract lists. Under the name of the list, each key is an operation reference exactly as written there, in either of i… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this contract is declared as stated, and on what evidence. It is about the contract as a whole and is not evidence for any one opera… |
 | `input_structures` | `ref → contract_structures` | - |  | Named input structures for tool calls. |
 | `output_structures` | `ref → contract_structures` | - |  | Named output structures from tool results. |
 
@@ -1331,6 +1482,8 @@ Command-line contract: the commands a command-line program exposes to whoever ru
 | `cross_cutting` | `ref → contract_cross_cutting` | - |  |  |
 | `expose` | `array<ref → operation_ref>` | - |  | Operations this service exposes as commands. |
 | `call` | `array<ref → operation_ref>` | - |  | Operations this service runs as commands of another program. |
+| `link_provenance` | `object` | - |  | Evidence for individual operations this contract lists. Under the name of the list, each key is an operation reference exactly as written there, in either of i… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this contract is declared as stated, and on what evidence. It is about the contract as a whole and is not evidence for any one opera… |
 | `input_structures` | `ref → contract_structures` | - |  | Named input structures for commands: arguments, options and standard input. |
 | `output_structures` | `ref → contract_structures` | - |  | Named output structures from commands: standard output and exit status. |
 
@@ -1348,6 +1501,7 @@ Workflow contract (Arazzo or CNCF Serverless Workflow).
 | `cross_cutting` | `ref → contract_cross_cutting` | - |  |  |
 | `output` | `ref → contract_output` | - |  |  |
 | `workflows` | `array<string>` | - |  | Workflow names defined in this contract. |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this contract is declared as stated, the workflows it names included, and on what evidence. A workflow name is a name rather than a… |
 | `input_structures` | `ref → contract_structures` | - |  | Named input structures for workflow triggers. |
 | `output_structures` | `ref → contract_structures` | - |  | Named output structures produced by workflows. |
 
@@ -1361,6 +1515,8 @@ In-process coupling: operations this service provides to, or consumes from, code
 | --- | --- | --- | --- | --- |
 | `provide` | `array<ref → operation_ref>` | - |  | Operations this service owns and makes callable in-process. The transport-free counterpart of a contract's `expose:` or `send:`, and it materializes the same `… |
 | `consume` | `array<ref → operation_ref>` | - |  | Operations another service owns that this service calls in-process - a sibling module of a modular monolith, a library service, an injected dependency. Each en… |
+| `link_provenance` | `object` | - |  | Evidence for individual operations this contract lists. Under the name of the list, each key is an operation reference exactly as written there, in either of i… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this coupling is declared as stated, and on what evidence. It is about the coupling as a whole and is not evidence for any one opera… |
 
 _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/inprocess_contract`_
 
@@ -1377,6 +1533,9 @@ Shared-data coupling: a store both services reach, where one writes the data and
 | `output` | `ref → contract_output` | - |  |  |
 | `write` | `array<ref → operation_ref>` | - |  | Document operations whose data this service writes into the shared store. The writer owns the schema, so this is the provider end even though no call is made. |
 | `read` | `array<ref → operation_ref>` | - |  | Document operations this service reads out of the shared store, written by another service. The consumer end: this service is bound to a schema it does not own. |
+| `store_ref` | `ref → infra_resource_ref` | - |  | The store the shared data lives in: the infrastructure resource (IR###) that declares it, usually a `database`, a `storage` or a `cache`. One store per contrac… |
+| `link_provenance` | `object` | - |  | Evidence for individual links this contract states in `write`, `read` and `store_ref`. Under the name of the field, each key is a reference exactly as written… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this contract is declared as stated, and on what evidence. It is about the contract as a whole and is not evidence for any one link… |
 | `input_structures` | `ref → contract_structures` | - |  | Named structures this service writes into the shared store. |
 | `output_structures` | `ref → contract_structures` | - |  | Named structures this service reads out of the shared store. |
 
@@ -1395,6 +1554,8 @@ Scheduled-transfer coupling: a run on a schedule moves data from one service to 
 | `output` | `ref → contract_output` | - |  |  |
 | `write` | `array<ref → operation_ref>` | - |  | Document operations this service produces for the transfer. The producing end owns the schema and the schedule. |
 | `read` | `array<ref → operation_ref>` | - |  | Document operations this service ingests from the transfer, produced by another service. |
+| `link_provenance` | `object` | - |  | Evidence for individual operations this contract lists. Under the name of the list, each key is an operation reference exactly as written there, in either of i… |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this contract is declared as stated, and on what evidence. It is about the contract as a whole and is not evidence for any one opera… |
 | `input_structures` | `ref → contract_structures` | - |  | Named structures this service produces for the transfer. |
 | `output_structures` | `ref → contract_structures` | - |  | Named structures this service ingests from the transfer. |
 
@@ -1712,7 +1873,7 @@ A domain operation with protocol binding, rule governance, and behavioral proper
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `id` | `ref → operation_ref` | ✓ |  | Unique operation identifier. Prefix encodes kind: CMD=command, EVT=event, QRY=query, DOC=document. The prefix MUST match the operation's kind field. Validator… |
-| `kind` | `string` | ✓ | `event`, `command`, `query`, `document` | Operation category: command=intent to change state, event=fact that happened, query=read-only, document=structured data transfer. |
+| `kind` | `string` | ✓ | `event`, `command`, `query`, `document` | Operation category: command=intent to change state, event=fact that happened, query=read-only, document=structured data transfer. An event states a business fa… |
 | `name` | `string` | - |  | Human-readable operation name. |
 | `version` | `ref → entity_version` | - |  | Operation version for individual lifecycle tracking. |
 | `description` | `string` | - |  | What this operation does and its domain significance. |
@@ -1727,7 +1888,7 @@ A domain operation with protocol binding, rule governance, and behavioral proper
 | `preconditions` | `array<ref → rule_reference>` | - |  | Rules that must hold true before this operation can execute. Checked at entry. |
 | `postconditions` | `array<ref → rule_reference>` | - |  | Rules that must hold true after this operation completes. Verified at exit. |
 | `requires` | `array<ref → operation_ref>` | - |  | Operations that must be available for this operation to function. Capability dependency, not execution order. |
-| `produces` | `object` | - |  | Operations this operation emits upon execution. Commands typically produce events and/or documents. Events do not produce; they trigger reactions via reacts_to… |
+| `produces` | `object` | - |  | Operations this operation emits upon execution: the events and documents that carry its outcome. A command states its outcome through `produces`, `materializes… |
 | `reacts_to` | `array<object>` | - |  | Events or signals this operation reacts to. Each entry is a reactive policy binding: a statement of CAUSALITY, true of the operation wherever it appears. A per… |
 | `translates` | `array<ref → operation_ref>` | - |  | Written on an integration event (an operation of `kind: event` that leaves its bounded context): the domain events of the same context that this event is the p… |
 | `task_type` | `string` | - | `automated`, `manual`, `user-decision`, `external` | Execution type: automated=system-executed, manual=human action outside system, user-decision=human choice within system (UI), external=third-party system. |
@@ -1777,6 +1938,7 @@ Communication protocol and binding. Protocol determines which sub-fields are req
 | `queue` | `ref → queue` | - |  | Message queue configuration (alternative to topic for AMQP/MQTT). |
 | `method` | `ref → method` | - |  | RPC method configuration (required for tcp/grpc/trpc/orpc/json-rpc/x-ws). |
 | `graphql` | `ref → graphql_binding` | - |  | GraphQL operation binding (required for graphql protocol). |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that the operation is bound as stated here - its protocol and its endpoint, topic, queue, method or field - and on what evidence. It is a… |
 
 _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/exchange`_
 
@@ -1805,6 +1967,7 @@ Message topic for pub/sub protocols.
 | `name` | `string` | - |  | Topic name. Where `channel_ref` names the channel, the routing key the message is published with on it. |
 | `channel_ref` | `ref → message_channel_ref` | - |  | The message channel (`kind: topic`) the message is published to, declared in an architecture document's `channels:` list. `name` keeps naming the topic, or the… |
 | `description` | `string` | - |  | What messages on this topic represent. |
+| `link_provenance` | `object` | - |  | Evidence for the channel this topic names. `channel_ref` holds at most one entry, keyed by the channel reference exactly as written in `channel_ref`, and its v… |
 | `filters` | `array<ref → filter>` | - |  | Message filters for selective consumption. |
 
 _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/topic`_
@@ -1818,6 +1981,7 @@ Message queue for point-to-point protocols.
 | `name` | `string` | - |  | Queue name. |
 | `channel_ref` | `ref → message_channel_ref` | - |  | The message channel (`kind: queue`) the message is sent to, declared in an architecture document's `channels:` list. |
 | `description` | `string` | - |  | What messages in this queue represent. |
+| `link_provenance` | `object` | - |  | Evidence for the channel this queue names. `channel_ref` holds at most one entry, keyed by the channel reference exactly as written in `channel_ref`, and its v… |
 
 _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/queue`_
 
@@ -1874,7 +2038,7 @@ HTTP path or query parameter.
 | --- | --- | --- | --- | --- |
 | `name` | `string` | ✓ |  | Parameter name. |
 | `schema` | `ref → model_ref` | ✓ |  | Model schema reference for this parameter's type. |
-| `type` | `string` | ✓ |  | Parameter location (path, query, header, cookie). |
+| `type` | `ref → parameter_location` | ✓ |  | Parameter location (path, query, header, cookie). |
 | `required` | `boolean` | - |  | Whether this parameter is required. |
 
 _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/parameter`_
@@ -2251,6 +2415,7 @@ An infrastructure resource with platform identity and per-environment configurat
 | `relations` | `array<ref → infra_relation_edge>` | - |  | Typed inter-resource relations (TOSCA vocabulary) - the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placement edg… |
 | `iac_refs` | `ref → iac_refs` | - |  | Infrastructure-as-Code traceability for this resource - the analogue of code_refs for infra. Spans cloud provisioners AND on-prem config-management. |
 | `implementation` | `ref → implementation` | - |  | Whether this resource exists yet. Absent means unclear. For a resource, iac_refs are the evidence the as-is check reads, beside code_refs. |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this resource exists as stated, and on what evidence. It is about the resource itself: each of its `relations`, each grant in its `a… |
 | `lifecycle` | `ref → lifecycle` | - |  | Optional lifecycle/protection posture (architect-altitude). |
 | `exposure` | `string` | - | `public`, `internal`, `dmz`, `private`, `air-gapped`, `vpn-only` … (7) | Neutral network-exposure posture: reachable from the internet (public), internal-only (internal), perimeter (dmz), isolated (private / air-gapped), reachable o… |
 | `exposure_detail` | `string` | - |  | Optional provider-specific exposure mechanism (free-text): e.g. 'azure-private-endpoint', 'vnet-integrated', 'aws-privatelink', 'on-prem firewall DMZ'. Retains… |
@@ -2346,6 +2511,7 @@ A deployment environment as a first-class, referenceable entity (v2.7.7, ENV###)
 | `credential_scope` | `string` | - |  | Optional logical credential/identity scope (e.g. a subscription, a service account, an AD domain). A reference/label, never a secret value. |
 | `param_overlay` | `object` | - |  | Optional per-environment parameter overlay applied to bindings (carried; not yet consumed). |
 | `tags` | `ref → tags` | - |  |  |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this environment exists as stated - its class, substrate and target scope - and on what evidence. It is about the environment itself… |
 
 _Source: `schema/v2.8/design/infrastructure.schema.yaml#/$defs/environment`_
 
@@ -2394,21 +2560,23 @@ A deployment scope (DSC###, v2.7.7) - a substrate-neutral management / lifecycle
 | `description` | `string` | - |  | Detailed description of this scope's purpose and what it contains. |
 | `tags` | `ref → tags` | - |  |  |
 | `properties` | `ref → entity_properties` | - |  | Open metadata bag for scope-level custom attributes. |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this scope exists as stated - its kind, parent and substrate - and on what evidence. It is about the scope itself and is not evidenc… |
 
 _Source: `schema/v2.8/design/infrastructure.schema.yaml#/$defs/deployment_scope`_
 
 #### `infra_relation_edge`
 
-A typed inter-resource relation (TOSCA vocabulary). `hosted_on` is the canonical placement edge; `connects_to`/`depends_on` may carry attribute-level output refs; `depends_on` is the ordering-only fallback. A `network-link` resource's connects_to/routes_to targets may sit in a different environment/substrate (the hybrid boundary).
+A typed inter-resource relation (TOSCA vocabulary). `hosted_on` is the canonical placement edge; `connects_to`/`depends_on` may carry attribute-level output refs; `depends_on` is the ordering-only fallback. A `network-link` resource's connects_to/routes_to targets may sit in a different environment/substrate (the hybrid boundary). `routes_to` may also name a service (SVC###): the resource forward…
 
 **Required:** `type`, `target`
 
 | Property | Type | Req | Enum | Description |
 | --- | --- | --- | --- | --- |
 | `type` | `ref → infra_relation` | ✓ |  | TOSCA relation verb: hosted_on / connects_to / depends_on / attaches_to / routes_to. |
-| `target` | `ref → infra_resource_ref` | ✓ |  | The target resource (IR###). May be in another environment/substrate (hybrid interconnect). |
+| `target` | `union` | ✓ |  | The target: a resource (IR###) for every verb, or a service (SVC###) for `routes_to` only, named by its exact declared id. An id that names nothing declared is… |
 | `outputs` | `array<string>` | - |  | Optional attribute-level outputs of the target this resource consumes - e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for im… |
 | `description` | `string` | - |  | Optional human note on this edge (e.g. 'reads via read-replica'). |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this relation holds as stated - its verb, its target and its outputs - and on what evidence. It is about the relation, for every ver… |
 
 _Source: `schema/v2.8/design/infrastructure.schema.yaml#/$defs/infra_relation_edge`_
 
@@ -2456,6 +2624,7 @@ Resolves (resource-type × environment) → a concrete implementation: which pla
 | `params` | `object` | - |  | Binding-time parameters passed to the module (conceptually merged over need `params` + environment `param_overlay`). |
 | `outputs` | `array<ref → io_field>` | - |  | Outputs this binding exposes (host/port/connection-string/…). A field may be secret-flagged - a reference/flow marker only, never a value. |
 | `description` | `string` | - |  | Optional human note on this binding. |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this binding realizes its type or need in its environment as stated - module, resource, profile and parameters together - and on wha… |
 
 _Source: `schema/v2.8/design/infrastructure.schema.yaml#/$defs/binding`_
 
@@ -2510,6 +2679,7 @@ An RBAC access triple: which identity may do what to which target. Substrate-neu
 | `identity` | `string` | - |  | The grantee identity (a `resource_identity` name, a group, or a principal label). |
 | `target` | `string` | - |  | What the access is over (a resource, a scope, a data store - free-text/label; may be an IR###). |
 | `role` | `string` | ✓ |  | The role/permission granted (e.g. reader, contributor, db_datawriter, read-only). |
+| `provenance` | `ref → provenance` | - |  | How sure the model is that this grant holds as stated - this identity has this role on this target - and on what evidence. It is about this grant alone: the re… |
 
 _Source: `schema/v2.8/design/infrastructure.schema.yaml#/$defs/access_grant`_
 
@@ -2809,7 +2979,7 @@ Reusable parameter for operation exchanges. Follows OpenAPI parameter structure.
 | --- | --- | --- | --- | --- |
 | `$ref` | `string` | - |  | JSON Pointer to a field definition (e.g. #/components/x-field/orderId). |
 | `name` | `string` | - |  | Parameter name. |
-| `in` | `string` | - | `path`, `query`, `header`, `cookie` | Parameter location in the request. |
+| `in` | `ref → parameter_location` | - |  | Parameter location in the request. |
 | `required` | `boolean` | - |  | Whether this parameter is required. |
 | `description` | `string` | - |  | Parameter description. |
 | `schema` | `object` | - |  | Inline JSON Schema for this parameter's type. |
@@ -3323,6 +3493,8 @@ An activity within a process. In a process that describes the system, it is the 
 | `outputs` | `array<ref → process_artifact>` | - |  | What this activity produces: a document, a decision record, a specification. |
 | `tools` | `array<ref → process_tool>` | - |  | The tools people use to do this activity: an issue tracker, a design tool, a spreadsheet. |
 | `hands_over_to` | `array<ref → process_handover>` | - |  | Where this activity hands its work over, one entry per receiver. Towards another activity of this process, the lanes and the order already state the handover,… |
+| `questions` | `array<ref → activity_question>` | - |  | The questions asked every time the work reaches this activity, such as "who reads this page?". Each has a `key` that is unique within the activity, so a record… |
+| `gates` | `array<ref → activity_gate>` | - |  | The pass or fail conditions the work meets at this activity before it goes on, such as "the page passes the accessibility check". Each has a `key` that is uniq… |
 | `provenance` | `ref → provenance` | - |  | How sure the model is that this activity happens as written, and on what evidence. Absent states nothing: it is not a claim that the activity is fact. An open… |
 | `tags` | `ref → tags` | - |  |  |
 
@@ -3367,6 +3539,39 @@ One receiver of an activity's work. `activity` names an activity of the same pro
 
 _Source: `schema/v2.8/design/story.schema.yaml#/$defs/process_handover`_
 
+#### `activity_question`
+
+A question asked every time the work reaches an activity. `key` and `statement` are a complete statement; `asked_by`, `asked_of` and `answer` say who asks it, who answers it and where the answer is recorded, where the model declares them.
+
+**Required:** `key`, `statement`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `key` | `ref → activity_item_key` | ✓ |  | The name the question is cited by, unique among the questions of the activity. |
+| `statement` | `string` | ✓ |  | The question as it is asked, for example "Who reads this page?". |
+| `asked_by` | `ref → actor_ref` | - |  | The actor who asks the question. Absent: whoever performs the activity. |
+| `asked_of` | `ref → owner_ref` | - |  | Who answers the question: an actor (ACT###) or a team (TM###). |
+| `answer` | `ref → process_artifact` | - |  | Where the answer is recorded, as a name and, where the model declares it, a concept. |
+
+_Source: `schema/v2.8/design/story.schema.yaml#/$defs/activity_question`_
+
+#### `activity_gate`
+
+A pass or fail condition the work meets at an activity before it goes on. `key` and `criterion` are a complete statement; `evaluated_by`, `rule`, `evidence` and `on_fail` say who judges it, which declared rule states it, what shows the result and where the work goes when it fails, where the model declares them.
+
+**Required:** `key`, `criterion`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `key` | `ref → activity_item_key` | ✓ |  | The name the gate is cited by, unique among the gates of the activity. |
+| `criterion` | `string` | ✓ |  | What passes the gate, for example "The page passes the accessibility check". |
+| `evaluated_by` | `ref → owner_ref` | - |  | Who judges the gate: an actor (ACT###) or a team (TM###). |
+| `rule` | `ref → rule_ref` | - |  | The rule that states the criterion, where the model declares it. Several gates may name one rule, and a test case that verifies the rule reaches every gate tha… |
+| `evidence` | `ref → process_artifact` | - |  | What shows the result of the gate, such as a report or a dated answer. |
+| `on_fail` | `ref → process_activity_ref` | - |  | The activity the work goes to when the gate fails: an activity this activity leads to through `next` or `next_activities`. Absent: the model does not say. |
+
+_Source: `schema/v2.8/design/story.schema.yaml#/$defs/activity_gate`_
+
 #### `user_story`
 
 Agile user story: a user-level goal someone INTENDS to deliver. Format: As a [actor], I want [goal], so that [benefit]. A user story states intent rather than describing the modelled system. It carries delivery state (`delivery_priority`, `release_target`, `status`), needs no operation to exist, and can be deferred or dropped without the model changing.
@@ -3388,7 +3593,7 @@ Agile user story: a user-level goal someone INTENDS to deliver. Format: As a [ac
 | `status` | `ref → story_status` | - |  | User story lifecycle status. |
 | `use_case` | `ref → use_case_ref` | - |  | SOFT-DEPRECATED (v2.8.9). The use case this story belongs to, named from the story. The link is stated by the use case instead - `use_case.user_stories[]` - so… |
 | `concern_ref` | `ref → concern_ref` | - |  | The stakeholder concern this story addresses. `benefit` says why the story is worth doing; this says whose standing expectation it serves, and a concern may be… |
-| `operations` | `array<ref → operation_ref>` | - |  | Domain operations this story exercises. |
+| `operations` | `array<ref → operation_ref>` | - |  | Domain operations this story exercises, each listed once. The list is a set: its order means nothing, and a story states no order of work. The order of steps b… |
 | `test_cases` | `array<ref → test_ref>` | - |  | Test cases validating this story. |
 | `version` | `ref → entity_version` | - |  |  |
 | `owned_by` | `ref → owned_by` | - |  |  |
@@ -3432,7 +3637,7 @@ Use case - a scenario-level requirement describing actor interaction with the sy
 | `goal` | `string` | - |  | What the actor is trying to accomplish. |
 | `preconditions` | `array<string>` | - |  | Conditions that must be true before the use case starts. |
 | `postconditions` | `array<string>` | - |  | Conditions that are true after successful completion. |
-| `main_scenario` | `array<object>` | - |  | Main success scenario as ordered steps. |
+| `main_scenario` | `array<object>` | - |  | Main success scenario: its steps, in the order a reader is shown them. A step that states no `after` must follow the step listed immediately before it, and the… |
 | `alternative_flows` | `array<ref → alternative_flow>` | - |  | Alternative flows and exception handling: what happens at a step of the main scenario when a condition holds. A branch WITHIN this use case; a use case that co… |
 | `extensions` | `array<ref → alternative_flow>` | - |  | SOFT-DEPRECATED (v2.8.9). The same list, under its former name. Use `alternative_flows`, which is what a use case's conditional branches are called; `extension… |
 | `includes` | `array<ref → use_case_ref>` | - |  | Use cases this one always performs as part of itself. The included behaviour runs every time, which is what separates it from `extends`: behaviour that runs on… |
@@ -3457,6 +3662,8 @@ _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case`_
 | --- | --- | --- | --- |
 | `process_trigger_type` | `string` | `message`, `timer`, `signal`, `manual`, `conditional` | BPMN-compatible start event type. |
 | `stated_name` | `string` |  | A name as the source states it, for something the model may not declare. It contains at least one non-space character and is never a typed id: write a declared… |
+| `activity_item_key` | `string` |  | The name a question or a gate is cited by, unique among the questions or among the gates of one activity: lowercase words joined by hyphens, for example `audie… |
+| `use_case_step_id` | `string` |  | Identifier of one step of a use case's main scenario: UCS followed by 3 or more digits, with no context prefix. It is unique within that main scenario and is n… |
 
 ## Governance Plane
 
@@ -3511,6 +3718,7 @@ A business capability - something the business can do or needs to do. Stable and
 | `owner` | `ref → owner_ref` | - |  | A person or role (ACT###) or a team (TM###) who drives this capability. Distinct from owned_by (the unit accountable for it). |
 | `version` | `ref → entity_version` | - |  | Capability version for lifecycle tracking. |
 | `owned_by` | `ref → owned_by` | - |  | Capability-level ownership override. |
+| `products` | `array<ref → product_ref>` | - |  | The products this capability is available in, each by the id a product declares in `blueprint.yaml` `products[]`. Several products may be listed, so per-produc… |
 | `value_stream_refs` | `array<ref → value_stream_ref>` | - |  | Value streams this capability participates in (convenience back-reference; authoritative direction is value_stream → stages[].capabilities[]). |
 | `discovery_stage` | `ref → discovery_stage` | - |  | Epistemic maturity of this capability. |
 | `certainty` | `ref → certainty` | - |  | Confidence level of this capability assessment. |
@@ -3571,6 +3779,7 @@ An Architecture Decision Record (ADR). Minimum: id, title, summary, date, status
 | `acceptance` | `ref → acceptance_criteria` | - |  | Conditions that must be met for this decision to be considered fully implemented. |
 | `links` | `ref → decision_links` | - |  | External references: issue tracker, PRs, docs, and decision chain (supersedes/superseded_by). |
 | `owned_by` | `ref → owned_by` | - |  | Decision-level ownership override. |
+| `participants` | `ref → decision_participants` | - |  | Who takes part in this decision, by role: who decides, who is consulted and who is informed. Optional. |
 | `properties` | `ref → entity_properties` | - |  |  |
 | `tags` | `ref → tags` | - |  |  |
 | `code_refs` | `ref → code_refs` | - |  |  |
@@ -3593,6 +3802,18 @@ The reasoning behind a decision: problem context, options explored, chosen appro
 | `chosen` | `string` | ✓ |  | The option selected and why it was preferred over alternatives. |
 
 _Source: `schema/v2.8/governance/decisions.schema.yaml#/$defs/rationale`_
+
+#### `decision_participants`
+
+The people and teams who take part in a decision, by role. Each role lists actors (ACT###) or teams (TM###), each once, and a reference nobody declares is a cross-reference error. At least one role is stated. A role that is absent is not recorded; it does not state that nobody holds it. An empty `consulted` or `informed` list states that nobody holds that role; `decision_makers`, when stated, nam…
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `decision_makers` | `array<ref → owner_ref>` | - |  | Who may make this decision. When stated, it names at least one actor or team; when absent, who decides is not recorded. |
+| `consulted` | `array<ref → owner_ref>` | - |  | Who is asked for advice before the decision is made. An empty list states that nobody is consulted; when absent, consultation is not recorded. |
+| `informed` | `array<ref → owner_ref>` | - |  | Who is told the outcome once the decision is made. An empty list states that nobody is told; when absent, who is told is not recorded. |
+
+_Source: `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants`_
 
 #### `motivation_links`
 
@@ -4006,8 +4227,10 @@ Governance inquiry - an unresolved strategic or stakeholder concern that needs i
 | `question_refs` | `array<ref → question_ref>` | - |  | Domain competency questions (QN###) that prompted this governance inquiry. |
 | `finding_refs` | `array<ref → finding_ref>` | - |  | Quality findings (FN###) this inquiry is about or was prompted by. The inquiry owns the link and a finding carries no reference back, so an inquiry that closes… |
 | `stakeholders` | `array<ref → actor_ref>` | - |  | Actors who care about the resolution. |
-| `affects` | `object` | - |  | Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded cont… |
-| `owner` | `ref → owner_ref` | - |  | A person or role (ACT###) or a team (TM###) who drives this inquiry to its resolution. Distinct from owned_by (the unit accountable for it). |
+| `affects` | `object` | - |  | Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board, a wall or a map can pin it beside the entity, or the part of on… |
+| `owner` | `ref → owner_ref` | - |  | A person or role (ACT###) or a team (TM###) who drives this inquiry to its resolution. Distinct from owned_by (the unit accountable for it), and from `asked_of… |
+| `asked_of` | `ref → inquiry_addressee` | - |  | Who is expected to answer this inquiry now: an actor (ACT###, a person or a role), a team (TM###), or a name for an addressee the model does not declare. Disti… |
+| `previously_asked_of` | `array<ref → inquiry_earlier_addressee>` | - |  | Whom this inquiry was asked of before `asked_of`, oldest first, each with how the inquiry left them. Passing an inquiry on changes who is asked and leaves `sta… |
 | `blocking` | `boolean` | - |  | True if this inquiry blocks downstream work. |
 | `due_date` | `string` | - |  | Target date for resolution (ISO 8601). |
 | `resolution` | `string` | - |  | Answer or decision once the inquiry is resolved. |
@@ -4022,6 +4245,33 @@ Governance inquiry - an unresolved strategic or stakeholder concern that needs i
 | `tags` | `ref → tags` | - |  |  |
 
 _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry`_
+
+#### `inquiry_addressee` - Addressee
+
+Who is or was expected to answer an inquiry: a reference to an actor (ACT###) or a team (TM###), a `name`, or a name beside one reference. A name alone is a complete statement for an addressee the model does not declare, for example a role such as "Domain expert"; it draws no graph edge, and two addressees stated by name are the same addressee only when the names are written identically. Beside a…
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `actor` | `ref → actor_ref` | - |  | The addressee as an actor: a person or a role (ACT###). |
+| `team` | `ref → team_ref` | - |  | The addressee as a team (TM###). |
+| `name` | `string` | - |  | The addressee as written in the source, for example "Domain expert". Alone, it is the addressee; beside a reference, it is the addressee as stated. It contains… |
+
+_Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry_addressee`_
+
+#### `inquiry_earlier_addressee` - Earlier addressee
+
+One earlier addressee of an inquiry and how the inquiry left them. `asked_of` and `outcome` are a complete statement; `date` and `note` are stated only where a source gives them.
+
+**Required:** `asked_of`, `outcome`
+
+| Property | Type | Req | Enum | Description |
+| --- | --- | --- | --- | --- |
+| `asked_of` | `ref → inquiry_addressee` | ✓ |  | The earlier addressee: an actor (ACT###), a team (TM###) or a name. |
+| `outcome` | `string` | ✓ | `redirected`, `partly-answered`, `reassigned` | How the inquiry left this addressee. redirected: the addressee passed it on without an answer. partly-answered: the addressee answered part of it and passed th… |
+| `date` | `string` | - |  | When the inquiry left this addressee (ISO 8601), where a source states it. |
+| `note` | `string` | - |  | What the addressee said or answered when the inquiry left them, as the source states it. |
+
+_Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry_earlier_addressee`_
 
 #### `concern`
 

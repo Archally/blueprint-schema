@@ -1,0 +1,291 @@
+{
+  "$comment": "The inquiry definition of governance/motivation.schema.yaml as of Blueprint Schema 2.8.105, before an inquiry could pin any typed id. element-refs.test.mjs puts it back in place of the current one.",
+  "inquiry": {
+    "type": "object",
+    "description": "Governance inquiry - an unresolved strategic or stakeholder concern that needs investigation or decision before work can proceed. Distinct from QN### (domain competency questions that model the reason for a domain to exist). Inquiries are temporary governance artifacts; questions are permanent domain knowledge requirements.\n",
+    "additionalProperties": false,
+    "required": [
+      "id",
+      "statement"
+    ],
+    "properties": {
+      "id": {
+        "$ref": "../metamodel.schema.yaml#/$defs/inquiry_ref",
+        "description": "Unique inquiry identifier (INQ + 3+ digits)."
+      },
+      "statement": {
+        "type": "string",
+        "pattern": "\\S",
+        "description": "The unresolved concern or question."
+      },
+      "summary": {
+        "type": "string",
+        "maxLength": 200,
+        "description": "One-line summary for listings."
+      },
+      "description": {
+        "type": "string",
+        "description": "Additional context, background, or constraints."
+      },
+      "category": {
+        "type": "string",
+        "enum": [
+          "business",
+          "technical",
+          "ux",
+          "legal",
+          "data",
+          "dependency",
+          "feasibility",
+          "strategic",
+          "organizational"
+        ],
+        "description": "Inquiry domain classification. business=revenue/market impact, technical=architecture/infrastructure, ux=user experience, legal=regulatory/compliance, data=data quality/availability, dependency=external blocking factor, feasibility=can we do this, strategic=direction/vision, organizational=team/process.\n"
+      },
+      "goal_refs": {
+        "type": "array",
+        "items": {
+          "$ref": "../metamodel.schema.yaml#/$defs/goal_ref"
+        },
+        "description": "Goals affected by this inquiry."
+      },
+      "risk_refs": {
+        "type": "array",
+        "items": {
+          "$ref": "../metamodel.schema.yaml#/$defs/risk_ref"
+        },
+        "description": "Risks related to this inquiry."
+      },
+      "question_refs": {
+        "type": "array",
+        "items": {
+          "$ref": "../metamodel.schema.yaml#/$defs/question_ref"
+        },
+        "description": "Domain competency questions (QN###) that prompted this governance inquiry."
+      },
+      "finding_refs": {
+        "type": "array",
+        "title": "Findings",
+        "items": {
+          "$ref": "../metamodel.schema.yaml#/$defs/finding_ref"
+        },
+        "description": "Quality findings (FN###) this inquiry is about or was prompted by. The inquiry owns the link and a finding carries no reference back, so an inquiry that closes leaves nothing stale on the finding; the inquiries open on a finding are read in the reverse direction. An id no quality file declares is a cross-reference error.\n",
+        "examples": [
+          [
+            "FN001",
+            "orders.FN002"
+          ]
+        ]
+      },
+      "stakeholders": {
+        "type": "array",
+        "items": {
+          "$ref": "../metamodel.schema.yaml#/$defs/actor_ref"
+        },
+        "description": "Actors who care about the resolution."
+      },
+      "affects": {
+        "type": "object",
+        "description": "Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context, service, package, capability, story or process activity it is about.",
+        "additionalProperties": false,
+        "properties": {
+          "operation_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations affected."
+          },
+          "concept_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/concept_ref"
+            },
+            "description": "Concepts affected."
+          },
+          "context_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/scope_prefix"
+            },
+            "description": "Bounded contexts / slices affected, by scope name. A name, not a reference: it builds no edge. Name a bounded context by its arch id in `bounded_context_refs`."
+          },
+          "bounded_context_refs": {
+            "type": "array",
+            "title": "Bounded contexts",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+            },
+            "description": "Bounded contexts (BC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error. A scope name belongs in `context_refs`.",
+            "examples": [
+              [
+                "BC001",
+                "shop.BC002"
+              ]
+            ]
+          },
+          "service_refs": {
+            "type": "array",
+            "title": "Services",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/service_ref"
+            },
+            "description": "Architecture services (SVC###) affected as a whole, by arch id. A typed reference: an id no arch file declares is a cross-reference error.",
+            "examples": [
+              [
+                "SVC001"
+              ]
+            ]
+          },
+          "package_refs": {
+            "type": "array",
+            "title": "Packages",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/package_ref"
+            },
+            "description": "Third-party packages (PKG###) affected as a whole, by the id their `packages:` declaration carries. A typed reference: an id no arch file declares is a cross-reference error.",
+            "examples": [
+              [
+                "PKG001"
+              ]
+            ]
+          },
+          "process_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/process_ref"
+            },
+            "description": "Business processes affected, for a concern about a flow as a whole rather than one of its operations."
+          },
+          "process_activity_refs": {
+            "type": "array",
+            "title": "Process activities",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/process_activity_ref"
+            },
+            "description": "Process activities (PA###) this inquiry is about, for an open question about one step of a flow: who does it, what it takes or produces, whether it happens at all. Each is the exact id its process declares, so it names one activity only where no other process declares the same id. An id no process declares is a cross-reference error.\n",
+            "examples": [
+              [
+                "PA004",
+                "delivery.PA002"
+              ]
+            ]
+          },
+          "capability_refs": {
+            "type": "array",
+            "title": "Capabilities",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/capability_ref"
+            },
+            "description": "Capabilities and features (CAP###) this inquiry bears on, each named by its declared id. A typed reference: an id no capability file declares is a cross-reference error. The inquiry belongs to each capability named here and to no other: a named capability's children, its parent and the capabilities that share an operation with it are not implied, so name every capability or feature the inquiry is about.",
+            "examples": [
+              [
+                "CAP001",
+                "billing.CAP002"
+              ]
+            ]
+          }
+        }
+      },
+      "owner": {
+        "$ref": "../metamodel.schema.yaml#/$defs/owner_ref",
+        "description": "A person or role (ACT###) or a team (TM###) who drives this inquiry to its resolution. Distinct from owned_by (the unit accountable for it), and from `asked_of`, who is expected to answer it.\n",
+        "examples": [
+          "ACT001",
+          "TM002"
+        ]
+      },
+      "asked_of": {
+        "$ref": "#/$defs/inquiry_addressee",
+        "title": "Addressee",
+        "description": "Who is expected to answer this inquiry now: an actor (ACT###, a person or a role), a team (TM###), or a name for an addressee the model does not declare. Distinct from `owner`, who drives the inquiry to its resolution, from `owned_by`, the unit accountable for it, and from `stakeholders`, who care about the answer; the addressee may work outside the area the inquiry is about. One addressee at a time. Absent: the model does not say who is asked, and nothing is inferred from `owner`.\n",
+        "examples": [
+          {
+            "team": "TM003"
+          },
+          {
+            "name": "Domain expert"
+          },
+          {
+            "actor": "payments.ACT004",
+            "name": "The payments developer"
+          }
+        ]
+      },
+      "previously_asked_of": {
+        "type": "array",
+        "title": "Earlier addressees",
+        "description": "Whom this inquiry was asked of before `asked_of`, oldest first, each with how the inquiry left them. Passing an inquiry on changes who is asked and leaves `status` as it is. An entry is recorded only where a source states it, and the current addressee is never listed here. An unsettled inquiry that lists earlier addressees and states no `asked_of` is reported by a semantic warning: it was passed on, and the model does not say to whom.\n",
+        "items": {
+          "$ref": "#/$defs/inquiry_earlier_addressee"
+        },
+        "examples": [
+          [
+            {
+              "asked_of": {
+                "actor": "payments.ACT004"
+              },
+              "outcome": "partly-answered",
+              "date": "2026-10-02"
+            }
+          ]
+        ]
+      },
+      "blocking": {
+        "type": "boolean",
+        "default": false,
+        "description": "True if this inquiry blocks downstream work."
+      },
+      "due_date": {
+        "type": "string",
+        "format": "date",
+        "description": "Target date for resolution (ISO 8601)."
+      },
+      "resolution": {
+        "type": "string",
+        "description": "Answer or decision once the inquiry is resolved."
+      },
+      "resolved": {
+        "type": "boolean",
+        "default": false,
+        "deprecated": true,
+        "description": "DEPRECATED - derived from `status`, which is the single source of the lifecycle. `resolved` is true exactly when `status` is `resolved` or `closed`. Still accepted so existing documents keep loading; a consumer should read `status`.\n"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "open",
+          "investigating",
+          "resolved",
+          "closed",
+          "deferred"
+        ],
+        "description": "Inquiry lifecycle: open=logged, investigating=actively being researched, resolved=answer found, closed=resolution accepted, deferred=postponed.\n"
+      },
+      "discovery_stage": {
+        "$ref": "../metamodel.schema.yaml#/$defs/discovery_stage",
+        "description": "Epistemic maturity of this inquiry."
+      },
+      "certainty": {
+        "$ref": "../metamodel.schema.yaml#/$defs/certainty",
+        "description": "Confidence level of this inquiry."
+      },
+      "evidence": {
+        "$ref": "../metamodel.schema.yaml#/$defs/evidence",
+        "description": "Evidence gathered during inquiry investigation."
+      },
+      "version": {
+        "$ref": "../metamodel.schema.yaml#/$defs/entity_version"
+      },
+      "owned_by": {
+        "$ref": "../metamodel.schema.yaml#/$defs/owned_by"
+      },
+      "properties": {
+        "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+      },
+      "tags": {
+        "$ref": "../metamodel.schema.yaml#/$defs/tags"
+      }
+    }
+  }
+}

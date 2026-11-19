@@ -2,6 +2,8 @@
 # A metadata-only migration: it labels candidates without changing domain entities.
 migration:
   id: MIG003
+  owned_by: { team: TM003 }
+  change_stream_ref: CS001
   name: tag-payment-operations
   date: "2026-02-22"
   status: pending

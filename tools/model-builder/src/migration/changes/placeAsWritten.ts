@@ -12,9 +12,16 @@
  *
  * A migration names no file. The file is the one its siblings sit in: entities of the same type in
  * the same slice (the scope prefix of a domain id), contexts placed the same way, services of the
- * same context. A document key is taken only when every sibling carries it with the same value, so
- * a slice whose files disagree passes on nothing it cannot be sure of. An entity with no siblings
- * gets no document keys.
+ * same context. A context whose declared id names a slice (`delivery.BC002` names `delivery`) takes
+ * as siblings the contexts placed the same way in that slice's folder, when there are any, so it is
+ * written beside them rather than among every context of the model. A document key is taken only
+ * when every sibling carries it with the same value, so a slice whose files disagree passes on
+ * nothing it cannot be sure of. An entity with no siblings gets no document keys.
+ *
+ * A root-declared context also records the `system_ref` default of the file it is written into,
+ * read from the services of that file that inherit it, so a reader that rebuilds a document's
+ * header from its entities finds the system the file states even when the context holds no
+ * service. Only services read the key to build a relation.
  *
  * The file itself is the build's third input: an operation's folder names its domain, and an arch
  * file nests a service in the context declared beside it. The entity keeps the migration's path as
@@ -26,6 +33,9 @@
  *   of the migration's own name in that folder, as a migration written out becomes a new file there.
  *
  * Where neither holds, nothing is recorded and the entity is read where it is declared.
+ *
+ * A change that states its `placement` names the file itself; it arrives here as `_written_in`, and
+ * the siblings are then the entities of that file rather than of the id's slice prefix.
  */
 import type { Entity } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
@@ -76,6 +86,13 @@ function dataOf(entity: Entity): Record<string, unknown> {
 function scopePrefix(displayId: string): string | null {
   const dot = displayId.indexOf('.');
   return dot > 0 ? displayId.slice(0, dot) : null;
+}
+
+/** The slice folder a model-relative path sits in: its first segment, or null for a file at the model root. */
+function sliceFolderOf(path: string | undefined): string | null {
+  const normalized = (path ?? '').replace(/\\/g, '/');
+  const slash = normalized.indexOf('/');
+  return slash > 0 ? normalized.slice(0, slash) : null;
 }
 
 function samePlacement(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
@@ -130,7 +147,11 @@ function siblingsOf(entity: Entity, entities: Entity[]): Entity[] {
   const data = dataOf(entity);
   const others = entities.filter((other) => other !== entity && !BUILT_TYPES.has(other.type));
   if (entity.type === ENTITY_TYPE.Context) {
-    return others.filter((other) => other.type === ENTITY_TYPE.Context && samePlacement(dataOf(other), data));
+    const placedAlike = others.filter((other) => other.type === ENTITY_TYPE.Context && samePlacement(dataOf(other), data));
+    const slice = typeof data.id === 'string' ? scopePrefix(data.id) : null;
+    if (!slice) return placedAlike;
+    const inSlice = placedAlike.filter((other) => sliceFolderOf(writtenFileOf(other)) === slice);
+    return inSlice.length > 0 ? inSlice : placedAlike;
   }
   if (entity.type === ENTITY_TYPE.Service) {
     const services = others.filter((other) => other.type === ENTITY_TYPE.Service);
@@ -146,11 +167,47 @@ function siblingsOf(entity: Entity, entities: Entity[]): Entity[] {
     );
     return services.filter((other) => placedAlike.has(dataOf(other)._context as string));
   }
+  const stated = data[WRITTEN_IN];
+  if (typeof stated === 'string' && stated.length > 0) {
+    const inFile = others.filter((other) => other.layer === entity.layer && writtenFileOf(other) === stated);
+    const sameTypeInFile = inFile.filter((other) => other.type === entity.type);
+    return sameTypeInFile.length > 0 ? sameTypeInFile : inFile;
+  }
   const prefix = scopePrefix(entity.displayId);
   if (!prefix) return [];
   const inSlice = others.filter((other) => other.layer === entity.layer && scopePrefix(other.displayId) === prefix);
   const sameType = inSlice.filter((other) => other.type === entity.type);
   return sameType.length > 0 ? sameType : inSlice;
+}
+
+/** The `system_ref` default the services under root-declared contexts of `file` inherit, when they agree. */
+function documentSystemOf(file: string, entities: Entity[]): unknown {
+  const values = new Set(
+    entities
+      .filter((other) => other.type === ENTITY_TYPE.Service && writtenFileOf(other) === file)
+      .map(dataOf)
+      .filter((data) => typeof data._party !== 'string' && SYSTEM_REF_DEFAULT in data)
+      .map((data) => JSON.stringify(data[SYSTEM_REF_DEFAULT])),
+  );
+  if (values.size !== 1) return undefined;
+  const [only] = values;
+  return only === undefined ? undefined : JSON.parse(only);
+}
+
+/**
+ * Declare an entity a migration moves in `file`: the keys its old document wrote are dropped, and it
+ * takes the document keys of the entities already in `file`, as an entity written there would.
+ * Mutates `entity`.
+ */
+export function relocateTo(entity: Entity, file: string, entities: Entity[]): void {
+  const data: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(dataOf(entity))) {
+    if (key === WRITTEN_IN || (DOCUMENT_KEYS as readonly string[]).includes(key)) continue;
+    data[key] = value;
+  }
+  data[WRITTEN_IN] = file;
+  entity.data = data;
+  placeAsWritten(entity, entities);
 }
 
 /**
@@ -172,6 +229,15 @@ export function placeAsWritten(entity: Entity, entities: Entity[]): void {
     const [only] = values;
     if (only === undefined) continue;
     placed[key] = JSON.parse(only);
+  }
+  if (entity.type === ENTITY_TYPE.Context) {
+    const merged = { ...data, ...placed };
+    const file = merged[WRITTEN_IN];
+    const root = typeof merged._party !== 'string';
+    if (root && typeof file === 'string' && !(SYSTEM_REF_DEFAULT in merged)) {
+      const system = documentSystemOf(file, entities);
+      if (system !== undefined) placed[SYSTEM_REF_DEFAULT] = system;
+    }
   }
   if (Object.keys(placed).length > 0) entity.data = { ...data, ...placed };
 }

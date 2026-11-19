@@ -11,6 +11,9 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - inquiry.finding_refs[]  → InquiryFinding    (inquiry → finding)
  * - inquiry.owner           → InquiryOwner      (inquiry → actor or team)
  * - inquiry.stakeholders[]  → InquiryStakeholder (inquiry → actor)
+ * - inquiry.asked_of        → InquiryAskedOf    (inquiry → actor or team; a name alone draws no edge)
+ * - inquiry.previously_asked_of[].asked_of → InquiryPreviouslyAskedOf (inquiry → actor or team), one
+ *   edge per entry with its position, outcome and date, so an addressee asked twice has two edges
  */
 export function extractInquiryRelations(
   entities: Entity[],
@@ -111,7 +114,58 @@ export function extractInquiryRelations(
         });
       }
     }
+
+    // asked_of → InquiryAskedOf: the reference arm is the addressee; a name beside it rides as data.
+    const askedOf = addresseeRef(data.asked_of);
+    if (askedOf) {
+      const targetId = resolveOrPlaceholder(askedOf.ref, domain, entities, placeholders);
+      relations.push({
+        id: `${entity.id}--${RELATION_TYPE.InquiryAskedOf}--${targetId}`,
+        source_entity_id: entity.id,
+        target_entity_id: targetId,
+        type: RELATION_TYPE.InquiryAskedOf,
+        ...(askedOf.name ? { data: { name: askedOf.name } } : {}),
+      });
+    }
+
+    // previously_asked_of[].asked_of → InquiryPreviouslyAskedOf, oldest first, kept apart from the
+    // current addressee so "asked of me now" never mixes with "asked of me before".
+    const earlier = data.previously_asked_of;
+    if (Array.isArray(earlier)) {
+      for (const [position, item] of earlier.entries()) {
+        if (!item || typeof item !== 'object') continue;
+        const entry = item as Record<string, unknown>;
+        const addressee = addresseeRef(entry.asked_of);
+        if (!addressee) continue;
+        const targetId = resolveOrPlaceholder(addressee.ref, domain, entities, placeholders);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.InquiryPreviouslyAskedOf}--${position}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.InquiryPreviouslyAskedOf,
+          data: {
+            position,
+            ...(typeof entry.outcome === 'string' ? { outcome: entry.outcome } : {}),
+            ...(typeof entry.date === 'string' ? { date: entry.date } : {}),
+            ...(addressee.name ? { name: addressee.name } : {}),
+          },
+        });
+      }
+    }
   }
 
   return relations;
+}
+
+/**
+ * The reference an addressee (`{ actor | team | name }`) names, with the name stated beside it.
+ * A name alone names no entity, so it yields nothing here.
+ */
+function addresseeRef(value: unknown): { ref: string; name?: string } | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const addressee = value as Record<string, unknown>;
+  const ref = [addressee.actor, addressee.team].find((arm): arm is string => typeof arm === 'string' && arm !== '');
+  if (!ref) return undefined;
+  const name = typeof addressee.name === 'string' && addressee.name.trim() !== '' ? addressee.name : undefined;
+  return name ? { ref, name } : { ref };
 }

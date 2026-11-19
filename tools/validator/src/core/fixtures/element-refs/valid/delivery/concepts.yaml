@@ -1,0 +1,27 @@
+version: "1.0.0"
+scope: delivery
+concepts:
+  - id: delivery.CN001
+    name: Parcel
+    attributes:
+      weight:
+        id: delivery.CAT004
+        description: The weight of the parcel in grams.
+  - id: delivery.CN002
+    name: Route
+actors:
+  - id: delivery.ACT001
+    name: Courier
+    type: human
+personas:
+  - id: delivery.PER001
+    name: Night courier
+enumerations:
+  - id: delivery.EN001
+    name: Parcel size
+    values: [small, large]
+associations:
+  - id: delivery.ASC001
+    predicate: uses
+    subject: delivery.CN001
+    object: delivery.CN002

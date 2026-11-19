@@ -1,0 +1,16 @@
+version: "1.0.0"
+scope: delivery
+decisions:
+  - id: delivery.DC001
+    title: Export from a replica
+    summary: The nightly export reads a replica.
+    date: 2026-10-28
+    status: proposed
+    rationale:
+      problem: The export loads the primary database.
+      chosen: Read a replica.
+business_decisions:
+  - id: delivery.BD001
+    name: Refunds above the limit need approval
+    description: A refund above the daily limit is approved by a person.
+    domain_scope: refunds

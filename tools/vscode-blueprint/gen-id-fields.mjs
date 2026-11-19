@@ -75,40 +75,8 @@ export function prefixesForDef(def, defs = {}, visited = new Set()) {
   return [...found];
 }
 
-/** Derives the table, then writes or checks it; returns the exit code the header documents. */
-function main() {
-  const source = CANDIDATES.map((c) => resolve(HERE, c)).find((p) => existsSync(join(p, 'metamodel.schema.yaml')));
-  if (!source) {
-    console.error('gen-id-fields: no schema tree found. Looked under:\n'
-      + CANDIDATES.map((c) => '  ' + resolve(HERE, c)).join('\n'));
-    return 2;
-  }
-
-  // ── 1. metamodel `*_ref` defs -> the id prefixes their pattern accepts ───────────────────────────
-
-  const metamodel = YAML.parse(readFileSync(join(source, 'metamodel.schema.yaml'), 'utf8'));
-  const defs = metamodel['$defs'] ?? {};
-
-  /** ref-def name -> prefixes, for every `*_ref` def that yields at least one. */
-  const refPrefixes = new Map();
-  for (const [name, def] of Object.entries(defs)) {
-    if (!name.endsWith('_ref')) continue;
-    const prefixes = prefixesForDef(def, defs);
-    if (prefixes.length) refPrefixes.set(name, prefixes);
-  }
-
-  // ── 2. walk every document schema, recording property -> ref-def ─────────────────────────────────
-
-  function schemaFiles(dir) {
-    const out = [];
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const p = join(dir, entry.name);
-      if (entry.isDirectory()) out.push(...schemaFiles(p));
-      else if (entry.name.endsWith('.schema.yaml')) out.push(p);
-    }
-    return out;
-  }
-
+/** Collects reference fields while withholding every entity declaration container. */
+export function referenceFields(roots, refPrefixes) {
   /** The `<name>_ref` a `$ref` string points at, or undefined. */
   const refDefName = (s) => (typeof s === 'string' ? s.match(/#\/\$defs\/([a-z_]+_ref)$/)?.[1] : undefined);
 
@@ -144,14 +112,16 @@ function main() {
    */
   function localRefsOf(spec) {
     const out = [];
+    const seen = new Set();
     const visit = (node) => {
-      if (!node || typeof node !== 'object') return;
+      if (!node || typeof node !== 'object' || seen.has(node)) return;
+      seen.add(node);
       if (typeof node['$ref'] === 'string') out.push(node['$ref']);
       for (const branch of node.oneOf ?? []) visit(branch);
       for (const branch of node.anyOf ?? []) visit(branch);
+      visit(node.items);
     };
     visit(spec);
-    visit(spec.items);
     return out;
   }
 
@@ -163,11 +133,10 @@ function main() {
     if (node.properties && typeof node.properties === 'object') {
       for (const [field, spec] of Object.entries(node.properties)) {
         if (!spec || typeof spec !== 'object') continue;
-        // `field: <ref>` - a scalar reference.
-        let name = refDefName(spec['$ref']);
-        // `field: [<ref>, ...]` - an array of references.
-        if (!name && spec.type === 'array') name = refDefName(spec.items?.['$ref']);
-        if (name && refPrefixes.has(name)) add(field, refPrefixes.get(name));
+        for (const ref of localRefsOf(spec)) {
+          const name = refDefName(ref);
+          if (name && refPrefixes.has(name)) add(field, refPrefixes.get(name));
+        }
 
         if (localRefsOf(spec).some((ref) => declaresEntity(ref, root))) containers.add(field);
       }
@@ -175,14 +144,51 @@ function main() {
     for (const value of Object.values(node)) walk(value, root);
   }
 
-  for (const file of schemaFiles(source)) {
-    const root = YAML.parse(readFileSync(file, 'utf8'));
-    walk(root, root);
-  }
+  for (const root of roots) walk(root, root);
 
   // `id:` declares an entity rather than referencing one - completing it would offer ids already taken.
   fields.delete('id');
   for (const name of containers) fields.delete(name);
+
+  return fields;
+}
+
+/** Derives the table, then writes or checks it; returns the exit code the header documents. */
+function main() {
+  const source = CANDIDATES.map((c) => resolve(HERE, c)).find((p) => existsSync(join(p, 'metamodel.schema.yaml')));
+  if (!source) {
+    console.error('gen-id-fields: no schema tree found. Looked under:\n'
+      + CANDIDATES.map((c) => '  ' + resolve(HERE, c)).join('\n'));
+    return 2;
+  }
+
+  // ── 1. metamodel `*_ref` defs -> the id prefixes their pattern accepts ───────────────────────────
+
+  const metamodel = YAML.parse(readFileSync(join(source, 'metamodel.schema.yaml'), 'utf8'));
+  const defs = metamodel['$defs'] ?? {};
+
+  /** ref-def name -> prefixes, for every `*_ref` def that yields at least one. */
+  const refPrefixes = new Map();
+  for (const [name, def] of Object.entries(defs)) {
+    if (!name.endsWith('_ref')) continue;
+    const prefixes = prefixesForDef(def, defs);
+    if (prefixes.length) refPrefixes.set(name, prefixes);
+  }
+
+  // ── 2. walk every document schema, recording property -> ref-def ─────────────────────────────────
+
+  function schemaFiles(dir) {
+    const out = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...schemaFiles(p));
+      else if (entry.name.endsWith('.schema.yaml')) out.push(p);
+    }
+    return out;
+  }
+
+  const roots = schemaFiles(source).map(file => YAML.parse(readFileSync(file, 'utf8')));
+  const fields = referenceFields(roots, refPrefixes);
 
   // ── 3. emit ──────────────────────────────────────────────────────────────────────────────────────
 

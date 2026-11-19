@@ -1,0 +1,21 @@
+engineVersion: "0.1"
+rules:
+  - id: migration-without-team-owner
+    severity: warn
+    description: >-
+      A migration states no owner, or names a department or party as its owner rather than a team.
+      A migration is carried out by exactly one team, as one release, and `owned_by.team` names it:
+      a migration map shows that team on the migration and lists a change stream's teams from its
+      migrations, and a wait between two migrations of different teams is a wait between teams. A
+      change too large for one team is several migrations joined by `depends_on`. An owner stated by
+      name alone is a complete statement for a team the model does not declare yet and is not
+      reported. Reads migration documents and register entries; validation reports the same for a
+      tracked register. One finding per migration. Override per project via .blueprint-lint.yaml
+      (e.g. `migration-without-team-owner: off`).
+    find:
+      entity_type: Migration
+    check:
+      custom:
+        module: ./migration-stream.mjs
+        export: migrationWithoutTeamOwner
+    message: 'Migration "{displayId}" ({name|''unnamed''}) {finding}'

@@ -2,6 +2,7 @@ import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { indexDeclarations, resolveReference, type RefDeclaration, type RefIndex } from './refResolution.js';
+import { companionEvidence, declarationOrigin, linkWitness, localEvidence } from './linkEvidence.js';
 import { partyIdentityKey } from '../entities/partyIdentity.js';
 
 /**
@@ -75,6 +76,8 @@ export function extractArchRelations(entities: Entity[]): Relation[] {
         source_entity_id: serviceId,
         target_entity_id: entity.id,
         type: RELATION_TYPE.Provides,
+        origin_ref: declarationOrigin(entity, 'declaration'),
+        data: { evidence_role: 'structural', supporting_record: localEvidence(data ?? {}) },
       });
     }
   }
@@ -83,6 +86,9 @@ export function extractArchRelations(entities: Entity[]): Relation[] {
 }
 
 /**
+ * Authored `routes_to` forwards to services with the same exact-id resolution as `uses`,
+ * retaining a separate `routes_to` edge. Forwarding never synthesizes a `service_uses` edge.
+ *
  * What a service is built on (`imports`) and the services it depends on while running (`uses`), as
  * edges: `service_imports` (Service -> Service or Package) and `service_uses` (Service -> Service).
  *
@@ -119,6 +125,7 @@ export function extractServiceDependencyRelations(entities: Entity[]): Relation[
   const indexes: Record<string, RefIndex> = {
     imports: indexDeclarations([...serviceDeclarations, ...packageDeclarations]),
     uses: indexDeclarations(serviceDeclarations),
+    routes_to: indexDeclarations(serviceDeclarations),
   };
 
   const relations: Relation[] = [];
@@ -126,6 +133,7 @@ export function extractServiceDependencyRelations(entities: Entity[]): Relation[
   const fields: ReadonlyArray<[string, string]> = [
     ['imports', RELATION_TYPE.ServiceImports],
     ['uses', RELATION_TYPE.ServiceUses],
+    ['routes_to', RELATION_TYPE.RoutesTo],
   ];
 
   for (const entity of entities) {
@@ -135,7 +143,8 @@ export function extractServiceDependencyRelations(entities: Entity[]): Relation[
       const items = data[field];
       if (!Array.isArray(items)) continue;
       for (const item of items) {
-        if (typeof item !== 'string' || item.length === 0) continue;
+        if (typeof item !== 'string') continue;
+        if (item.length === 0) continue;
         const resolution = resolveReference(indexes[field]!, item);
         if (resolution.status !== 'resolved') continue;
         const id = `${entity.id}--${type}--${resolution.handle}`;
@@ -146,6 +155,13 @@ export function extractServiceDependencyRelations(entities: Entity[]): Relation[
           source_entity_id: entity.id,
           target_entity_id: resolution.handle,
           type,
+          origin_ref: declarationOrigin(entity, `${field}[target=${encodeURIComponent(item)}]`),
+          data: {
+            ...companionEvidence(data, field, item),
+            declaration_sources: items.flatMap((target, occurrence) => target === item
+              ? [linkWitness(entity, `${field}[target=${encodeURIComponent(item)}][occurrence=${occurrence}]`, companionEvidence(data, field, item))]
+              : []),
+          },
         });
       }
     }

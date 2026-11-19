@@ -25,6 +25,8 @@
 schemaVersion: "2.8.0"
 migration:
   id: MIG006
+  owned_by: { team: TM001 }
+  change_stream_ref: CS003
   name: orders-inventory-published-language
   date: "2026-09-20"
   status: pending

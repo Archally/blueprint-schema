@@ -129,3 +129,13 @@ test('an entry with no name still completes, by id', () => {
   const rows = completionsFor('screen', [{ id: 'storefront.SCR009', name: '', kind: '', file: 'f.yaml' }]);
   assert.equal(rows[0].filterText, 'storefront.SCR009');
 });
+
+test('imports completes service and package ids from the regenerated table', () => {
+  assert.deepEqual([...(prefixesForField('imports') ?? [])].sort(), ['PKG', 'SVC']);
+  const entries: IdEntry[] = [
+    { id: 'platform.SVC001', name: 'Billing', kind: 'service', file: 'platform/arch.yaml' },
+    { id: 'platform.PKG001', name: 'Utilities', kind: 'package', file: 'platform/arch.yaml' },
+    { id: 'platform.ACT001', name: 'Operator', kind: 'actor', file: 'platform/concepts.yaml' },
+  ];
+  assert.deepEqual(completionsFor('imports', entries).map(entry => entry.id).sort(), ['platform.PKG001', 'platform.SVC001']);
+});

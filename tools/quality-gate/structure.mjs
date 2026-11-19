@@ -493,3 +493,74 @@ export function summarizeStructure(records, order = []) {
       };
     });
 }
+
+/** Count sentences while ignoring punctuation inside code, URLs, numbers and common abbreviations. */
+export function countTextSentences(text) {
+  const protectedText = text
+    .replace(/(`+)[\s\S]*?\1/g, 'code')
+    .replace(/\bhttps?:\/\/[^\s<>]+/gi, url => `url${url.match(/[.!?]+$/)?.[0] ?? ''}`)
+    .replace(/\b(?:e\.g\.|i\.e\.|etc\.|vs\.)/gi, 'abbreviation')
+    .replace(/(?<=\d)\.(?=\d)/g, '');
+  return protectedText.split(/[.!?]+["')\]]*(?=\s|$)/u)
+    .filter(part => /[\p{L}\p{N}]/u.test(part)).length;
+}
+
+/**
+ * Measure configured string fields throughout the observed entities' source documents.
+ * Paths are escaped segments separated by slashes, relative to each document.
+ * Nested objects belong to the nearest observed entity; unobserved parts stay with their owner.
+ * Only over-limit fields are attached to entity records. All measured strings feed the counts.
+ */
+export function measureTextLength({ documents, entities, limits }) {
+  const byFile = new Map();
+  const fields = {};
+  for (const [field, limit] of Object.entries(limits)) {
+    fields[field] = { ...limit, measured: 0, overLimit: 0, overChars: 0, overSentences: 0, longest: 0 };
+  }
+  for (const entity of entities) {
+    entity.textLength = [];
+    const bucket = byFile.get(entity.file) ?? [];
+    bucket.push(entity);
+    byFile.set(entity.file, bucket);
+  }
+  for (const { file, doc } of documents) {
+    const candidates = byFile.get(file) ?? [];
+    const byId = new Map(candidates.filter(entity => entity.entityId).map(entity => [entity.entityId, entity]));
+    const ancestors = new Set();
+    const visit = (node, segments, owner, key) => {
+      if (!node || typeof node !== 'object' || ancestors.has(node)) return;
+      ancestors.add(node);
+      if (!Array.isArray(node)) {
+        const id = typedIdOf(node.id) ?? typedIdOf(node['x-model-id']);
+        const named = candidates.find(entity => !entity.entityId && entity.name === String(nameOf(node, key)));
+        owner = byId.get(id) ?? named ?? owner;
+      }
+      for (const [field, value] of Object.entries(node)) {
+        const pointer = [...segments, field];
+        const rule = limits[field];
+        if (owner && rule && !rule.off && typeof value === 'string') {
+          const trimmed = value.trim();
+          const length = [...trimmed].length;
+          const sentences = rule.max_sentences === undefined ? undefined : countTextSentences(trimmed);
+          const overChars = rule.max_chars !== undefined && length > rule.max_chars;
+          const overSentences = sentences !== undefined && sentences > rule.max_sentences;
+          const counts = fields[field];
+          counts.measured++;
+          counts.longest = Math.max(counts.longest, length);
+          counts.overChars += Number(overChars);
+          counts.overSentences += Number(overSentences);
+          if (overChars || overSentences) {
+            counts.overLimit++;
+            owner.textLength.push({ field, path: pointer.map(segment => segment.replace(/~/g, '~0').replace(/\//g, '~1')).join('/'),
+              length, limit: rule.max_chars ?? null,
+              ...(sentences === undefined ? {} : { sentences, sentenceLimit: rule.max_sentences }) });
+          }
+        }
+        visit(value, pointer, owner, Array.isArray(node) ? undefined : field);
+      }
+      ancestors.delete(node);
+    };
+    visit(doc, [], undefined, undefined);
+  }
+  return { limits, fields };
+}

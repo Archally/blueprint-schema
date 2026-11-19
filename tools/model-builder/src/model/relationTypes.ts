@@ -3,6 +3,7 @@
  * Maps to relationship field names in v2 schemas.
  */
 export const RELATION_TYPE = {
+  CapabilityProduct: 'capability_product',
   // concepts.schema: owned relationships from concept to concept (concept.relationships[])
   Relationship: 'relationship',
   // concepts.schema: concept lifecycle transition rule references (concept.transition_rules[])
@@ -171,6 +172,12 @@ export const RELATION_TYPE = {
   ActivityUsesTool: 'activity_uses_tool',
   ActivityArtifactConcept: 'activity_artifact_concept',
   ActivityHandsOverTo: 'activity_hands_over_to',
+  // story.schema: a stage question's asked_by, asked_of and answer concept, from its process; the edge
+  // data names the activity, the question's key and the field (`role`).
+  ActivityQuestion: 'activity_question',
+  // story.schema: a gate's evaluated_by, rule and evidence concept, from its process; the edge data
+  // names the activity, the gate's key and the field (`role`).
+  ActivityGate: 'activity_gate',
   // org.schema: party structurally contains department
   OrgContainsDept: 'org_contains_dept',
   // org.schema: department has team
@@ -209,6 +216,8 @@ export const RELATION_TYPE = {
   TestValidatesQuestion: 'test_validates_question',
   // decisions.schema: decision motivated by question
   DecisionMotivatedByQuestion: 'decision_motivated_by_question',
+  // decisions.schema: a recorded role in a decision, never approval evidence.
+  DecisionParticipant: 'decision_participant',
   // code_refs: entity references code file
   CodeRef: 'code_ref',
   // domain.schema: operation example validates test case (example.test_ref)
@@ -259,6 +268,12 @@ export const RELATION_TYPE = {
   InquiryOwner: 'inquiry_owner',
   // motivation.schema (v2.5): inquiry stakeholder actor (inquiry.stakeholders[])
   InquiryStakeholder: 'inquiry_stakeholder',
+  // motivation.schema (v2.8): who is expected to answer the inquiry now (inquiry.asked_of, the actor
+  // or team arm). Kept apart from inquiry_owner, the driver.
+  InquiryAskedOf: 'inquiry_asked_of',
+  // motivation.schema (v2.8): whom the inquiry was asked of before (inquiry.previously_asked_of[]),
+  // one edge per entry; data carries position, outcome and date.
+  InquiryPreviouslyAskedOf: 'inquiry_previously_asked_of',
   // motivation.schema (v2.5): risk references goal (risk.goal_refs[])
   RiskGoal: 'risk_goal',
   // v2.8.1: where a governance concern sticks on the domain model - risk.affects.*_refs[],
@@ -272,6 +287,14 @@ export const RELATION_TYPE = {
   MigrationRelatesToDecision: 'migration_relates_to_decision',
   // The coarse edge the ruling put in place of a per-change one, agnostic to what the change does.
   MigrationAffects: 'migration_affects',
+  // The change stream a migration names in `change_stream_ref` (at most one). The stream's teams and
+  // reach are derived from the migrations on the far end of these edges.
+  MigrationInChangeStream: 'migration_in_change_stream',
+  // The bounded contexts and domains a migration changes: derived from its typed change targets,
+  // or stated by hand in `reach` where the changes cannot show them. One edge per target, with
+  // `data.provenance` saying `derived`, `declared` or `both`. Kept apart from `migration_affects`,
+  // which lists the entities a migration names and carries no provenance.
+  MigrationReach: 'migration_reach',
   RiskAffects: 'risk_affects',
   InquiryAffects: 'inquiry_affects',
   FindingAffects: 'finding_affects',
@@ -437,6 +460,8 @@ export const RELATION_TYPE = {
   // TOSCA's own verb, and its alone since the arch edge became `context_depends_on` above.
   DependsOn: 'depends_on',
   AttachesTo: 'attaches_to',
+  // Authored forwarding: Service -> Service, InfraResource -> Service or InfraResource.
+  // This states neither resource intent nor placement, and never implies service_uses.
   RoutesTo: 'routes_to',
   // infrastructure.schema (v2.7.7 CR-2): the three-altitude intent→binding→instance edges.
   // needs: arch Service → ResourceType (abstract intent, service.needs[].type_ref).
@@ -447,6 +472,8 @@ export const RELATION_TYPE = {
   // the contract publishes to and receives from. One per contract; the superseded free-string
   // brokerId names no entity and builds no edge.
   ContractBroker: 'contract_broker',
+  // Contract -> InfraResource: the store named by a shared-data contract's store_ref.
+  ContractStore: 'contract_store',
   // v2.8.67 message channels. channel_broker: MessageChannel → InfraResource (channel.broker_ref),
   // the broker the channel lives on. travels_on: Operation → MessageChannel
   // (exchange.topic.channel_ref / exchange.queue.channel_ref), the channel the message is published
@@ -519,6 +546,11 @@ export const RELATION_TYPE = {
   LeverageCapability: 'leverage_capability',
   // leverage.schema (v2.7.4): leverage DAG - dependent LP → prerequisite LP (depends_on[])
   LeverageDependsOn: 'leverage_depends_on',
+  // leverage.schema: a watch item concerns a risk (watchlist[].risk_refs[]) or a finding
+  // (watchlist[].finding_refs[]) or observes a decision (watchlist[].decision_refs[]).
+  WatchItemRisk: 'watch_item_risk',
+  WatchItemFinding: 'watch_item_finding',
+  WatchItemDecision: 'watch_item_decision',
   // dynamics.schema: the runtime-behaviour layer's edges, all of them Dynamics → Operation.
   //
   // Every name here is PREFIXED with its family, and that is not decoration. `Requires: 'requires'`

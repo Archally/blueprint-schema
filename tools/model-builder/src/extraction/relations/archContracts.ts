@@ -1,6 +1,7 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
+import { companionEvidence, contractWitness, declarationOrigin, declarationRelationId } from './linkEvidence.js';
 import { entityDomain } from './resolver.js';
 import { buildOperationKeyIndex, resolveOperationRefOrPlaceholder } from './operationRef.js';
 
@@ -73,10 +74,17 @@ export function extractArchContractRelations(
         if (typeof ref !== 'string' || !ref) continue;
         const targetId = resolveOperationRefOrPlaceholder(ref, domain, entities, placeholders, keyIndex);
         relations.push({
-          id: `${entity.id}--${type}--${targetId}`,
+          id: declarationRelationId(entity, `${field}[target=${encodeURIComponent(ref)}]`, type),
           source_entity_id: entity.id,
           target_entity_id: targetId,
           type,
+          origin_ref: declarationOrigin(entity, `${field}[target=${encodeURIComponent(ref)}]`),
+          data: {
+            ...companionEvidence(data, field, ref),
+            declaration_sources: refs.flatMap((target, occurrence) => target === ref
+              ? [contractWitness(entity, `${field}[target=${encodeURIComponent(ref)}][occurrence=${occurrence}]`, companionEvidence(data, field, ref))]
+              : []),
+          },
         });
       }
     }

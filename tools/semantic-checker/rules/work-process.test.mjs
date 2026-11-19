@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { laneTeamDiffersFromStaffing, activityInTwoLanes, workActivityWithoutLane, activityToolPartyNotSystem } from './work-process.mjs';
+import { laneTeamDiffersFromStaffing, activityInTwoLanes, workActivityWithoutLane, activityToolPartyNotSystem, activityItemKeyRepeated, gateOnFailNotASuccessor } from './work-process.mjs';
 
 const team = { id: 'team-internal', displayId: 'TM001', type: 'Team', data: {} };
 const actor = { id: 'actor-internal', displayId: 'delivery.ACT001', type: 'Actor', data: { staffed_by: 'TM001' } };
@@ -34,4 +34,34 @@ test('reports every non-system tool with its activity and item position, without
   assert.equal(result.ok, false);
   assert.match(result.context.problems, /tools\[1\].*delivery.PRT001.*tools\[2\]/);
   assert.doesNotMatch(result.context.problems, /tools\[0\]|tools\[3\]/);
+});
+
+test('reports a question or gate key repeated within one activity, never the same key in two lists or two activities', () => {
+  const clean = process({ activities: [
+    { id: 'delivery.PA001', questions: [{ key: 'audience' }], gates: [{ key: 'audience' }] },
+    { id: 'delivery.PA002', questions: [{ key: 'audience' }] },
+  ] });
+  assert.equal(activityItemKeyRepeated(model, clean).ok, true);
+  const repeated = activityItemKeyRepeated(model, process({ activities: [
+    { id: 'delivery.PA001', gates: [{ key: 'release' }, { key: 'release' }, { key: 'a11y' }] },
+  ] }));
+  assert.equal(repeated.ok, false);
+  assert.match(repeated.context.problems, /delivery.PA001: gates key "release"/);
+  assert.doesNotMatch(repeated.context.problems, /a11y/);
+});
+
+test('reports an on_fail that is not a successor, reading the derived order first and the authored links without it', () => {
+  const stated = (gates) => process({ activities: [
+    { id: 'delivery.PA001', next: [{ to: 'delivery.PA002' }], next_activities: undefined, gates },
+    { id: 'delivery.PA002' },
+  ] });
+  assert.equal(gateOnFailNotASuccessor(model, stated([{ key: 'ok', on_fail: 'delivery.PA002' }, { key: 'none' }])).ok, true);
+  const wrong = gateOnFailNotASuccessor(model, stated([{ key: 'release', on_fail: 'delivery.PA009' }]));
+  assert.equal(wrong.ok, false);
+  assert.match(wrong.context.problems, /delivery.PA001\/release: on_fail delivery.PA009/);
+  const derived = process({ activities: [{ id: 'delivery.PA001', _next: [{ to: 'delivery.PA003', origin: 'declared-order' }],
+    next: [{ to: 'delivery.PA002' }], gates: [{ key: 'release', on_fail: 'delivery.PA002' }] }] });
+  assert.equal(gateOnFailNotASuccessor(model, derived).ok, false);
+  const legacy = process({ activities: [{ id: 'delivery.PA001', next_activities: ['delivery.PA002'], gates: [{ key: 'release', on_fail: 'delivery.PA002' }] }] });
+  assert.equal(gateOnFailNotASuccessor(model, legacy).ok, true);
 });

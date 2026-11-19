@@ -1,6 +1,6 @@
 {
   "name": "@archally/blueprint-schema",
-  "version": "2.8.90",
+  "version": "2.8.106",
   "description": "YAML-based schema for digital system modeling - domain-first multi-method specification format",
   "license": "SEE LICENSE IN LICENSE",
   "author": "Adam Walkowski <adam.walkowski@inperceptic.com>",
@@ -40,7 +40,7 @@
   "scripts": {
     "validate": "node tools/validator/src/cli.mjs",
     "validate:examples": "node tools/validator/src/cli.mjs examples/ecommerce/.blueprint/v2.6 --schemas schema/v2.6",
-    "build": "tsc -p tools/model-builder/tsconfig.json && tsc -p tools/semantic-checker/tsconfig.json && tsc -p tools/schema-update/tsconfig.json && tsc -p tools/renderer/tsconfig.json && tsc -p tools/schema-atlas/tsconfig.json && tsc -p tools/guide-publisher/tsconfig.json",
+    "build": "tsc -p tools/model-builder/tsconfig.json && cp tools/model-builder/src/product-resolution.mjs tools/model-builder/src/product-resolution.d.mts tools/model-builder/dist/ && tsc -p tools/semantic-checker/tsconfig.json && tsc -p tools/schema-update/tsconfig.json && tsc -p tools/renderer/tsconfig.json && tsc -p tools/schema-atlas/tsconfig.json && tsc -p tools/guide-publisher/tsconfig.json",
     "render": "node tools/renderer/dist/cli.js",
     "render:ecommerce": "node tools/renderer/dist/cli.js examples/ecommerce/.blueprint/v2.6 -o examples/ecommerce/.blueprint/v2.6/.specs/overview.md -t E-Commerce",
     "render:prestashop": "node tools/renderer/dist/cli.js examples/prestashop/.blueprint/v2.8 -o examples/prestashop/.blueprint/v2.8/.specs/overview.md -t PrestaShop-v9",

@@ -131,3 +131,64 @@ describe('extractLeverageRelations', () => {
     expect(extractLeverageRelations([DECISION, WORK_ITEM], placeholders)).toHaveLength(0);
   });
 });
+
+describe('watch item decision references', () => {
+  const decision = makeEntity({
+    id: 'default-decisions.yaml-DC007',
+    displayId: 'DC007',
+    type: ENTITY_TYPE.Decision,
+  });
+  const otherDecision = makeEntity({
+    id: 'default-decisions.yaml-DC008',
+    displayId: 'DC008',
+    type: ENTITY_TYPE.Decision,
+  });
+  const watch = makeEntity({
+    id: 'default-leverage.yaml-WCH001',
+    displayId: 'WCH001',
+    type: ENTITY_TYPE.WatchItem,
+    data: { decision_refs: ['DC007', 'DC008'] },
+  });
+
+  it('resolves every decision reference as a directed watch_item_decision edge', () => {
+    const placeholders = new Map<string, Entity>();
+    const relations = extractLeverageRelations([watch, decision, otherDecision], placeholders);
+
+    expect(relations).toEqual([decision, otherDecision].map((target) => ({
+      id: `${watch.id}--watch_item_decision--${target.id}`,
+      source_entity_id: watch.id,
+      target_entity_id: target.id,
+      type: 'watch_item_decision',
+    })));
+    expect(placeholders.size).toBe(0);
+  });
+
+  it('retains an unresolved decision as the same Missing placeholder as an unresolved risk', () => {
+    const unresolvedWatch = makeEntity({
+      ...watch,
+      data: { risk_refs: ['DC999'], decision_refs: ['DC999'] },
+    });
+    const placeholders = new Map<string, Entity>();
+    const relations = extractLeverageRelations([unresolvedWatch], placeholders);
+    const missing = [...placeholders.values()];
+
+    expect(missing).toHaveLength(1);
+    expect(missing[0]).toMatchObject({ type: ENTITY_TYPE.Missing });
+    expect(relations.map((relation) => [relation.type, relation.target_entity_id])).toEqual([
+      ['watch_item_risk', missing[0]?.id],
+      ['watch_item_decision', missing[0]?.id],
+    ]);
+  });
+
+  it('exposes the watch item as the incoming endpoint of a decision reference', () => {
+    const relations = extractLeverageRelations([watch, decision, otherDecision], new Map());
+    const incoming = relations.filter((relation) => relation.target_entity_id === decision.id);
+
+    expect(incoming).toEqual([{
+      id: `${watch.id}--watch_item_decision--${decision.id}`,
+      source_entity_id: watch.id,
+      target_entity_id: decision.id,
+      type: 'watch_item_decision',
+    }]);
+  });
+});

@@ -1,0 +1,12 @@
+engineVersion: "0.1"
+rules:
+  - id: link-provenance-correspondence
+    severity: error
+    description: Companion metadata belongs to the exact written target in the named field of its owner; evidence is optional.
+    find:
+      all: true
+    check:
+      custom:
+        module: ./link-provenance.mjs
+        export: linkProvenanceCorrespondence
+    message: 'Entity {subject} has link provenance without a corresponding declaration at {paths}.'

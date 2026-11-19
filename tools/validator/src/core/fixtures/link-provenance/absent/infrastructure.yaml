@@ -1,0 +1,52 @@
+version: "1.0.0"
+name: Shop infrastructure
+environments:
+  - id: ENV001
+    name: Production
+    env_class: production
+resources:
+  - id: IR001
+    kind: broker
+    name: Order Event Bus
+    relations:
+      - type: hosted_on
+        target: IR003
+  - id: IR002
+    kind: database
+    name: Orders Database
+    relations:
+      - type: hosted_on
+        target: IR003
+      - type: attaches_to
+        target: IR005
+  - id: IR003
+    kind: cluster
+    name: Shop Cluster
+  - id: IR004
+    kind: gateway
+    name: Edge Load Balancer
+    hosting_model: network-link
+    relations:
+      - type: connects_to
+        target: IR002
+        outputs: [ host, port ]
+      - type: depends_on
+        target: IR003
+      - type: routes_to
+        target: IR003
+      - type: routes_to
+        target: SVC001
+  - id: IR005
+    kind: volume
+    name: Orders Volume
+bindings:
+  - id: BND001
+    type_ref: RT001
+    need_ref: orders-db
+    environment_ref: ENV001
+    resource_ref: IR002
+    module:
+      ref: modules/postgres
+  - id: BND002
+    type_ref: RT001
+    need_ref: orders-cache

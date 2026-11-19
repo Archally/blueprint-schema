@@ -2,6 +2,8 @@
 # Validates against the v2.8 migration schema, migration.schema.yaml.
 migration:
   id: MIG002
+  owned_by: { team: TM001 }
+  change_stream_ref: CS003
   name: split-order-aggregate
   date: "2026-02-20"
   status: draft

@@ -1,0 +1,14 @@
+engineVersion: "0.1"
+rules:
+  - id: gateway-without-route
+    severity: warn
+    description: >-
+      A service with role gateway or bff names no authored routes_to targets. An absent or empty list warns; an unresolved authored target belongs to reference validation.
+      Override per-project via .blueprint-lint.yaml.
+    find:
+      entity_type: Service
+    check:
+      custom:
+        module: ./service-routes.mjs
+        export: gatewayWithoutRoute
+    message: '{findings}'

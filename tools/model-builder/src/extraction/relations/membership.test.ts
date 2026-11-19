@@ -385,3 +385,44 @@ describe('findMembershipGaps - why an operation is unbound', () => {
     expect(gap?.unboundReason).toBeNull();
   });
 });
+
+
+describe('sent command handlers', () => {
+  const sender = ctx('sender-context', 'Sender', 'Shop', 'BC001');
+  const receiver = ctx('receiver-context', 'Receiver', 'Shop', 'BC002');
+  const command = op('command', 'CMD009', 'Handle', 'orders', 'command');
+  const sent = contract('sent', 'Sender', 'Shop', { send: ['CMD009'] });
+  const received = contract('received', 'Receiver', 'Shop', { receive: ['CMD009'] });
+
+  it('binds to the sole receiver and retains its receive declaration evidence', () => {
+    const relations = extractMembershipRelations([sender, receiver, command, sent, received]);
+    expect(targetsFrom(relations, RELATION_TYPE.HandledBy, 'command')).toEqual(['receiver-context']);
+    expect(JSON.stringify(relations[0]?.data)).toContain('.receive[');
+    expect(JSON.stringify(relations[0]?.data)).not.toContain('.send[');
+  });
+
+  it('keeps the sender with no receiver', () => {
+    expect(targetsFrom(extractMembershipRelations([sender, command, sent]), RELATION_TYPE.HandledBy, 'command')).toEqual(['sender-context']);
+  });
+
+  it('keeps the sender with two receiving services in the same context', () => {
+    const another = { ...received, id: 'another-receiver' };
+    expect(targetsFrom(extractMembershipRelations([sender, receiver, command, sent, received, another]), RELATION_TYPE.HandledBy, 'command')).toEqual(['sender-context']);
+  });
+
+  it('counts two contracts of the same receiving service once', () => {
+    const first = { ...received, data: { ...received.data, _service: 'Worker' } };
+    const second = { ...first, id: 'another-contract' };
+    expect(targetsFrom(extractMembershipRelations([sender, receiver, command, sent, first, second]), RELATION_TYPE.HandledBy, 'command')).toEqual(['receiver-context']);
+  });
+
+  it('keeps events bound to their producer', () => {
+    const event = { ...command, data: { ...command.data, kind: 'event' } };
+    expect(targetsFrom(extractMembershipRelations([sender, receiver, event, sent, received]), RELATION_TYPE.HandledBy, 'command')).toEqual(['sender-context']);
+  });
+
+  it('does not change API exposure when there is no messaging sender', () => {
+    const exposed = contract('exposed', 'Sender', 'Shop', { expose: ['CMD009'] });
+    expect(targetsFrom(extractMembershipRelations([sender, receiver, command, exposed, received]), RELATION_TYPE.HandledBy, 'command')).toEqual(['sender-context']);
+  });
+});

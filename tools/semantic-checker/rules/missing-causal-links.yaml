@@ -2,15 +2,11 @@ engineVersion: "0.1"
 rules:
   - id: missing-causal-links
     severity: warn
-    description: Commands must produce at least one event. Reactive commands must have reacts_to.
+    description: Commands state a nonempty outcome through produces, materializes or side_effects.writes.
     find:
       entity_type: Operation
-    filter:
-      field_eq:
-        data.kind: command
     check:
-      has_relation:
-        direction: out
-        type: produces
-        exists: true
-    message: 'Command "{displayId}" ({name|''unnamed''}) has no produces link to any event.'
+      custom:
+        module: ./command-outcomes.mjs
+        export: commandHasOutcome
+    message: 'Command "{displayId}" ({name|''unnamed''}) states no outcome. State produces, materializes or side_effects.writes.'

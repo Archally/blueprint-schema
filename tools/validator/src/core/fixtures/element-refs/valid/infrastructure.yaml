@@ -1,0 +1,17 @@
+version: "1.0.0"
+name: Delivery infrastructure
+environments:
+  - id: ENV001
+    name: production
+resources:
+  - id: IR003
+    kind: database
+    name: Parcel store
+deployment_scopes:
+  - id: DSC001
+    name: Delivery cluster
+    kind: cluster
+bindings:
+  - id: BND001
+    resource_ref: IR003
+    environment_ref: ENV001

@@ -1,0 +1,39 @@
+version: "1.0.0"
+scope: delivery
+metrics:
+  - id: delivery.MT001
+    name: Export duration
+    type: latency
+    unit: seconds
+kpis:
+  - id: delivery.KPI001
+    name: On-time deliveries
+    target: "95%"
+slos:
+  - id: delivery.SLO001
+    name: Export finishes by six
+    target: "99%"
+slas:
+  - id: delivery.SLA001
+    name: Courier app availability
+    slos: [delivery.SLO001]
+security:
+  - id: delivery.SEC001
+    name: Signed proof of delivery
+    type: data-protection
+    requirement: Every proof of delivery is signed.
+compliance:
+  - id: delivery.CMP001
+    name: Address retention
+    regulation: GDPR
+    requirement: Addresses are deleted after a year.
+resilience:
+  - id: delivery.RES001
+    name: Export restarts
+    type: availability
+findings:
+  - id: delivery.FN001
+    title: The export reads the primary database
+    kind: coupling
+    severity: medium
+    statement: The nightly export reads the primary database.

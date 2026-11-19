@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { isMap, isScalar, LineCounter, parseDocument, visit, type Scalar, type YAMLMap } from 'yaml';
+import { isMap, isScalar, LineCounter, parseDocument, type Scalar, type YAMLMap } from 'yaml';
 import {
   buildCodeRefHover,
   codeRefEntryMeta,
@@ -18,6 +18,7 @@ import {
 import { completionsFor, fieldAtCursor, type IdEntry } from './completion';
 import { DiagnosticWorkspace, DEFAULT_DEBOUNCE_MS, MAX_DEBOUNCE_MS, owningModelRoot, clearSchemaCache, type Severity, type DiagnosticPublication } from './diagnostics';
 import { DiagnosticScheduler } from './diagnosticScheduler';
+import { classifyDeclarations, preferredDeclarations, type Declaration } from './declarations';
 
 /**
  * Archally Blueprint Navigation
@@ -27,19 +28,15 @@ import { DiagnosticScheduler } from './diagnosticScheduler';
  * extension already gives schema validation + hover on property KEYS; this adds cross-file
  * resolution of the ID VALUES, which the JSON Schema only validates by shape, not by target.
  *
- * Index source: every `id:` declaration (block `- id: X` or inline `{ id: X, ... }`). No model.json
- * dependency — the line scan gives exact locations and works before the model is built.
+ * Index source: structural YAML declarations, with model-scoped layer precedence.
  */
 
 const DEFAULT_GLOB = '**/.blueprint/**/*.{yaml,yml}';
-
-// A blueprint id under the cursor: scoped (`slice.TYPE###`) or bare (`TYPE###` / `MIG###` / `CAT####`).
 const TOKEN_RE = /[a-z][a-z0-9-]*\.[A-Za-z]{1,6}\d{2,5}|[A-Za-z]{1,6}\d{2,5}/;
 
-// An `id:` declaration — block (`  - id: X`) or inline flow map (`{ id: X, ... }`).
-const DECL_RE = /(?:^|[\s{,])id:\s*['"]?([A-Za-z][A-Za-z0-9.\-]*?\d{2,5})['"]?(?=[\s,}\]]|$)/g;
-
 interface Decl {
+  origin: Declaration['origin'];
+  modelRoot: string | undefined;
   uri: vscode.Uri;
   range: vscode.Range;
   summary: string;
@@ -62,56 +59,8 @@ function selector(): vscode.DocumentSelector {
   return { language: 'yaml', scheme: 'file', pattern: currentGlob() };
 }
 
-/**
- * Read the entity declared at line `i`: its kind, its name, and a one-line hover descriptor.
- *
- * The three are returned separately rather than pre-joined because completion needs the NAME on its
- * own - it is what the author searches by, and what goes in the row's detail beside the id.
- */
-function describe(lines: string[], i: number, declLine: string): { kind: string; name: string; summary: string } {
-  let kind = '';
-  let name = '';
-  let summary = '';
-
-  // Inline flow map on the same line: `{ id: X, description: "...", ... }`.
-  const inlineDesc = declLine.match(/\b(?:summary|description|name|title)\s*:\s*['"]?([^'"\n}]+?)['"]?\s*[},]/);
-
-  const indent = declLine.match(/^\s*/)?.[0].length ?? 0;
-  for (let j = i; j < Math.min(lines.length, i + 16); j++) {
-    const l = lines[j];
-    if (j > i) {
-      const ind = l.match(/^\s*/)?.[0].length ?? 0;
-      if (l.trim().startsWith('- ') && ind <= indent) break; // next list item
-      if (/^\s*(?:-\s*)?id:/.test(l)) break; // next entity declaration
-    }
-    if (!kind) {
-      const km = l.match(/^\s*(?:kind|stereotype|type)\s*:\s*['"]?([A-Za-z0-9 _-]+?)['"]?\s*$/);
-      if (km) kind = km[1].trim();
-    }
-    if (!name) {
-      const nm = l.match(/^\s*(?:name|title)\s*:\s*['"]?(.+?)['"]?\s*$/);
-      if (nm) name = nm[1].trim();
-    }
-    if (!summary) {
-      const sm = l.match(/^\s*(?:summary|description)\s*:\s*(.+?)\s*$/);
-      if (sm) {
-        let v = sm[1].trim();
-        if (v === '>' || v === '|' || v === '>-' || v === '|-' || v === '') {
-          // Folded/literal scalar — take the next non-empty deeper line.
-          const next = lines[j + 1];
-          v = next ? next.trim() : '';
-        }
-        v = v.replace(/^['"]|['"]$/g, '');
-        if (v) summary = v;
-      }
-    }
-  }
-
-  if (!summary && inlineDesc) summary = inlineDesc[1].trim();
-  if (summary.length > 160) summary = summary.slice(0, 157) + '…';
-
-  const head = [kind, name].filter(Boolean).join(' ');
-  return { kind, name, summary: [head, summary].filter(Boolean).join(' - ') };
+function declarationsFor(id: string): Decl[] {
+  return preferredDeclarations(index.get(id) ?? []);
 }
 
 function removeFile(uriStr: string): void {
@@ -131,43 +80,51 @@ function indexText(uri: vscode.Uri, text: string): void {
   const uriStr = uri.toString();
   removeFile(uriStr);
   const ids = new Set<string>();
-  const lines = text.split(/\r?\n/);
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    DECL_RE.lastIndex = 0;
-    let m: RegExpExecArray | null;
-    while ((m = DECL_RE.exec(line)) !== null) {
-      const id = m[1];
-      const ch = m.index + m[0].lastIndexOf(id);
-      const range = new vscode.Range(i, ch, i, ch + id.length);
-      let arr = index.get(id);
-      if (!arr) {
-        arr = [];
-        index.set(id, arr);
-      }
-      const described = describe(lines, i, line);
-      arr.push({ uri, range, summary: described.summary, name: described.name, kind: described.kind });
-      ids.add(id);
-    }
+  for (const declaration of classifyDeclarations(uri.fsPath, text)) {
+    const { id, start, end, origin, summary, name, kind } = declaration;
+    const range = new vscode.Range(start.line, start.character, end.line, end.character);
+    const candidates = index.get(id) ?? [];
+    candidates.push({ uri, range, origin, modelRoot: owningModelRoot(uri.fsPath), summary, name, kind });
+    index.set(id, candidates);
+    ids.add(id);
   }
   fileIds.set(uriStr, ids);
 }
 
 async function reindexFile(uri: vscode.Uri): Promise<void> {
   try {
-    const buf = await vscode.workspace.fs.readFile(uri);
-    indexText(uri, Buffer.from(buf).toString('utf8'));
+    const text = await currentText(uri);
+    if (text !== undefined) indexText(uri, text);
+    else removeFile(uri.toString());
   } catch {
     /* deleted or unreadable — ignore */
   }
 }
 
+/** Open buffers index synchronously, so their own ids resolve before any disk read. */
+function indexOpenDocuments(): void {
+  for (const document of vscode.workspace.textDocuments) {
+    if (vscode.languages.match(selector(), document) > 0) indexText(document.uri, document.getText());
+  }
+}
+
 async function rebuildIndex(): Promise<void> {
+  // findFiles matches workspace-relative paths; a root already inside .blueprint needs
+  // its own relative search. Keep the absolute document selector unchanged.
+  const modelFolders = (vscode.workspace.workspaceFolders ?? []).filter(folder =>
+    folder.uri.path.split('/').includes('.blueprint'));
+  const discoveredFiles = await Promise.all([
+    vscode.workspace.findFiles(currentGlob(), '**/node_modules/**'),
+    ...modelFolders.map(folder => vscode.workspace.findFiles(
+      new vscode.RelativePattern(folder.uri.fsPath, '**/*.{yaml,yml}'), '**/node_modules/**')),
+  ]);
+  const files = [...new Map(discoveredFiles.flat().map(uri => [uri.toString(), uri])).values()];
   index.clear();
   fileIds.clear();
   repoConfigCache.clear();
-  const files = await vscode.workspace.findFiles(currentGlob(), '**/node_modules/**');
-  await Promise.all(files.map(reindexFile));
+  indexOpenDocuments();
+  const unopened = files.filter(uri => !fileIds.has(uri.toString()));
+  await Promise.all(unopened.map(reindexFile));
 }
 
 function tokenAt(doc: vscode.TextDocument, pos: vscode.Position): string | undefined {
@@ -178,7 +135,7 @@ function tokenAt(doc: vscode.TextDocument, pos: vscode.Position): string | undef
 const definitionProvider: vscode.DefinitionProvider = {
   provideDefinition(doc, pos) {
     const token = tokenAt(doc, pos);
-    const decls = token ? index.get(token) : undefined;
+    const decls = token ? declarationsFor(token) : undefined;
     if (!decls?.length) return undefined;
     return decls.map((d) => new vscode.Location(d.uri, d.range));
   },
@@ -189,7 +146,7 @@ const hoverProvider: vscode.HoverProvider = {
     const range = doc.getWordRangeAtPosition(pos, TOKEN_RE);
     if (!range) return undefined;
     const token = doc.getText(range);
-    const decls = index.get(token);
+    const decls = declarationsFor(token);
     if (!decls?.length) return undefined;
 
     const md = new vscode.MarkdownString();
@@ -283,6 +240,8 @@ async function currentText(uri: vscode.Uri): Promise<string | undefined> {
 }
 
 interface PageMapDeclaration {
+  origin: Declaration['origin'];
+  modelRoot: string | undefined;
   location: vscode.Location;
   title: string;
   status: string;
@@ -300,21 +259,20 @@ async function pageMapDeclarations(document: vscode.TextDocument, key: string): 
     if (!/^v\d+(?:\.\d+)*\/.+\.ya?ml$/.test(relative)) continue;
     const text = await currentText(uri);
     if (text === undefined) continue;
-    const parsed = parseDocument(text);
-    if (parsed.errors.length > 0) continue;
-    visit(parsed, {
-      Map(_key, mapping) {
-        const identifier = mapScalar(mapping, 'id');
-        if (identifier?.value !== key) return;
-        const range = scalarRange(text, identifier);
-        if (!range) return;
-        const title = mapScalar(mapping, 'title')?.value ?? mapScalar(mapping, 'name')?.value ?? key;
-        const status = mapScalar(mapping, 'status')?.value ?? 'unspecified';
-        declarations.push({ location: new vscode.Location(uri, range), title: String(title), status: String(status) });
-      },
-    });
+    for (const declaration of classifyDeclarations(uri.fsPath, text)) {
+      if (declaration.id !== key) continue;
+      const { start, end, origin, status, name, title } = declaration;
+      const range = new vscode.Range(start.line, start.character, end.line, end.character);
+      declarations.push({
+        location: new vscode.Location(uri, range),
+        title: title || name || key,
+        status,
+        origin,
+        modelRoot: owningModelRoot(uri.fsPath),
+      });
+    }
   }
-  return declarations;
+  return preferredDeclarations(declarations);
 }
 
 async function pageMapLinks(document: vscode.TextDocument): Promise<vscode.DocumentLink[]> {
@@ -392,8 +350,8 @@ export function registerPageMapProviders(context: vscode.ExtensionContext): void
 /** Every indexed id, reduced to a completion row's raw material. First declaration wins. */
 function indexEntries(): IdEntry[] {
   const entries: IdEntry[] = [];
-  for (const [id, decls] of index) {
-    const decl = decls[0];
+  for (const id of index.keys()) {
+    const decl = declarationsFor(id)[0];
     if (!decl) continue;
     entries.push({
       id,
@@ -700,7 +658,7 @@ function applyDecorations(editor: vscode.TextEditor | undefined): void {
       TOKEN_RE_G.lastIndex = 0;
       let m: RegExpExecArray | null;
       while ((m = TOKEN_RE_G.exec(lines[i])) !== null) {
-        if (!index.has(m[0])) continue; // only highlight KNOWN ids — unknown refs / typos stay un-coloured
+        if (!declarationsFor(m[0]).length) continue; // Highlight only IDs with a declaration.
         idRanges.push(new vscode.Range(i, m.index, i, m.index + m[0].length));
       }
     }
@@ -821,7 +779,9 @@ export function registerDiagnostics(context: vscode.ExtensionContext): { refresh
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const diagnostics = registerDiagnostics(context);
-  await rebuildIndex();
+  // Paint and serve the open buffers first: the workspace-wide index below can take seconds in a
+  // large repository, and the visible editors must not wait for it.
+  indexOpenDocuments();
   rebuildDecoType();
   refreshAllDecorations();
 
@@ -861,6 +821,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   });
   context.subscriptions.push(
     watcher,
+    vscode.workspace.onDidOpenTextDocument(document => {
+      if (vscode.languages.match(selector(), document) > 0) indexText(document.uri, document.getText());
+    }),
+    vscode.workspace.onDidCloseTextDocument(document => {
+      if (vscode.languages.match(selector(), document) > 0) void reindexFile(document.uri).then(refreshAllDecorations);
+    }),
     vscode.workspace.onDidSaveTextDocument((d) => {
       if (vscode.languages.match(selector(), d) > 0) {
         indexText(d.uri, d.getText());
@@ -871,6 +837,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.window.onDidChangeActiveTextEditor((e) => applyDecorations(e)),
     vscode.window.onDidChangeVisibleTextEditors(() => refreshAllDecorations()),
     vscode.workspace.onDidChangeTextDocument((e) => {
+      if (vscode.languages.match(selector(), e.document) > 0) indexText(e.document.uri, e.document.getText());
       const ed = vscode.window.activeTextEditor;
       if (!ed || e.document !== ed.document) return;
       if (decoTimer) clearTimeout(decoTimer);
@@ -889,6 +856,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       if (linkCfgChanged) registerLinkProvider();
     }),
   );
+
+  await rebuildIndex();
+  refreshAllDecorations();
 }
 
 export function deactivate(): void {

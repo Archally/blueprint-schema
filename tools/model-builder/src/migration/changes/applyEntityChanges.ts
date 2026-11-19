@@ -1,5 +1,9 @@
 /**
- * Apply entity-level migration changes: add, modify, deprecate, remove, split, merge.
+ * Apply entity-level migration changes: add, modify, deprecate, remove, split, merge, move.
+ *
+ * A change's `placement` names where the entity it adds or moves is declared. It is recorded on the
+ * entity as `_written_in`, the key every reader of a migration-added entity already takes its file
+ * from, so a stated placement and an inferred one reach readers the same way.
  */
 import type { BlueprintModel, Entity } from '../../model/types.js';
 import { ENTITY_TYPE, SCHEMA_TYPE_TO_LAYER } from '../../model/entityTypes.js';
@@ -7,7 +11,8 @@ import { makeInternalId } from '../../extraction/entities/id.js';
 import { MigrationError } from '../migrationError.js';
 import { findEntityByRef } from '../migrationApplyUtils.js';
 import { resolveSchemaLine } from '../../extraction/entities/ownershipDefaults.js';
-import { declaredKeyOf, keepDocumentKeys, placeAsWritten, writtenFileOf } from './placeAsWritten.js';
+import { slicePrefixOf } from '../../extraction/relations/refResolution.js';
+import { WRITTEN_IN, declaredKeyOf, keepDocumentKeys, placeAsWritten, relocateTo, writtenFileOf } from './placeAsWritten.js';
 
 // ---------------------------------------------------------------------------
 // Entity-type mapping: migration entity_type → core Entity type + layer
@@ -90,6 +95,8 @@ const RULE_PREFIX_TO_TYPE: Record<string, string> = {
   VR:  ENTITY_TYPE.ValidationRule,
   TR:  ENTITY_TYPE.TransitionRule,
 };
+
+const KEYED_ARCH_TYPES = new Set(['context', 'service', 'dependency']);
 
 function strOrUndef(v: unknown): string | undefined {
   return v != null ? String(v) : undefined;
@@ -202,7 +209,9 @@ function resolveResourceType(
 
 function resolveEntityType(entityType: string, displayId: string): TypeMapping {
   if (entityType === 'rule') {
-    const prefixMatch = displayId.match(/^([A-Z]{2})\d/);
+    const slicePrefix = slicePrefixOf(displayId);
+    const localId = slicePrefix === null ? displayId : displayId.slice(slicePrefix.length + 1);
+    const prefixMatch = localId.match(/^([A-Z]{2})\d/);
     if (prefixMatch) {
       const ruleType = RULE_PREFIX_TO_TYPE[prefixMatch[1]!];
       if (ruleType) {
@@ -212,6 +221,109 @@ function resolveEntityType(entityType: string, displayId: string): TypeMapping {
     return MIGRATION_ENTITY_TYPE_MAP['rule']!;
   }
   return MIGRATION_ENTITY_TYPE_MAP[entityType] ?? { type: entityType, layer: 'unknown' };
+}
+
+interface Placement {
+  slice?: string;
+  file?: string;
+}
+
+function placementOf(change: Record<string, unknown>, key: 'placement' | 'placement_before'): Placement | undefined {
+  const value = change[key];
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  const placement: Placement = {};
+  if (typeof record.slice === 'string' && record.slice.length > 0) {
+    placement.slice = record.slice;
+  }
+  if (typeof record.file === 'string' && record.file.length > 0) {
+    placement.file = record.file.replace(/\\/g, '/');
+  }
+  return placement.slice || placement.file ? placement : undefined;
+}
+
+/** The slice folder of a model-relative path: its first segment, or '' for a file at the model root. */
+function sliceFolderOf(path: string | undefined): string {
+  const normalized = (path ?? '').replace(/\\/g, '/');
+  const slash = normalized.indexOf('/');
+  return slash > 0 ? normalized.slice(0, slash) : '';
+}
+
+/** The schema types whose files hold entities of `layer`, in table order. */
+function fileTypesOfLayer(layer: string): string[] {
+  return Object.entries(SCHEMA_TYPE_TO_LAYER)
+    .filter(([, candidate]) => candidate === layer)
+    .map(([schemaType]) => schemaType);
+}
+
+/**
+ * The file a placement names: its `file`, else the one file of its slice holding the entity's layer,
+ * else that layer's plain file name in the slice.
+ */
+function placedFile(
+  model: BlueprintModel,
+  placement: Placement,
+  fileTypes: string[],
+  isSameKind: (entity: Entity) => boolean,
+  target: string,
+  kind: string,
+): string {
+  if (placement.file) {
+    return placement.file;
+  }
+  const slice = placement.slice!;
+  const candidates = model.metadata.files
+    .filter((file) => sliceFolderOf(file.path) === slice && file.schemaType !== undefined && fileTypes.includes(file.schemaType))
+    .map((file) => file.path.replace(/\\/g, '/'))
+    .sort();
+  if (candidates.length === 1) {
+    return candidates[0]!;
+  }
+  if (candidates.length > 1) {
+    const holding = candidates.filter((path) =>
+      model.entities.some((entity) => isSameKind(entity) && writtenFileOf(entity)?.replace(/\\/g, '/') === path),
+    );
+    if (holding.length === 1) {
+      return holding[0]!;
+    }
+    throw new MigrationError(
+      `Entity ${kind}: placement names slice ${slice} for ${target}, which holds ${candidates.length} files of its layer (${candidates.join(', ')}); state placement.file`,
+    );
+  }
+  return `${slice}/${fileTypes[0] ?? 'migration'}.yaml`;
+}
+
+/** The schema types a migration's entity type is declared in, the first naming the file a slice gets. */
+function fileTypesOfChange(model: BlueprintModel, entityType: string, target: string): string[] {
+  if (entityType === 'resource') {
+    const line = declaredResourceLine(model);
+    return line && line !== 'v2.6' ? ['infrastructure', 'rg'] : ['rg', 'infrastructure'];
+  }
+  return fileTypesOfLayer(resolveEntityType(entityType, target).layer);
+}
+
+/** `after` with the file its change's placement names recorded as `_written_in`, or `after` itself. */
+function placedAfter(
+  model: BlueprintModel,
+  change: Record<string, unknown>,
+  after: Record<string, unknown>,
+  entityType: string,
+  target: string,
+  kind: string,
+): Record<string, unknown> {
+  const placement = placementOf(change, 'placement');
+  if (!placement) {
+    return after;
+  }
+  const displayId = declaredKeyOf(after, entityType, target);
+  const declaredId = String(after.id ?? displayId);
+  const isSameKind = entityType === 'resource'
+    ? (entity: Entity) => entity.type === ENTITY_TYPE.RG || entity.type === ENTITY_TYPE.InfraResource
+    : (entity: Entity) => entity.type === resolveEntityType(entityType, declaredId).type;
+  const file = placedFile(model, placement, fileTypesOfChange(model, entityType, declaredId), isSameKind, displayId, kind);
+  return { ...after, [WRITTEN_IN]: file };
 }
 
 function entityFromAfter(
@@ -262,7 +374,7 @@ export function applyEntityChanges(
       case 'add': {
         const after = change.after as Record<string, unknown> | undefined;
         if (!after) throw new MigrationError(`Entity add: missing 'after' for target ${target}`);
-        const entity = entityFromAfter(after, entityType, migrationFilePath, target, model);
+        const entity = entityFromAfter(placedAfter(model, change, after, entityType, target, 'add'), entityType, migrationFilePath, target, model);
         model.entities.push(entity);
         break;
       }
@@ -273,7 +385,19 @@ export function applyEntityChanges(
         if (!after) throw new MigrationError(`Entity modify: missing 'after' for target ${target}`);
         entity.data = keepDocumentKeys(entity.data, structuredClone(after));
         if (after.term != null) entity.term = String(after.term);
-        if (after.name != null && entity.term == null) entity.term = String(after.name);
+        if (after.name != null && KEYED_ARCH_TYPES.has(entityType)) {
+          const previousName = entity.displayId;
+          entity.displayId = String(after.name);
+          if (entityType === 'context') {
+            for (const child of model.entities) {
+              if (child.data?._context === previousName && writtenFileOf(child) === writtenFileOf(entity)) {
+                child.data._context = String(after.name);
+              }
+            }
+          }
+        } else if (after.name != null && after.term == null) {
+          entity.term = String(after.name);
+        }
         if (after.summary != null) entity.summary = String(after.summary);
         if (after.definition != null) entity.description = String(after.definition);
         else if (after.description != null) entity.description = String(after.description);
@@ -327,7 +451,7 @@ export function applyEntityChanges(
           if (index === keptIndex) {
             return [];
           }
-          return [entityFromAfter(item, entityType, migrationFilePath, String(item.id ?? ''), model, [entity])];
+          return [entityFromAfter(placedAfter(model, change, item, entityType, String(item.id ?? ''), 'split'), entityType, migrationFilePath, String(item.id ?? ''), model, [entity])];
         });
         const kept = parts[keptIndex]!;
         entity.data = keepDocumentKeys(entity.data, structuredClone(kept));
@@ -354,12 +478,35 @@ export function applyEntityChanges(
           sourceIds.push(entity.id);
           sources.push(entity);
         }
-        const mergedEntity = entityFromAfter(after, entityType, migrationFilePath, String(after.id ?? ''), model, sources);
+        const mergedEntity = entityFromAfter(placedAfter(model, change, after, entityType, String(after.id ?? ''), 'merge'), entityType, migrationFilePath, String(after.id ?? ''), model, sources);
         model.entities = model.entities.filter((e) => !sourceIds.includes(e.id));
         model.relations = model.relations.filter(
           (r) => !sourceIds.includes(r.source_entity_id) && !sourceIds.includes(r.target_entity_id),
         );
         model.entities.push(mergedEntity);
+        break;
+      }
+      case 'move': {
+        const entity = findEntityByRef(target, model.entities);
+        if (!entity) throw new MigrationError(`Entity move: target not found: ${target}`);
+        const placement = placementOf(change, 'placement');
+        if (!placement) throw new MigrationError(`Entity move: missing 'placement' for target ${target}`);
+        const current = writtenFileOf(entity)?.replace(/\\/g, '/') ?? '';
+        const before = placementOf(change, 'placement_before');
+        if (before?.file && before.file !== current) {
+          throw new MigrationError(`Entity move: ${target} is declared in ${current}, not in ${before.file} as placement_before states`);
+        }
+        if (before?.slice && before.slice !== sliceFolderOf(current)) {
+          throw new MigrationError(`Entity move: ${target} is declared in slice ${sliceFolderOf(current) || '(model root)'}, not in ${before.slice} as placement_before states`);
+        }
+        const fileTypes = entity.type === ENTITY_TYPE.InfraResource || entity.type === ENTITY_TYPE.RG
+          ? (entity.type === ENTITY_TYPE.InfraResource ? ['infrastructure'] : ['rg'])
+          : fileTypesOfLayer(entity.layer);
+        const file = placedFile(model, placement, fileTypes, (other) => other.type === entity.type, target, 'move');
+        if (file === current) {
+          throw new MigrationError(`Entity move: ${target} is already declared in ${file}`);
+        }
+        relocateTo(entity, file, model.entities);
         break;
       }
       default:

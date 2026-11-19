@@ -12,7 +12,9 @@ function fixture(context) {
   context.after(() => rmSync(root, { recursive: true, force: true }));
   return suites => {
     writeFileSync(join(root, 'package.json'), JSON.stringify({ testSuites: suites }));
-    return spawnSync(process.execPath, [runner, join(root, 'package.json')], { encoding: 'utf8', timeout: 15000 });
+    const environment = { ...process.env };
+    delete environment.NODE_TEST_CONTEXT;
+    return spawnSync(process.execPath, [runner, join(root, 'package.json')], { encoding: 'utf8', timeout: 15000, env: environment });
   };
 }
 const group = (name, code = 0) => ({ name, argv: ['node', '-e', `console.log('MARKER:${name}'); console.log('# tests 1'); process.exit(${code});`] });
@@ -58,3 +60,18 @@ test('empty, malformed, duplicate or invalid timeout configuration fails before 
     assert.doesNotMatch(child.stdout, /MARKER:/);
   }
 });
+
+for (const reporter of ['tap', 'spec']) {
+  test(`counts executed Node tests from the ${reporter} reporter`, context => {
+    const root = mkdtempSync(join(tmpdir(), 'suite-reporter-'));
+    context.after(() => rmSync(root, { recursive: true, force: true }));
+    const testFile = join(root, 'example.test.mjs');
+    writeFileSync(testFile, "import { test } from 'node:test'; test('executes', () => {});\n");
+    const child = fixture(context)([{
+      name: reporter, argv: ['node', '--test', `--test-reporter=${reporter}`, testFile],
+    }]);
+    assert.equal(child.status, 0, child.stdout + child.stderr);
+    assert.equal(results(child.stdout)[0].tests, 1);
+    assert.equal(results(child.stdout)[0].status, 'passed');
+  });
+}

@@ -67,6 +67,7 @@ $defs:
         description: "Unique rule ID. Prefix indicates category: SR=structural, CR=classification, DR=derivation, EQ=equivalence, VR=validation."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable name in imperative form. Describes what the rule enforces, not how."
       description:
         type: string
@@ -155,6 +156,7 @@ $defs:
         description: "Unique transition rule ID (e.g. TR001 or billing.TR001)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable name for this transition."
       summary:
         type: string
@@ -165,9 +167,11 @@ $defs:
         description: "The concept whose lifecycle state machine this transition belongs to. Must define states[]."
       from:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Source state name. Must match a state defined in the referenced concept's states[]."
       to:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Target state name. Must match a state defined in the referenced concept's states[]."
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
@@ -181,6 +185,7 @@ $defs:
         properties:
           when:
             type: string
+            pattern: "\\S"
             description: "Condition expression that must evaluate to true."
       fact:
         type: string

@@ -1,0 +1,29 @@
+migration:
+  id: MIG001
+  name: Add delivery service
+changes:
+  entities:
+    - kind: add
+      target: delivery.SVC005
+      entity_type: service
+      after:
+        id: delivery.SVC005
+        name: Schedule parcels
+        _written_in: orders/arch.yaml
+    - kind: add
+      target: delivery.SVC006
+      entity_type: service
+      after:
+        id: delivery.SVC006
+        name: Dispatch parcels
+        _written_in: delivery/arch.yaml
+    - kind: modify
+      target: delivery.SVC004
+      entity_type: service
+      before:
+        id: delivery.SVC004
+        name: Earlier description
+      after:
+        id: delivery.SVC004
+        name: Revised description
+        _written_in: orders/arch.yaml

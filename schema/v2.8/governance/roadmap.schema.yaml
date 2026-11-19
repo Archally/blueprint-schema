@@ -95,6 +95,7 @@ $defs:
         description: "Unique milestone identifier (MS + 3+ digits)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Milestone name (e.g., 'MVP', 'Beta Launch', 'GA')."
       description:
         type: string
@@ -204,6 +205,7 @@ $defs:
           children. Encodes hierarchy level independently of `children` nesting depth.
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Short work-item title (e.g. 'Survey Setup', 'Reminders')."
       description:
         type: string

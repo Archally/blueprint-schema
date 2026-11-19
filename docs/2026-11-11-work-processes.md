@@ -107,6 +107,62 @@ belongs to one branch: name the activity that branch leads to.
           - process: delivery.PRC002    # Build the item
 ```
 
+## Questions and gates at an activity
+
+Some questions are asked every time the work reaches an activity, such as "who reads this page?",
+and some conditions must hold before the work goes on, such as "the page passes the accessibility
+check". An activity states the first in `questions` and the second in `gates`. Each item has a `key`,
+lowercase words joined by hyphens and unique among the questions or among the gates of that
+activity, so a record of one run can cite it as `PA001/audience` or `PA012/release`.
+
+| Field | Each entry | Meaning |
+|---|---|---|
+| `questions` | `key`, `statement`, optional `asked_by`, `asked_of`, `answer` | a question asked at every run: who asks it (an actor), who answers it (an actor or a team) and where the answer is recorded (`name`, optional `concept`) |
+| `gates` | `key`, `criterion`, optional `evaluated_by`, `rule`, `evidence`, `on_fail` | a pass or fail condition: who judges it (an actor or a team), the declared rule that states it, what shows the result (`name`, optional `concept`) and the activity the work goes to when it fails |
+
+`key` with `statement`, or `key` with `criterion`, is a complete entry. A criterion that several
+gates share, or that test cases verify, is a rule the model declares, and each gate names it in
+`rule`: a test case that verifies the rule then reaches every gate that names it. `on_fail` names an
+activity this activity leads to through `next`, so the order of the process has a path for the
+failure.
+
+```yaml
+      - id: delivery.PA001
+        name: Refine the item
+        questions:
+          - key: audience
+            statement: Who reads the specification?
+            asked_of: TM001             # Product Team
+            answer:
+              name: Specification draft
+              concept: delivery.CN001   # Specification
+      - id: delivery.PA002
+        name: Review the specification
+        gateway: xor
+        next:
+          - to: delivery.PA003
+            condition: the specification is accepted
+          - to: delivery.PA001
+            condition: the specification is not accepted
+        gates:
+          - key: accepted
+            criterion: The product team accepts the specification
+            evaluated_by: TM001
+            rule: delivery.VR001        # Specification passes review
+            evidence:
+              name: Review record
+            on_fail: delivery.PA001     # back to Refine the item
+```
+
+A question asked at every run is not an open question about the model. A question the modeller has
+about the activity, which is answered once and then resolved, is an inquiry whose `affects` names
+the activity (see below).
+
+The model graph draws an `activity_question` edge from the process to each actor, team or concept a
+question names, and an `activity_gate` edge to each actor, team, rule or concept a gate names. Each
+edge carries the activity, the item's key and the field it comes from, so the gates of a process
+can be listed by their judge or their rule.
+
 ## Fact, hypothesis and unknown
 
 A process and an activity may state `provenance`, the same definition design entities use:
@@ -175,11 +231,16 @@ A model that kept these facts in `properties` moves them by hand:
 | an input, output or tool has no `name`, a blank name, or a typed id as its name | a schema error at the entry |
 | `hands_over_to: []`, or an entry naming no receiver | a schema error at the list or the entry |
 | a handover entry names `activity` and `process` together | a schema error at the entry |
-| names a team, activity, process, concept or party nothing declares | a cross-reference error at the reference |
+| a question without `key` or `statement`, a gate without `key` or `criterion`, or a key that is not lowercase words joined by hyphens | a schema error at the entry |
+| names a team, actor, rule, activity, process, concept or party nothing declares | a cross-reference error at the reference |
 
 Schema and reference validation resolve each id across the model by its exact string; they do not
-check that an activity belongs to the same process or that a party is of `kind: system`.
+check that an activity belongs to the same process or that a party is of `kind: system`. The semantic
+check reports two of the question and gate cases: a key that repeats among the questions or among
+the gates of one activity is an error (`activity-item-key-repeated`), and an `on_fail` that names an
+activity this activity does not lead to is a warning (`gate-on-fail-not-a-successor`).
 
 A process that states none of these fields validates exactly as it did before 2.8.88 and keeps its
 meaning, and needs no migration. Validators older than 2.8.88 reject a process, activity, lane,
-slice or inquiry that carries them.
+slice or inquiry that carries them. `questions` and `gates` are accepted from 2.8.102, and older
+validators reject an activity that states them.

@@ -99,6 +99,7 @@ $defs:
         description: "Typed resource identifier (IR###). Used in topology tier references and as a relation target."
       kind:
         type: string
+        pattern: "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
         description: >-
           Resource type (e.g. database, queue, storage, cache, api, function, service). A message
           broker - a RabbitMQ server, a Kafka cluster, a Service Bus namespace - is `broker`, the
@@ -106,6 +107,7 @@ $defs:
           `queue`.
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable resource name."
       summary:
         type: string
@@ -179,7 +181,7 @@ $defs:
         description: "Substrate-neutral realization classifier: HOW the resource is hosted - a managed cloud/PaaS service, an IaaS/on-prem VM, a container, bare metal, serverless, a hybrid network interconnect (network-link), or an external SaaS. Drives portability/cost/hybrid-boundary analysis and makes cloud-vs-on-prem legible. Additive to the coarse free-string `kind` (WHAT it is: database/queue/…)."
       relations:
         type: array
-        description: "Typed inter-resource relations (TOSCA vocabulary) - the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placement edge; connects_to/depends_on/attaches_to/routes_to express wiring. For a hybrid interconnect, a network-link resource's connects_to/routes_to targets may sit in a different environment/substrate."
+        description: "Typed inter-resource relations (TOSCA vocabulary) - the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placement edge; connects_to/depends_on/attaches_to/routes_to express wiring, and `routes_to` may also name a service the resource forwards requests to. For a hybrid interconnect, a network-link resource's connects_to/routes_to targets may sit in a different environment/substrate."
         items:
           $ref: "#/$defs/infra_relation_edge"
       iac_refs:
@@ -188,6 +190,13 @@ $defs:
       implementation:
         $ref: "../metamodel.schema.yaml#/$defs/implementation"
         description: "Whether this resource exists yet. Absent means unclear. For a resource, iac_refs are the evidence the as-is check reads, beside code_refs."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this resource exists as stated, and on what evidence. It is
+          about the resource itself: each of its `relations`, each grant in its `access` and each
+          binding that realizes it states its own evidence, and the resource's evidence is not
+          evidence for any of them. A resource without one states no evidence of its own.
       lifecycle:
         $ref: "#/$defs/lifecycle"
         description: "Optional lifecycle/protection posture (architect-altitude)."
@@ -283,6 +292,7 @@ $defs:
         properties:
           name:
             type: string
+            pattern: "^\\S+$"
             description: "Secret name."
           description:
             type: string
@@ -331,6 +341,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Tier name (e.g. web-tier, worker-tier, data-tier)."
       description:
         type: string
@@ -369,6 +380,7 @@ $defs:
         description: "Typed environment id (ENV###). Referenced by bindings (BND###) and per-environment config."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable environment name (e.g. production, staging, dr-site)."
       env_class:
         type: string
@@ -393,6 +405,13 @@ $defs:
           type: [string, number, boolean]
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this environment exists as stated - its class, substrate and
+          target scope - and on what evidence. It is about the environment itself and is not
+          evidence for a binding or a per-environment configuration that names it. An environment
+          without one states no evidence of its own.
 
   target_scope:
     description: "The deployment partition an environment targets. Two additive forms (v2.7.7): the legacy INLINE `{kind, name}` object OR a REFERENCE `{ ref: DSC### }` to a first-class DeploymentScope. Substrate-neutral: cloud (account/subscription/project/resource_group/region/availability_zone), kubernetes (cluster/namespace), and on-premise (datacenter/site/rack/host_pool/vlan) all coexist."
@@ -465,6 +484,7 @@ $defs:
         description: "Typed scope identifier (DSC###). Matches the reference fields that point at it (`parent`, `resource.scope_ref`, `environment.target_scope.ref`)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable scope name (e.g. the 'prod' subscription, the 'Accounting' resource-group)."
       kind:
         $ref: "#/$defs/scope_kind"
@@ -495,10 +515,17 @@ $defs:
       properties:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
         description: "Open metadata bag for scope-level custom attributes."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this scope exists as stated - its kind, parent and substrate -
+          and on what evidence. It is about the scope itself and is not evidence for a resource that
+          names it in `scope_ref` or for an environment that targets it. A scope without one states
+          no evidence of its own.
 
   infra_relation_edge:
     type: object
-    description: "A typed inter-resource relation (TOSCA vocabulary). `hosted_on` is the canonical placement edge; `connects_to`/`depends_on` may carry attribute-level output refs; `depends_on` is the ordering-only fallback. A `network-link` resource's connects_to/routes_to targets may sit in a different environment/substrate (the hybrid boundary)."
+    description: "A typed inter-resource relation (TOSCA vocabulary). `hosted_on` is the canonical placement edge; `connects_to`/`depends_on` may carry attribute-level output refs; `depends_on` is the ordering-only fallback. A `network-link` resource's connects_to/routes_to targets may sit in a different environment/substrate (the hybrid boundary). `routes_to` may also name a service (SVC###): the resource forwards requests to it, as a bought API gateway or load balancer does for the services behind it. Every other verb names a resource."
     additionalProperties: false
     required:
       - type
@@ -508,16 +535,50 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/infra_relation"
         description: "TOSCA relation verb: hosted_on / connects_to / depends_on / attaches_to / routes_to."
       target:
-        $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
-        description: "The target resource (IR###). May be in another environment/substrate (hybrid interconnect)."
+        anyOf:
+          - $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+          - $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+        description: "The target: a resource (IR###) for every verb, or a service (SVC###) for `routes_to` only, named by its exact declared id. An id that names nothing declared is a cross-reference error. A resource target may be in another environment/substrate (hybrid interconnect). A resource type (RT###) or a third-party package (PKG###) is never a target."
+        examples:
+          - IR002
+          - orders.SVC001
       outputs:
         type: array
-        description: "Optional attribute-level outputs of the target this resource consumes - e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for impact analysis."
+        description: "Optional attribute-level outputs of the target this resource consumes - e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for impact analysis. Only a resource target has outputs: a relation whose target is a service carries no `outputs`, not even an empty list."
         items:
           type: string
       description:
         type: string
         description: "Optional human note on this edge (e.g. 'reads via read-replica')."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this relation holds as stated - its verb, its target and its
+          outputs - and on what evidence. It is about the relation, for every verb and either kind
+          of target: neither the resource that declares it nor its target is evidence for it. A
+          relation without one states no evidence of its own.
+    allOf:
+      # A service is a target of `routes_to` only; every other verb names a resource. Written as
+      # if/else so the error lands at `target`, the value to change.
+      - if:
+          properties:
+            type:
+              const: routes_to
+          required: [type]
+        else:
+          properties:
+            target:
+              $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+      # A service publishes no resource outputs, so a relation to one names none. The error lands
+      # at `outputs`, the key to remove.
+      - if:
+          properties:
+            target:
+              $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+          required: [target]
+        then:
+          properties:
+            outputs: false
 
   iac_refs:
     type: array
@@ -553,6 +614,7 @@ $defs:
         description: "The IaC system. Cloud provisioners (terraform/opentofu/bicep/arm/cloudformation/pulumi/crossplane) and on-prem config-management (ansible/puppet/chef/saltstack) plus kubernetes/helm are all first-class."
       locator:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Where the resource is defined in that system (e.g. module path, `file:resource` address, Ansible role, Helm chart)."
       role:
         type: string
@@ -627,6 +689,13 @@ $defs:
       description:
         type: string
         description: "Optional human note on this binding."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this binding realizes its type or need in its environment as
+          stated - module, resource, profile and parameters together - and on what evidence. It is
+          about the stated realization, not about whether its resource or its environment exists on
+          its own.
 
   binding_module:
     type: object
@@ -641,6 +710,7 @@ $defs:
     properties:
       ref:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Module/recipe locator - e.g. 'br/public:avm/res/db-for-postgre-sql/flexible-server', a Terraform registry path, a Helm chart, an Ansible role."
       version_pin:
         type: string
@@ -661,6 +731,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S+$"
         description: "Field name (e.g. host, port, name, username, password, connection_string, endpoint)."
       type:
         type: string
@@ -706,7 +777,15 @@ $defs:
         description: "What the access is over (a resource, a scope, a data store - free-text/label; may be an IR###)."
       role:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "The role/permission granted (e.g. reader, contributor, db_datawriter, read-only)."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this grant holds as stated - this identity has this role on
+          this target - and on what evidence. It is about this grant alone: the resource that lists
+          it and every other grant state their own evidence. A grant without one states no evidence
+          of its own.
 
   observability_binding:
     type: object

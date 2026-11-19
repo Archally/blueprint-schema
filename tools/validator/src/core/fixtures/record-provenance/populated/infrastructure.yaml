@@ -1,0 +1,79 @@
+version: "1.0.0"
+name: Shop infrastructure
+deployment_scopes:
+  - id: DSC001
+    name: Shop subscription
+    kind: subscription
+    substrate: cloud
+    provenance:
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: deploy/landing-zone/main.tf
+          date: "2026-11-03"
+          summary: The subscription is declared in the landing-zone configuration.
+  - id: DSC002
+    name: Orders resource group
+    kind: resource_group
+    parent: DSC001
+environments:
+  - id: ENV001
+    name: Production
+    env_class: production
+    substrate: cloud
+    target_scope:
+      ref: DSC001
+    provenance:
+      discovery_stage: validated
+      certainty: probable
+      evidence:
+        - kind: interview
+          source: Platform team
+          date: "2026-11-05"
+          summary: The platform team runs production in the shop subscription.
+        - kind: documentation
+          summary: The runbook names production as the only customer-facing environment.
+  - id: ENV002
+    name: Staging
+    env_class: staging
+  - development
+resources:
+  - id: IR001
+    kind: broker
+    name: Order Event Bus
+    scope_ref: DSC002
+    provenance:
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: deploy/broker/main.tf
+          date: "2026-11-03"
+          summary: The broker is provisioned in the orders resource group.
+  - id: IR002
+    kind: database
+    name: Orders Database
+    scope_ref: DSC002
+    provenance:
+      discovery_stage: exploring
+      evidence: []
+    access:
+      - identity: order-api
+        target: IR002
+        role: db_datawriter
+        provenance:
+          certainty: confirmed
+          evidence:
+            - kind: codebase-analysis
+              source: deploy/orders/rbac.tf
+              date: "2026-11-04"
+              summary: The order API identity is granted write access to the orders database.
+      - identity: reporting
+        target: IR002
+        role: reader
+      - identity: support
+        target: IR002
+        role: read-only
+        provenance: {}
+  - id: IR003
+    kind: cluster
+    name: Shop Cluster

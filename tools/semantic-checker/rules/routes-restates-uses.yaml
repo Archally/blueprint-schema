@@ -1,0 +1,14 @@
+engineVersion: "0.1"
+rules:
+  - id: routes-restates-uses
+    severity: warn
+    description: >-
+      A service names the same resolved target in routes_to and uses. The warning identifies each uses entry to remove because forwarding already states the dependency.
+      Override per-project via .blueprint-lint.yaml.
+    find:
+      entity_type: Service
+    check:
+      custom:
+        module: ./service-routes.mjs
+        export: routesRestatesUses
+    message: '{findings}'

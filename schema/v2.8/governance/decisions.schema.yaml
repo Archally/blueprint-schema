@@ -59,9 +59,11 @@ $defs:
         description: "Human-readable description."
       title:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Short descriptive title understandable without reading the full rationale."
       summary:
         type: string
+        pattern: "\\S"
         maxLength: 200
         description: "One-line summary for listings and quick scanning (≤200 chars). Self-contained."
       date:
@@ -120,6 +122,9 @@ $defs:
       owned_by:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
         description: "Decision-level ownership override."
+      participants:
+        $ref: "#/$defs/decision_participants"
+        description: "Who takes part in this decision, by role: who decides, who is consulted and who is informed. Optional."
       properties:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       tags:
@@ -146,6 +151,7 @@ $defs:
     properties:
       problem:
         type: string
+        pattern: "\\S"
         description: "The problem or question that prompted this decision. Describes context and constraints."
       options:
         type: array
@@ -159,7 +165,57 @@ $defs:
             - $ref: "#/$defs/option"
       chosen:
         type: string
+        pattern: "\\S"
         description: "The option selected and why it was preferred over alternatives."
+
+  decision_participants:
+    type: object
+    additionalProperties: false
+    minProperties: 1
+    description: >
+      The people and teams who take part in a decision, by role. Each role lists actors (ACT###)
+      or teams (TM###), each once, and a reference nobody declares is a cross-reference error. At
+      least one role is stated. A role that is absent is not recorded; it does not state that
+      nobody holds it. An empty `consulted` or `informed` list states that nobody holds that role;
+      `decision_makers`, when stated, names at least one actor or team. The roles state who is
+      meant to decide, advise and be told. They are not an approval: they leave the decision's
+      `status` as it is, and an agreement is recorded as `evidence` of kind
+      `stakeholder-signoff`. Distinct from `owned_by`, the unit accountable for the decision
+      record, which need not take part in the decision itself.
+    properties:
+      decision_makers:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
+        description: "Who may make this decision. When stated, it names at least one actor or team; when absent, who decides is not recorded."
+        examples:
+          - [ACT001]
+      consulted:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
+        description: "Who is asked for advice before the decision is made. An empty list states that nobody is consulted; when absent, consultation is not recorded."
+        examples:
+          - [TM001]
+          - []
+      informed:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
+        description: "Who is told the outcome once the decision is made. An empty list states that nobody is told; when absent, who is told is not recorded."
+        examples:
+          - [ACT002]
+          - []
+    examples:
+      - decision_makers: [ACT001]
+        consulted: [TM001]
+        informed: [ACT002]
+      - decision_makers: [ACT001]
+        consulted: []
 
   motivation_links:
     type: object
@@ -416,6 +472,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Short name of the option (e.g. 'x-vector voice conversion', 'McAdams coefficient')."
       description:
         type: string
@@ -464,9 +521,11 @@ $defs:
         description: "Unique business decision identifier (e.g. BD001 or orders.BD001)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Short human-readable name. Used in displayId fallback when no context prefix is set."
       description:
         type: string
+        pattern: "\\S"
         description: "Full statement of the decision. Free text; may be multi-paragraph."
       domain_scope:
         $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"

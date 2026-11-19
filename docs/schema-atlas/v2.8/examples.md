@@ -6,6 +6,10 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 ## Schema-native examples
 
+- `schema/v2.8/blueprint.schema.yaml#/$defs/change_stream/properties/name/examples/0`: `"Orders modularization"`
+
+- `schema/v2.8/blueprint.schema.yaml#/$defs/change_stream/properties/description/examples/0`: `"Separates order handling into its own module behind a published API."`
+
 - `schema/v2.8/design/arch.schema.yaml#/$defs/package/properties/ecosystem/examples/0`: `"npm"`
 
 - `schema/v2.8/design/arch.schema.yaml#/$defs/package/properties/ecosystem/examples/1`: `"nuget"`
@@ -22,15 +26,27 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/design/arch.schema.yaml#/$defs/package_license/properties/expires_on/examples/0`: `"2027-03-31"`
 
+- `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/role/examples/0`: `"gateway"`
+
+- `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/role/examples/1`: `"bff"`
+
 - `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/imports/examples/0`: `["platform.SVC012","platform.SVC014"]`
 
 - `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/imports/examples/1`: `["platform.SVC012","PKG001"]`
 
 - `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/uses/examples/0`: `["payments.SVC003"]`
 
+- `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/routes_to/examples/0`: `["orders.SVC001"]`
+
+- `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/routes_to/examples/1`: `["orders.SVC001","catalog.SVC002"]`
+
 - `schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/owner/examples/0`: `"ACT001"`
 
 - `schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/owner/examples/1`: `"TM002"`
+
+- `schema/v2.8/design/infrastructure.schema.yaml#/$defs/infra_relation_edge/properties/target/examples/0`: `"IR002"`
+
+- `schema/v2.8/design/infrastructure.schema.yaml#/$defs/infra_relation_edge/properties/target/examples/1`: `"orders.SVC001"`
 
 - `schema/v2.8/design/quality.schema.yaml#/$defs/kpi/properties/owner/examples/0`: `"ACT001"`
 
@@ -49,6 +65,24 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 - `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/owner/examples/0`: `"ACT001"`
 
 - `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/owner/examples/1`: `"TM002"`
+
+- `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/products/examples/0`: `["PDT001"]`
+
+- `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/products/examples/1`: `["PDT001","PDT002"]`
+
+- `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants/properties/decision_makers/examples/0`: `["ACT001"]`
+
+- `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants/properties/consulted/examples/0`: `["TM001"]`
+
+- `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants/properties/consulted/examples/1`: `[]`
+
+- `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants/properties/informed/examples/0`: `["ACT002"]`
+
+- `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants/properties/informed/examples/1`: `[]`
+
+- `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants/examples/0`: `{"decision_makers":["ACT001"],"consulted":["TM001"],"informed":["ACT002"]}`
+
+- `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants/examples/1`: `{"decision_makers":["ACT001"],"consulted":[]}`
 
 - `schema/v2.8/governance/decisions.schema.yaml#/$defs/impact_declaration/properties/direct/properties/bounded_contexts/examples/0`: `["BC001"]`
 
@@ -72,41 +106,7 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects/properties/service_refs/examples/0`: `["SVC001"]`
 
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects/properties/package_refs/examples/0`: `["PKG001"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects/properties/capability_refs/examples/0`: `["CAP001","billing.CAP002"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/assumption/properties/affects/properties/bounded_context_refs/examples/0`: `["BC001","shop.BC002"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/assumption/properties/affects/properties/service_refs/examples/0`: `["SVC001"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/assumption/properties/affects/properties/package_refs/examples/0`: `["PKG001"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/finding_refs/examples/0`: `["FN001","orders.FN002"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/bounded_context_refs/examples/0`: `["BC001","shop.BC002"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/service_refs/examples/0`: `["SVC001"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/package_refs/examples/0`: `["PKG001"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/process_activity_refs/examples/0`: `["PA004","delivery.PA002"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/capability_refs/examples/0`: `["CAP001","billing.CAP002"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/owner/examples/0`: `"ACT001"`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/owner/examples/1`: `"TM002"`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/properties/name/examples/0`: `"Checkout platform roadmap 2026"`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/properties/description/examples/0`: `"Delivery plan for the checkout rebuild; agreed with the product owner through Q2, a proposal after it."`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence/properties/anchor_sprint/examples/0`: `30`
-
-- `schema/v2.8/governance/roadmap.schema.yaml#/properties/cadence/properties/anchor_start/examples/0`: `"2026-07-01"`
-
-_… and 60 more (listed first 50 for readability)._
+_… and 139 more (listed first 50 for readability)._
 
 ## Reference example models
 

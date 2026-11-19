@@ -1,0 +1,9 @@
+version: "1.0.0"
+value_streams:
+  - id: VS001
+    name: Parcel to door
+    stages:
+      - name: Sort
+        capabilities: [CAP001]
+      - name: Deliver
+        capabilities: [CAP001]

@@ -1,0 +1,4120 @@
+{
+  "design/arch.schema.yaml": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Blueprint Architecture",
+    "description": "Design Plane - L0: Bounded context topology. Parties, contexts, services with contracts (interfaces), enriched dependencies for context-map inference, and unified component kinds.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "name"
+    ],
+    "anyOf": [
+      {
+        "required": [
+          "parties"
+        ]
+      },
+      {
+        "required": [
+          "contexts"
+        ]
+      },
+      {
+        "required": [
+          "packages"
+        ]
+      }
+    ],
+    "properties": {
+      "name": {
+        "type": "string",
+        "pattern": "^\\S(?:.*\\S)?$",
+        "description": "Name of this architecture definition (e.g. system name or product name)."
+      },
+      "description": {
+        "type": "string",
+        "description": "Human-readable description of this architecture."
+      },
+      "version": {
+        "$ref": "../metamodel.schema.yaml#/$defs/semver",
+        "description": "Content version of this architecture document."
+      },
+      "schemaVersion": {
+        "$ref": "../metamodel.schema.yaml#/$defs/schema_version",
+        "description": "Schema version this document conforms to. Omit to assume latest."
+      },
+      "scope": {
+        "$ref": "../metamodel.schema.yaml#/$defs/scope_prefix",
+        "description": "Bounded context this architecture file belongs to. Used only for context-scoped arch fragments (future). Root-level arch files describe systems and MUST NOT declare scope - the file name identifies the system (e.g., eshop.arch.yaml). Validators SHOULD warn when scope is present alongside system-level parties.\n"
+      },
+      "stage": {
+        "type": "string",
+        "description": "Architecture maturity stage (e.g. draft, review, approved, production)."
+      },
+      "domains": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        },
+        "description": "SOFT-DEPRECATED (v2.8.0). Free-string map naming the domains this architecture belongs to (name to identifier or description). Nothing resolves it. A domain is declared in the root `domains[]` registry of `blueprint.yaml`, where it carries a `DMN###` id that a context names through `domain_ref`; the schema-update tool promotes each key into that registry, the name becoming the domain's name and the prose its description, and removes the key here. Accepted so that existing documents keep loading. Removal targeted for v2.9.\n"
+      },
+      "processes": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Process file references providing narrative context for this architecture."
+      },
+      "tags": {
+        "$ref": "../metamodel.schema.yaml#/$defs/tags"
+      },
+      "owned_by": {
+        "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+        "description": "File-level ownership default. Entities inherit unless overridden."
+      },
+      "parties": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/party"
+        },
+        "description": "System and organizational parties. In the nested form each carries the bounded contexts whose services are its components; a party declared whole carries none, and services elsewhere name it through `system_ref`.\n"
+      },
+      "contexts": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/context"
+        },
+        "description": "Bounded contexts declared whole at the document root, each exactly once in the model. A service under a root-declared context names the system it is a component of through `system_ref`, or inherits this document's `system_ref` default; the systems a context spans are derived from its services. This is the form for a context that several systems provide services to, which the nested form can state only by declaring the context once per system.\n"
+      },
+      "system_ref": {
+        "$ref": "../metamodel.schema.yaml#/$defs/party_ref",
+        "description": "File-level default for `service.system_ref`: the system party that every service under a root-declared context in this document is a component of, unless the service names its own. A service nested under a party is a component of that party and does not read this default.\n"
+      },
+      "probes": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/probe"
+        },
+        "description": "Instruments this architecture is read with. A probe is declared here when what it cannot see has to be recorded somewhere other than the prose of whoever last ran it.\n"
+      },
+      "channels": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/message_channel"
+        },
+        "description": "Message channels: the topics producers publish to and the queues consumers read from, each placed on a message broker. A channel is shared by producers and consumers in different bounded contexts, so it is declared here, once, rather than under one context. Operations name the channel they travel on through `exchange.topic.channel_ref` or `exchange.queue.channel_ref`; a consuming contract names the queue it reads through `subscription.channel_ref`.\n"
+      },
+      "packages": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/package"
+        },
+        "description": "Third-party packages: the libraries the organization obtains from a supplier or a public registry rather than builds, each declared once in the model. A package belongs to no bounded context, so it is declared here rather than under one, and a document may declare packages and nothing else. Services name the packages they are built on through `imports`; the services that import a package are read from those lists, never stated on the package. A library the organization builds itself is a service of `kind: library`, not a package.\n"
+      }
+    },
+    "$defs": {
+      "package": {
+        "type": "object",
+        "description": "A third-party package: a library obtained from a supplier or a public registry, at one version. Two versions in use at the same time are two entries, each with its own id. What the package depends on, its vulnerabilities and where each copy is deployed are not stated here.\n",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "license"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/package_ref",
+            "description": "Stable package id (PKG###), making the package a referenceable node."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Package name, as its ecosystem or supplier publishes it (e.g. yaml, Newtonsoft.Json, org.apache.commons:commons-lang3)."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief description of what the package provides."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description: what the package is used for here and anything a reader needs before changing it."
+          },
+          "ecosystem": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The package ecosystem the package is obtained from, written as its Package URL type in lowercase (npm, nuget, maven, pypi, gem, golang, cargo, composer), or `generic` for a package distributed outside any registry. Absent means not stated.\n",
+            "examples": [
+              "npm",
+              "nuget",
+              "generic"
+            ]
+          },
+          "vendor_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/party_ref",
+            "description": "The party that supplies the package (PRT###), normally one of `kind: organization`. A reference to a party nobody declares is a cross-reference error. Absent means the supplier is not stated.\n"
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The version this entry describes, written as its ecosystem writes it (4.2.1, 23.10.0, 2.0.0-rc.1, 2024.1). Compared as text, never parsed as a version number. Absent means not stated.\n",
+            "examples": [
+              "23.10.0"
+            ]
+          },
+          "license": {
+            "$ref": "#/$defs/package_license",
+            "description": "Required, non-empty license statement; use expression: NOASSERTION when the license is unknown."
+          },
+          "code_refs": {
+            "$ref": "../metamodel.schema.yaml#/$defs/code_refs",
+            "description": "Where the package is pinned or carried in the source: a manifest, a lock file, a vendored directory."
+          },
+          "provenance": {
+            "$ref": "../metamodel.schema.yaml#/$defs/provenance",
+            "description": "How sure the model is that this package, at this version, is in use, and on what evidence."
+          },
+          "owned_by": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+            "description": "The unit accountable for this package: keeping it current and its license in force."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          }
+        }
+      },
+      "package_license": {
+        "type": "object",
+        "description": "The license statement for this package entry, with at least one member. An unknown license is stated as `expression: NOASSERTION`. Known members describe the documented entitlement; unknown terms and dates are omitted rather than guessed. A license label does not establish a supplier's terms. Where entitlements differ between the places the package is used, each with its own date, no single date is stated here.\n",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "properties": {
+          "expression": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The license as an SPDX license expression (MIT, Apache-2.0, MIT OR Apache-2.0), or a `LicenseRef-` identifier for terms no SPDX identifier names. Use the SPDX value `NOASSERTION` when the license is unknown.\n",
+            "examples": [
+              "MIT",
+              "LicenseRef-Commercial",
+              "NOASSERTION"
+            ]
+          },
+          "terms": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The terms of the entitlement in words: its tier, its seat or host count, what renewing it involves."
+          },
+          "expires_on": {
+            "type": "string",
+            "format": "date",
+            "description": "The calendar date (YYYY-MM-DD) on which the entitlement ends. Absent means no single end date is established, which includes a license that does not expire.\n",
+            "examples": [
+              "2027-03-31"
+            ]
+          }
+        }
+      },
+      "message_channel": {
+        "type": "object",
+        "description": "A named destination on a message broker. A `topic` is where a producer publishes and every subscriber receives a copy: an AMQP exchange, a Kafka topic, a Service Bus topic. A `queue` is where messages wait for one reader: an AMQP queue, which on a broker with exchanges is also the private subscription of one consuming service. Which messages travel on a channel is stated by the operations that name it, never listed here.\n",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/message_channel_ref",
+            "description": "Stable channel id (MCH###)."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Channel name, as the system's code and documentation call it."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "topic",
+              "queue"
+            ],
+            "description": "`topic`: published to by producers, each subscriber receives every message. `queue`: read by one consumer, its competing instances sharing the messages.\n"
+          },
+          "address": {
+            "type": "string",
+            "description": "The name the broker knows the channel by on the wire: the exchange name of an AMQP topic, the queue name, the Kafka topic name. Absent, it is the channel's `name`.\n"
+          },
+          "broker_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref",
+            "description": "The message broker this channel lives on: the infrastructure resource (IR###) that declares it, conventionally with `kind: broker`. Absent, the channel lives on the broker of the contracts whose operations name it.\n"
+          },
+          "description": {
+            "type": "string",
+            "description": "What travels on this channel and why it exists."
+          },
+          "bindings": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Protocol-specific details of the channel, keyed by protocol, after the AsyncAPI bindings. Each key describes the channel on that protocol only.\n",
+            "properties": {
+              "amqp": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "The channel on an AMQP broker.",
+                "properties": {
+                  "exchange_type": {
+                    "type": "string",
+                    "enum": [
+                      "direct",
+                      "topic",
+                      "fanout",
+                      "headers",
+                      "default"
+                    ],
+                    "description": "For a `topic` channel, the type of the AMQP exchange it is: `direct` routes a message to the queues bound with exactly its routing key, `topic` to the queues whose binding pattern matches it, `fanout` to every bound queue, `headers` by message headers, and `default` is the broker's nameless exchange, which routes by queue name. The routing key a message is published with is the operation's `exchange.topic.name`.\n"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "contract_output": {
+        "type": "string",
+        "description": "SOFT-DEPRECATED (v2.8.14). Identity of the generated contract artifact, with the document's name, its placement and its serialization fused into one string. State the three separately instead: `contract_name` names the document, `slice` or `cross_cutting` places it, and the contract kind selects the serialization. Still accepted until the next major line, so an unmigrated model keeps validating; the schema-update tool splits one into the three. The forms are `<name>`, `<slice>/<name>`, or `_global/<name>`. Two services declaring the same value contribute to ONE artifact - their specs are merged additively - so this names the physical contract, not one service's copy of it. A leading slice name places the artifact in that slice; `_global/` marks it cross-cutting; a bare name is placed by the declaring file. A first segment that names no declared slice is kept as a subdirectory and reported. The extension selects the serialization: `.yaml` and `.yml`, the kind-identifying `.openapi`, `.asyncapi` and `.arazzo`, and `.openrpc`, which is JSON-only by its own specification. Anything else is written verbatim."
+      },
+      "contract_name": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+        "description": "Name of the contract document this interface contributes to. Two services declaring the same name under the same contract kind contribute to ONE document - their specs are merged additively - so this names the physical contract, not one service's copy of it. The kind selects the serialization, so the name carries no extension; `slice` and `cross_cutting` place the document, so it carries no path separator."
+      },
+      "contract_slice": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$",
+        "description": "Slice the contract document belongs to, naming a slice declared at the blueprint root. Absent, the document belongs to the slice its declaring file sits in. A document belonging to no single slice says so with `cross_cutting` instead."
+      },
+      "contract_cross_cutting": {
+        "const": true,
+        "description": "The contract document spans the model rather than belonging to one slice. Written only as `true` - its absence is the negative - and never beside `slice`."
+      },
+      "contract_identity": {
+        "description": "The naming and placement rules the contract kinds share. A document is named once, by `contract_name` or by the superseded `output`, and placed once, by `slice` or by `cross_cutting`. Two names, or two placements, would be two answers to one question with nothing to say which is current. `mcp`, `cli` and `protobuf` never accepted `output`, so they require `contract_name` and state the placement rule themselves.",
+        "anyOf": [
+          {
+            "required": [
+              "contract_name"
+            ]
+          },
+          {
+            "required": [
+              "output"
+            ]
+          }
+        ],
+        "dependentSchemas": {
+          "output": {
+            "properties": {
+              "contract_name": false
+            }
+          },
+          "slice": {
+            "properties": {
+              "cross_cutting": false
+            }
+          }
+        }
+      },
+      "party": {
+        "type": "object",
+        "description": "A system or organizational party. In the nested form it carries the bounded contexts whose services are its components; declared whole, it carries no contexts and services name it through `system_ref`. One party is one node however many documents declare it (see `party_ref` in the metamodel for how declarations fold).\n",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/party_ref",
+            "description": "Stable party id (PRT###) - makes the party a first-class, referenceable graph node. MUST reconcile with the org-layer PRT### when the party is also modelled there (parties are dual-sourced: arch + org).\n"
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Party name (unique within this architecture document)."
+          },
+          "version": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_version",
+            "description": "Party version for lifecycle tracking."
+          },
+          "kind": {
+            "$ref": "../metamodel.schema.yaml#/$defs/party_kind",
+            "description": "Party type: system=technical system, organization=business unit or company."
+          },
+          "contexts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/context"
+            },
+            "description": "Bounded contexts whose services are components of this party (nested form). Optional: a party declared whole carries none, and its contexts are then derived from the services that name it through `system_ref`.\n"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+          },
+          "owned_by": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+            "description": "Party-level ownership override."
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          }
+        }
+      },
+      "context": {
+        "type": "object",
+        "description": "A bounded context with its domain model, services, and dependencies.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/bounded_context_ref",
+            "description": "Stable bounded-context id (BC###) - the target of inter-context `dependency.bounded_context_ref` edges, the DERIVED operation to context membership (`handled-by`, from a service contract's `expose`/`send`), and a competency question's `bounded_context_ref`. Operations do NOT carry an ownership ref - their membership is contract-derived, not declared on the domain file.\n"
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Context name (unique within the party or document that declares it)."
+          },
+          "kind": {
+            "$ref": "../metamodel.schema.yaml#/$defs/context_kind",
+            "description": "DDD classification of this bounded context, by the problem-space domain it realizes. The slice vocabulary in blueprint.schema classifies that domain itself; this one classifies the solution-space unit serving it.\n"
+          },
+          "domain_ref": {
+            "oneOf": [
+              {
+                "$ref": "../metamodel.schema.yaml#/$defs/domain_ref"
+              },
+              {
+                "$ref": "../metamodel.schema.yaml#/$defs/subdomain_ref"
+              }
+            ],
+            "description": "The PRIMARY region of the problem space this bounded context realizes - its home: a domain (`DMN###`) or one of its subdomains (`SDM###`), by id from `blueprint.yaml`'s `domains[]`. ONE reference either way, because this is the field a drawing groups by and a context in three domains has no box.\nIt is not the whole answer to \"which problem-space areas does this context serve\". That question is n-to-n and is answered by coverage, which is derived from the contract surface - context to services to contracts to operations to the domain each operation belongs to - with `covers[]` beside it for what no contract can express. Naming a home here neither states nor limits that coverage. Naming a subdomain also places the context in the domain that contains it - that membership is derived from the registry, never declared twice, so a context named against a subdomain groups with its domain's other contexts wherever domains are drawn or counted. Optional.\nThe subdomain arm is SOFT-DEPRECATED (v2.8.17): a subdomain takes no identity of its own on the next major line, so a new context names its domain. One already naming a subdomain keeps validating and keeps grouping under that subdomain's domain, which is the value the reference resolves to anyway.\nUsed to draw the domain map - an overview that groups contexts into domains and aggregates the dependencies between them, which is the readable view of a model with more contexts than one diagram can show.\nDeclaring it OVERRIDES the fallback, which is the slice folder the context's file sits in, matched against the domain names. State it when a context belongs to a domain other than the one its folder is named after. A slice name is not accepted here; the schema-update tool rewrites one to the id of the domain seeded from that slice.\n"
+          },
+          "covers": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/domain_coverage"
+            },
+            "description": "Problem-space domains this context serves that its contracts do not reach. THE EXCEPTION CHANNEL. Coverage is normally derived - a context's services expose and call operations, and each operation belongs to a domain - and a derivation costs nothing to author, cannot go stale, and is precise to the operation. An entry here is for the coverage that derivation cannot see: work done outside any declared contract.\nDeclaring one does not replace the derived answer; both are sources over the same proposition and each carries where it came from.\n"
+          },
+          "value_stream_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/value_stream_ref",
+            "description": "The value stream this bounded context principally serves - its home in the flow of value to a customer, by id from `value_streams[]`. ONE reference, for the same reason `domain_ref` takes one: this is the field a drawing groups by, and a context in three lanes has no lane.\nIt is not the whole answer to \"which value streams does this context serve\". That question is n-to-n and is answered through capabilities - a capability names the streams it belongs to and the operations that realize it, and every operation belongs to a context - so a context contributing to three streams is still reached through all three. Naming a home here neither states nor limits that contribution.\nWhere `domain_ref` names the region of the problem space a context realizes, this names the flow of value it serves: a context can be the only one in its domain and still sit mid-stream between two others. Used to draw the context map in lanes, one per stream. A context that names none is left outside the lanes and counted there, because how much of a model has not answered the question is what a reader of that view most needs to know. Optional.\n"
+          },
+          "complexity": {
+            "$ref": "../metamodel.schema.yaml#/$defs/complexity_pattern",
+            "description": "Dominant implementation-complexity / problem-type pattern. Distinct from `model_traits` (behavioural archetype) and `kind` (strategic value)."
+          },
+          "business_model_role": {
+            "type": "string",
+            "enum": [
+              "revenue-generator",
+              "engagement-creator",
+              "compliance-enforcer"
+            ],
+            "description": "BCC v5 Strategic Classification - Business Model Role. Captures HOW the context contributes to the business. Distinct from `kind` (which captures WHETHER the context is differentiating).\n"
+          },
+          "evolution": {
+            "type": "string",
+            "enum": [
+              "genesis",
+              "custom",
+              "product",
+              "commodity"
+            ],
+            "description": "BCC v5 Strategic Classification - Wardley Evolution stage. Used in the dedicated Wardley map view and as a third badge in the BCC node's strategic header.\n"
+          },
+          "model_traits": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/model_traits_item"
+            },
+            "description": "BCC v5 Model Traits - behavioural archetypes for this context. All values are role nouns (\"a context that does X\") for authoring consistency. Sources:\n  - Plan / Do / Check (Nick Tune workshop recipe):\n      drafter · executor · auditor\n  - Wirfs-Brock Object Role Stereotypes:\n      controller · service-provider · information-holder\n      structurer · coordinator · interfacer\n  - Domain analysis emphasis:\n      analyser\nMultiple traits per context are allowed; the canonical Plan/Do/Check pattern is `[drafter, executor, auditor]` across three contexts. Domain-specific traits require a schema CR.\n"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief description of this context's purpose and responsibilities."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+          },
+          "owned_by": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+            "description": "Context-level ownership override."
+          },
+          "code_refs": {
+            "$ref": "../metamodel.schema.yaml#/$defs/code_refs",
+            "description": "Source files or module directories that implement this bounded context as a whole: a module root, a namespace folder, an integration package. A file that belongs to one of the context's services is named on that service instead. A path naming a directory covers every file beneath it when changed files are traced back to the model.\n"
+          },
+          "implementation": {
+            "$ref": "../metamodel.schema.yaml#/$defs/implementation",
+            "description": "Whether this bounded context exists in the system yet. Absent means unclear."
+          },
+          "provenance": {
+            "$ref": "../metamodel.schema.yaml#/$defs/provenance",
+            "description": "How sure the model is that this bounded context exists as drawn, and on what evidence. A context known from a conversation rather than from code records it as an `interview` or `stakeholder-signoff` evidence entry with its source and date.\n"
+          },
+          "responsibilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "What this context is accountable for."
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/dependency"
+            },
+            "description": "Other contexts or external systems this context depends on. Enriched for context-map inference."
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/entity"
+            },
+            "description": "Core domain entities in this context."
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/service"
+            },
+            "description": "Services implementing this context."
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          }
+        }
+      },
+      "team": {
+        "type": "object",
+        "description": "Team responsible for a bounded context.",
+        "additionalProperties": true,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Team name."
+          },
+          "contactEmail": {
+            "type": "string",
+            "format": "email",
+            "description": "Team contact email for escalations and coordination."
+          }
+        }
+      },
+      "dependency": {
+        "type": "object",
+        "description": "Dependency on another bounded context or external system. Technical connections in contracts enable topology inference; the DDD strategic relationship states the architectural intent the connection cannot.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "relationship"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Name of the dependency (context or external system name)."
+          },
+          "bounded_context_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/bounded_context_ref",
+            "description": "Optional target bounded-context id (BC###) - the id-based inter-context edge, preferred over matching the `name` string (deprecated fallback). Use for dependencies on another bounded context in this model.\n"
+          },
+          "type": {
+            "type": "string",
+            "description": "SOFT-DEPRECATED (v2.8.33). Technical integration type, as free text. Accepted for the whole 2.8 line and removed at the next major. Write `coupling` instead. Its values - `http`, `message`, `rpc`, `mcp`, `cli`, `graphql`, `inprocess`, `shareddata`, `scheduledtransfer` - are the contract surface's own vocabulary, so a declared coupling and a derived one are comparable, where a free string is a second vocabulary for the same fact and cannot be compared with anything. `api` and `http` become `http`, `events` becomes `message`, a shared store becomes `shareddata`; a value naming a medium rather than a coupling has no mechanical successor and is a decision for an author. Where the contracts already reach the pair, declare neither: they carry the direction, the operations and the broker as well.\n"
+          },
+          "coupling": {
+            "$ref": "../metamodel.schema.yaml#/$defs/coupling",
+            "description": "How this dependency is connected, in the vocabulary the contract surface computes. State it where the contracts do not: where they do, they already carry the direction, the operations and the broker as well, and a second statement of one fact is a disagreement waiting to happen.\n"
+          },
+          "relationship": {
+            "$ref": "../metamodel.schema.yaml#/$defs/context_relationship",
+            "description": "DDD strategic relationship pattern. Captures architectural intent beyond technical integration."
+          },
+          "direction": {
+            "$ref": "../metamodel.schema.yaml#/$defs/context_direction",
+            "description": "This context's role: upstream=we provide, downstream=we consume, peer=bidirectional."
+          },
+          "language_boundary": {
+            "type": "boolean",
+            "description": "Whether this dependency crosses a ubiquitous language boundary. When true, translation may be needed."
+          },
+          "translation": {
+            "type": "string",
+            "description": "How the language boundary is handled (e.g. anticorruption-layer, adapter, mapper, shared-types)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          }
+        }
+      },
+      "entity": {
+        "type": "object",
+        "description": "A core domain entity in this bounded context.",
+        "additionalProperties": true,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Entity name."
+          },
+          "description": {
+            "type": "string",
+            "description": "What this entity represents in the domain."
+          }
+        }
+      },
+      "service": {
+        "type": "object",
+        "description": "A deployable service or component within a bounded context.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/service_ref",
+            "description": "Stable service id (SVC###) - makes the service a first-class, referenceable graph node.\n"
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Service name (e.g. order-api, payment-worker)."
+          },
+          "kind": {
+            "$ref": "../metamodel.schema.yaml#/$defs/service_kind",
+            "description": "Architectural component type. Determines applicable contract patterns."
+          },
+          "role": {
+            "$ref": "../metamodel.schema.yaml#/$defs/service_role",
+            "description": "The responsibility this service takes in front of other services: `gateway` for an entry point that forwards client requests to backend services, `bff` for a gateway dedicated to one frontend or client experience. It leaves `kind` as it is: a gateway can be an `api`, and an edge function that forwards requests is a `function` with `role: gateway`. Optional, with no default; the services a gateway forwards to are named in `routes_to`.\n",
+            "examples": [
+              "gateway",
+              "bff"
+            ]
+          },
+          "system_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/party_ref",
+            "description": "The system party (PRT###) this service is a component of. A service nested under a party is a component of that party and may omit it; naming a different party there is a cross-reference error. A service under a root-declared context names it here or inherits the document's `system_ref` default, and one that does neither is reported by the semantic checker as a service without a system. Distinct from `owned_by`, which says who owns the service rather than what it is part of.\n"
+          },
+          "imports": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "../metamodel.schema.yaml#/$defs/service_ref"
+                },
+                {
+                  "$ref": "../metamodel.schema.yaml#/$defs/package_ref"
+                }
+              ]
+            },
+            "description": "The libraries this service is built on: a package it imports or a component it embeds, so that its build contains them. Each item names, by its exact declared id, scope prefix included, either another service, normally one of `kind: library`, for a library the organization builds, or a third-party package (PKG###) declared in a `packages:` list; an item that names nothing declared is a cross-reference error. One list holds both, and the model graph draws a `service_imports` edge to each named service or package, so impact analysis reaches every service built on a changed library. A call over an interface to a running service is not an import: state it in `uses`, and in the contracts once they are written. Optional.\n",
+            "examples": [
+              [
+                "platform.SVC012",
+                "platform.SVC014"
+              ],
+              [
+                "platform.SVC012",
+                "PKG001"
+              ]
+            ]
+          },
+          "uses": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/service_ref"
+            },
+            "description": "The services this one depends on while running, stated at the level of a container diagram (\"orders uses payments\"): the statement to make before the contracts between the two are written. Each item names another service by its exact declared id, scope prefix included; an item that names no declared service is a cross-reference error. The model graph draws a `service_uses` edge to each named service, so impact analysis reaches every service that depends on a changed one. A library this service is built on belongs in `imports`, and a service this one forwards requests to belongs in `routes_to`. Once contracts are written, they state the operations, direction and transport of the dependency. Optional.\n",
+            "examples": [
+              [
+                "payments.SVC003"
+              ]
+            ]
+          },
+          "routes_to": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/service_ref"
+            },
+            "description": "The backend services this one forwards requests to: it receives a request and passes it on to each named service, the statement a gateway or a backend for frontend makes about where requests go. Each item names a service by its exact declared id, scope prefix included; an item that names no declared service is a cross-reference error, and a service named twice is a schema error. The list states forwarding and nothing else: not the protocol, the operations, authentication or deployment, and contracts written later do not replace it. A runtime dependency that is not forwarding, such as a token check against an identity service, belongs in `uses`. An absent or empty list states only that the model names no targets, not that the service forwards nothing. Optional.\n",
+            "examples": [
+              [
+                "orders.SVC001"
+              ],
+              [
+                "orders.SVC001",
+                "catalog.SVC002"
+              ]
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief description of what this service does."
+          },
+          "description": {
+            "type": "string",
+            "description": "Full description of this service's purpose, responsibilities, and domain role."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+          },
+          "vendor": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/team"
+            },
+            "description": "Teams or vendors responsible for this service."
+          },
+          "resource_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+            },
+            "description": "Typed infrastructure resources this service requires (IR### - `infra_resource_ref`), resolving to `resource` entities in the infrastructure layer. This is the canonical *intent* edge to a CONCRETE resource; the infrastructure layer's `hosted_on` relation is the *placement* edge. Optional. Since v2.8 it is the only way a service names its resources: the free-string `resources` list is no longer accepted. See `needs` for the abstract (type-level) intent.\n"
+          },
+          "needs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/service_need"
+            },
+            "description": "Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary) this service declares - TYPE-level intent, resolved to a concrete resource per environment by a binding (BND###). The three altitudes: `needs` (type) → binding (type × environment) → `resource_refs` / `resource` (IR### instance). A need names WHAT the service requires without pinning a platform, so the same need realizes on cloud, on-prem, or hybrid. Additive/optional (v2.7.7).\n"
+          },
+          "owned_by": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+            "description": "Service-level ownership override."
+          },
+          "servers": {
+            "type": "array",
+            "description": "Server instances where this service is deployed. Follows OpenAPI server object pattern.\n",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "url",
+                "environment"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "pattern": "^\\S+$",
+                  "description": "Base URL template (e.g., https://api.example.com/v1)."
+                },
+                "environment": {
+                  "description": "Which deployment environment this server instance serves. A value takes exactly one of three forms, and the three cannot overlap: a name from the common vocabulary (production, staging, development, test); a typed environment reference (ENV###) naming an environment the model declares, so the server points at the entity carrying that environment's class, substrate, provider and target scope; or an `x-` prefixed name, for an environment outside the common vocabulary. Only the typed form resolves - naming an ENV### the model does not declare is a cross-reference error, while a name is checked against nothing.\n",
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "production",
+                        "staging",
+                        "development",
+                        "test"
+                      ]
+                    },
+                    {
+                      "$ref": "../metamodel.schema.yaml#/$defs/environment_ref"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^x-[a-z][a-z0-9-]*$"
+                    }
+                  ]
+                },
+                "protocol": {
+                  "type": "string",
+                  "description": "Protocol if different from service default."
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Server instance description."
+                },
+                "variables": {
+                  "type": "object",
+                  "description": "URL template variables.",
+                  "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "default": {
+                        "type": "string",
+                        "description": "Default value for this variable."
+                      },
+                      "enum": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Allowed values for this variable."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "contracts": {
+            "$ref": "#/$defs/contracts",
+            "description": "External contracts exposing and consuming interfaces for this service."
+          },
+          "side_effects": {
+            "$ref": "#/$defs/service_side_effects",
+            "description": "Observable side effects beyond request/response: filesystem, stdout, stderr."
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          },
+          "code_refs": {
+            "$ref": "../metamodel.schema.yaml#/$defs/code_refs"
+          },
+          "implementation": {
+            "$ref": "../metamodel.schema.yaml#/$defs/implementation",
+            "description": "Whether this service exists yet. Absent means unclear."
+          },
+          "provenance": {
+            "$ref": "../metamodel.schema.yaml#/$defs/provenance",
+            "description": "Epistemic provenance for this service (brownfield modeling confidence)."
+          }
+        }
+      },
+      "service_need": {
+        "type": "object",
+        "description": "An abstract infrastructure need declared by a service (Score `type`/`class`/`id`/`params` vocabulary). Names WHAT the service requires (a resource TYPE) without pinning a concrete resource or platform - a binding (BND###) resolves it per environment (type × env → module). The type-level altitude above `resource_refs` (concrete instance). Substrate-neutral: the same need binds to a cloud module in one environment and an on-prem module in another (hybrid).\n",
+        "additionalProperties": false,
+        "required": [
+          "type_ref"
+        ],
+        "properties": {
+          "type_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/resource_type_ref",
+            "description": "The resource TYPE this need requires (RT### in the resource-type catalog profiles)."
+          },
+          "class": {
+            "type": "string",
+            "description": "Optional variant/tier within the type (Score `class`) - e.g. 'managed' vs 'self-hosted', 'standard' vs 'premium', 'read-replica'. Free-text; the catalog/profile + binding interpret it.\n"
+          },
+          "id": {
+            "type": "string",
+            "description": "Optional logical need id distinguishing shared-vs-dedicated instances. The same id shared across services ⇒ a shared resource; distinct ids ⇒ dedicated. NOT an IR### (this is intent, pre-binding) - a free-string handle a binding's `need_ref` can target.\n"
+          },
+          "params": {
+            "type": "object",
+            "description": "Optional type-level parameters (Score `params`) - e.g. {version: '16', size: small}. The environment `param_overlay` and the binding `params` refine these at resolution time.\n",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional human note on why this need exists."
+          }
+        }
+      },
+      "contracts": {
+        "type": "object",
+        "description": "Integration contracts for this service: what it provides to, and consumes from, everything outside itself. Each contract kind names one coupling style. The wire kinds name a specification and carry the document generated from it, except `protobuf`, whose `.proto` file is written by hand and is itself the contract; `mcp` and `cli` name a surface rather than a specification - the tools of a Model Context Protocol server, the commands of a command-line program - so they name their document without fixing its notation; `inprocess`, `shareddata` and `scheduledtransfer` name couplings that are not protocols, and `inprocess` carries no document at all, because no notation describes what it couples. `security_schemes` is not a kind - it declares the authentication the wire kinds reference.",
+        "additionalProperties": false,
+        "properties": {
+          "openapi": {
+            "$ref": "#/$defs/endpoint_contract",
+            "description": "REST/HTTP API contract (OpenAPI specification)."
+          },
+          "httpClient": {
+            "$ref": "#/$defs/http_client_contract",
+            "description": "Outbound HTTP client contract - what endpoints this service calls."
+          },
+          "asyncapi": {
+            "$ref": "#/$defs/channel_contract",
+            "description": "Async messaging contract (AsyncAPI specification)."
+          },
+          "openrpc": {
+            "$ref": "#/$defs/rpc_contract",
+            "description": "JSON-RPC contract (OpenRPC specification)."
+          },
+          "protobuf": {
+            "$ref": "#/$defs/protobuf_contract",
+            "description": "Remote procedure contract defined by a Protocol Buffers service (`.proto` file), served over gRPC or a compatible wire."
+          },
+          "mcp": {
+            "$ref": "#/$defs/mcp_contract",
+            "description": "Model Context Protocol contract - the tools an MCP server exposes or calls."
+          },
+          "cli": {
+            "$ref": "#/$defs/cli_contract",
+            "description": "Command-line contract - the commands a command-line program exposes or runs."
+          },
+          "arazzo": {
+            "$ref": "#/$defs/flow_contract",
+            "description": "Workflow contract (Arazzo specification)."
+          },
+          "cncfsw": {
+            "$ref": "#/$defs/flow_contract",
+            "description": "Serverless workflow contract (CNCF Serverless Workflow specification)."
+          },
+          "inprocess": {
+            "$ref": "#/$defs/inprocess_contract",
+            "description": "In-process coupling - operations provided to, or consumed from, the same process."
+          },
+          "shareddata": {
+            "$ref": "#/$defs/shared_data_contract",
+            "description": "Shared-data coupling - a store one service writes and another reads."
+          },
+          "scheduledtransfer": {
+            "$ref": "#/$defs/scheduled_transfer_contract",
+            "description": "Scheduled-transfer coupling - a run on a schedule moves data between services."
+          },
+          "graphql": {
+            "type": "object",
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "$ref": "#/$defs/contract_identity"
+              }
+            ],
+            "description": "GraphQL API contract.",
+            "properties": {
+              "file": {
+                "type": "string",
+                "description": "Path to the GraphQL schema definition file (.graphql)."
+              },
+              "contract_name": {
+                "$ref": "#/$defs/contract_name"
+              },
+              "slice": {
+                "$ref": "#/$defs/contract_slice"
+              },
+              "cross_cutting": {
+                "$ref": "#/$defs/contract_cross_cutting"
+              },
+              "output": {
+                "$ref": "#/$defs/contract_output"
+              },
+              "queries": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Root query field names exposed by this contract."
+              },
+              "mutations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Root mutation field names exposed by this contract."
+              },
+              "subscriptions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Root subscription field names exposed by this contract."
+              }
+            }
+          },
+          "security_schemes": {
+            "type": "object",
+            "description": "Security scheme definitions for this service's contracts.",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "type"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "apiKey",
+                    "http",
+                    "oauth2",
+                    "openIdConnect",
+                    "mutualTLS"
+                  ],
+                  "description": "Security scheme type (OpenAPI-compatible)."
+                },
+                "scheme": {
+                  "type": "string",
+                  "description": "HTTP auth scheme (e.g., bearer, basic). For type=http."
+                },
+                "bearer_format": {
+                  "type": "string",
+                  "description": "Bearer token format hint (e.g., JWT)."
+                },
+                "flows": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "description": "OAuth2 flow definitions."
+                },
+                "scopes": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "Available OAuth2 scopes with descriptions."
+                }
+              }
+            }
+          }
+        }
+      },
+      "endpoint_contract": {
+        "type": "object",
+        "description": "OpenAPI endpoint contract: what the service exposes over HTTP.",
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "$ref": "#/$defs/contract_identity"
+          }
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Path to the OpenAPI specification file."
+          },
+          "contract_name": {
+            "$ref": "#/$defs/contract_name"
+          },
+          "slice": {
+            "$ref": "#/$defs/contract_slice"
+          },
+          "cross_cutting": {
+            "$ref": "#/$defs/contract_cross_cutting"
+          },
+          "output": {
+            "$ref": "#/$defs/contract_output"
+          },
+          "expose": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations exposed by this HTTP contract."
+          },
+          "input_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named input data structures accepted by this contract."
+          },
+          "output_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named output data structures produced by this contract."
+          }
+        }
+      },
+      "http_client_contract": {
+        "type": "object",
+        "description": "Outbound HTTP client contract: what endpoints this service calls.",
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "$ref": "#/$defs/contract_identity"
+          }
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Path to the OpenAPI or .http file describing outbound calls."
+          },
+          "contract_name": {
+            "$ref": "#/$defs/contract_name"
+          },
+          "slice": {
+            "$ref": "#/$defs/contract_slice"
+          },
+          "cross_cutting": {
+            "$ref": "#/$defs/contract_cross_cutting"
+          },
+          "output": {
+            "$ref": "#/$defs/contract_output"
+          },
+          "call": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service calls via HTTP."
+          },
+          "input_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named input structures sent to the dependency."
+          },
+          "output_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named output structures received from the dependency."
+          }
+        }
+      },
+      "channel_contract": {
+        "type": "object",
+        "description": "AsyncAPI messaging contract: topics and channels this service publishes to or consumes from.",
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "$ref": "#/$defs/contract_identity"
+          }
+        ],
+        "dependentSchemas": {
+          "broker_ref": {
+            "properties": {
+              "brokerId": false
+            }
+          }
+        },
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Path to the AsyncAPI specification file."
+          },
+          "contract_name": {
+            "$ref": "#/$defs/contract_name"
+          },
+          "slice": {
+            "$ref": "#/$defs/contract_slice"
+          },
+          "cross_cutting": {
+            "$ref": "#/$defs/contract_cross_cutting"
+          },
+          "output": {
+            "$ref": "#/$defs/contract_output"
+          },
+          "send": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service publishes via messaging."
+          },
+          "receive": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service consumes via messaging."
+          },
+          "broker_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref",
+            "description": "The message broker this contract publishes to and receives from: the infrastructure resource (IR###) that declares it, conventionally with `kind: broker`. One broker per contract. Contract generators take the AsyncAPI servers from that resource, one per environment that declares a host, and the reference resolves like every other typed id, so a broker nothing declares is a cross-reference error."
+          },
+          "brokerId": {
+            "type": "string",
+            "description": "SUPERSEDED by `broker_ref`. A free-string broker name (e.g. rabbitmq-prod), which resolves to nothing in the model. Still accepted on this line, and never beside `broker_ref`; the semantic checker advises the typed reference wherever it appears."
+          },
+          "subscription": {
+            "type": "object",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "description": "How this service receives the messages it consumes: its own durable subscription, which receives every message published to the channels its `receive:` operations travel on, while the service's competing instances share them. The messages bound to the subscription are this contract's `receive:` list, so they are not repeated here.",
+            "properties": {
+              "channel_ref": {
+                "$ref": "../metamodel.schema.yaml#/$defs/message_channel_ref",
+                "description": "The queue channel (`kind: queue`) this service reads, on a broker where a subscription is a queue of its own, as on AMQP."
+              },
+              "name": {
+                "type": "string",
+                "description": "The subscription's name where it is not a channel of its own: the consumer group id on Kafka, the subscription name on a Service Bus topic."
+              }
+            }
+          },
+          "input_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named message structures received (consumed)."
+          },
+          "output_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named message structures sent (published)."
+          }
+        }
+      },
+      "rpc_contract": {
+        "type": "object",
+        "description": "OpenRPC contract: remote methods exposed or called.",
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "$ref": "#/$defs/contract_identity"
+          }
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Path to the OpenRPC specification file."
+          },
+          "contract_name": {
+            "$ref": "#/$defs/contract_name"
+          },
+          "slice": {
+            "$ref": "#/$defs/contract_slice"
+          },
+          "cross_cutting": {
+            "$ref": "#/$defs/contract_cross_cutting"
+          },
+          "output": {
+            "$ref": "#/$defs/contract_output"
+          },
+          "expose": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations exposed via RPC by this service."
+          },
+          "call": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service calls via RPC."
+          },
+          "input_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named input structures for RPC calls."
+          },
+          "output_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named output structures from RPC results."
+          }
+        }
+      },
+      "protobuf_contract": {
+        "type": "object",
+        "description": "Protocol Buffers contract: the remote procedures of a service defined in a `.proto` file, served by this service or called on another. The `.proto` file is the contract - client and server code is compiled from it, and it alone carries the field numbers, the message types and each method's streaming mode - so `file` is required and names it. Each listed operation is one method of that service; its fully qualified name (`package.Service/Method`) and its streaming mode come from the operation's `exchange.method`, and the wire from `exchange.protocol` (`grpc`). A JSON view of the service, such as an OpenRPC document, is derived from the `.proto` and is never the contract. A `.proto` file holding only messages, used as a payload format, exposes and calls nothing and is not a contract of this kind. The document is named by `contract_name`, which is required, and placed once, by `slice` or by `cross_cutting`.",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "contract_name"
+        ],
+        "dependentSchemas": {
+          "slice": {
+            "properties": {
+              "cross_cutting": false
+            }
+          }
+        },
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "\\.proto$",
+            "description": "Path of the `.proto` file that defines the service, relative to the root of the repository the model's code lives in."
+          },
+          "contract_name": {
+            "$ref": "#/$defs/contract_name"
+          },
+          "slice": {
+            "$ref": "#/$defs/contract_slice"
+          },
+          "cross_cutting": {
+            "$ref": "#/$defs/contract_cross_cutting"
+          },
+          "expose": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service serves as methods of the Protocol Buffers service."
+          },
+          "call": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service calls as methods of another service's Protocol Buffers definition."
+          },
+          "input_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named request messages."
+          },
+          "output_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named response messages."
+          }
+        }
+      },
+      "mcp_contract": {
+        "type": "object",
+        "description": "Model Context Protocol contract: the tools an MCP server exposes to its clients, and the tools this service calls on another MCP server. Each listed operation is one tool; its name and its transport come from the operation's `exchange` - for a server reached over standard input and output, protocol `stdio` with an `endpoint` whose `group` is `tool`, whose `path` is the tool name and whose `method` is `CALL`. The document is named by `contract_name`, which is required, and placed once, by `slice` or by `cross_cutting`.",
+        "additionalProperties": false,
+        "required": [
+          "contract_name"
+        ],
+        "dependentSchemas": {
+          "slice": {
+            "properties": {
+              "cross_cutting": false
+            }
+          }
+        },
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Path to the MCP tools document file."
+          },
+          "contract_name": {
+            "$ref": "#/$defs/contract_name"
+          },
+          "slice": {
+            "$ref": "#/$defs/contract_slice"
+          },
+          "cross_cutting": {
+            "$ref": "#/$defs/contract_cross_cutting"
+          },
+          "expose": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service exposes as MCP tools."
+          },
+          "call": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service calls as tools of another MCP server."
+          },
+          "input_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named input structures for tool calls."
+          },
+          "output_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named output structures from tool results."
+          }
+        }
+      },
+      "cli_contract": {
+        "type": "object",
+        "description": "Command-line contract: the commands a command-line program exposes to whoever runs it, and the commands of another program this service runs. Each listed operation is one command; the command line comes from the operation's `exchange`, with protocol `cli` and an `endpoint` whose `path` is the command line and whose `method` is `EXEC`. A program whose commands are also called in-process by a sibling module declares both couplings: `cli` for the command line and `inprocess` for the call. The document is named by `contract_name`, which is required, and placed once, by `slice` or by `cross_cutting`.",
+        "additionalProperties": false,
+        "required": [
+          "contract_name"
+        ],
+        "dependentSchemas": {
+          "slice": {
+            "properties": {
+              "cross_cutting": false
+            }
+          }
+        },
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Path to the command-line description file."
+          },
+          "contract_name": {
+            "$ref": "#/$defs/contract_name"
+          },
+          "slice": {
+            "$ref": "#/$defs/contract_slice"
+          },
+          "cross_cutting": {
+            "$ref": "#/$defs/contract_cross_cutting"
+          },
+          "expose": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service exposes as commands."
+          },
+          "call": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service runs as commands of another program."
+          },
+          "input_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named input structures for commands: arguments, options and standard input."
+          },
+          "output_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named output structures from commands: standard output and exit status."
+          }
+        }
+      },
+      "flow_contract": {
+        "type": "object",
+        "description": "Workflow contract (Arazzo or CNCF Serverless Workflow).",
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "$ref": "#/$defs/contract_identity"
+          }
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Path to the workflow specification file."
+          },
+          "contract_name": {
+            "$ref": "#/$defs/contract_name"
+          },
+          "slice": {
+            "$ref": "#/$defs/contract_slice"
+          },
+          "cross_cutting": {
+            "$ref": "#/$defs/contract_cross_cutting"
+          },
+          "output": {
+            "$ref": "#/$defs/contract_output"
+          },
+          "workflows": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Workflow names defined in this contract."
+          },
+          "input_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named input structures for workflow triggers."
+          },
+          "output_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named output structures produced by workflows."
+          }
+        }
+      },
+      "inprocess_contract": {
+        "type": "object",
+        "description": "In-process coupling: operations this service provides to, or consumes from, code running in the same process and the same deployment unit - a method call, an injected dependency, an in-VM event. The one contract kind that names no document: no notation describes a module's published interface in a transport-independent, hand-authorable form, so this kind carries no `file:`, no `contract_name` and no placement. There is nothing to generate, nothing to name and nowhere to put it. What it states is the coupling itself, which is what a dependency picture is made of.",
+        "additionalProperties": false,
+        "properties": {
+          "provide": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations this service owns and makes callable in-process. The transport-free counterpart of a contract's `expose:` or `send:`, and it materializes the same `handled_by` binding. An operation this service starts itself - in reaction to an operation it receives or raises, or on the initiative of an actor such as a timer - needs nothing more: its `reacts_to` or `initiated_by` names the caller, and the service does not list the operation under `consume:` as well."
+          },
+          "consume": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations another service owns that this service calls in-process - a sibling module of a modular monolith, a library service, an injected dependency. Each entry is the dependency of this service on the other one, which is what the context map and the service diagrams draw. Listing an operation here says how THIS coupling reaches it and nothing about the operation itself: one operation may be reached in-process from a sibling module and over a wire from outside, which is two contracts over one operation. What the operation's own invocation model is, `dispatch:` says. A service listing an operation it provides itself states nothing and is redundant."
+          }
+        }
+      },
+      "shared_data_contract": {
+        "type": "object",
+        "description": "Shared-data coupling: a store both services reach, where one writes the data and the other reads it, and neither calls the other. The Shared Database style in Enterprise Integration Patterns - the quickest coupling to build and the hardest to change, because the reader is bound to the writer's schema without being asked and nothing in either service records the dependency. Declaring it here is what makes it visible. Its operations are `document` transfers; the specification a generator emits for it is a data contract describing the dataset. Against `scheduledtransfer`: the data sits in one place both services address, and the reader sees it as of its own read. A store a reader polls on a schedule is still this kind, because the schedule is the reader's policy rather than part of the coupling.",
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "$ref": "#/$defs/contract_identity"
+          }
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Path to the data contract describing the shared dataset."
+          },
+          "contract_name": {
+            "$ref": "#/$defs/contract_name"
+          },
+          "slice": {
+            "$ref": "#/$defs/contract_slice"
+          },
+          "cross_cutting": {
+            "$ref": "#/$defs/contract_cross_cutting"
+          },
+          "output": {
+            "$ref": "#/$defs/contract_output"
+          },
+          "write": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Document operations whose data this service writes into the shared store. The writer owns the schema, so this is the provider end even though no call is made."
+          },
+          "read": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Document operations this service reads out of the shared store, written by another service. The consumer end: this service is bound to a schema it does not own."
+          },
+          "input_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named structures this service writes into the shared store."
+          },
+          "output_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named structures this service reads out of the shared store."
+          }
+        }
+      },
+      "scheduled_transfer_contract": {
+        "type": "object",
+        "description": "Scheduled-transfer coupling: a run on a schedule moves data from one service to another - an export and an import, a nightly extract, a batch feed. The File Transfer style in Enterprise Integration Patterns, named for the schedule rather than for the file because the medium is incidental and the timing is not: the reader sees the writer's data as of the last run, and every consequence of the coupling follows from that lag. Its operations are `document` transfers; the specification a generator emits for it is a data contract describing the dataset. Against `shareddata`: what makes it this kind is the RUN, not the timing. Take the schedule away and ask whether the reader can still reach the writer's current data. If it can, both ends address one store and the coupling is `shareddata`; if nothing arrives, the run is the coupling and it belongs here.",
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "$ref": "#/$defs/contract_identity"
+          }
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Path to the data contract describing the transferred dataset."
+          },
+          "contract_name": {
+            "$ref": "#/$defs/contract_name"
+          },
+          "slice": {
+            "$ref": "#/$defs/contract_slice"
+          },
+          "cross_cutting": {
+            "$ref": "#/$defs/contract_cross_cutting"
+          },
+          "output": {
+            "$ref": "#/$defs/contract_output"
+          },
+          "write": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Document operations this service produces for the transfer. The producing end owns the schema and the schedule."
+          },
+          "read": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Document operations this service ingests from the transfer, produced by another service."
+          },
+          "input_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named structures this service produces for the transfer."
+          },
+          "output_structures": {
+            "$ref": "#/$defs/contract_structures",
+            "description": "Named structures this service ingests from the transfer."
+          }
+        }
+      },
+      "contract_structures": {
+        "type": "object",
+        "description": "Named data structures crossing the service boundary (input or output). Each entry describes a payload shape.",
+        "additionalProperties": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "description"
+          ],
+          "properties": {
+            "description": {
+              "type": "string",
+              "pattern": "\\S",
+              "description": "What this structure represents and when it is used."
+            },
+            "schema": {
+              "type": "object",
+              "description": "JSON Schema or $ref to models.schema.yaml for the data shape."
+            },
+            "format": {
+              "type": "string",
+              "description": "Content type (e.g. application/json, application/xml)."
+            },
+            "condition": {
+              "type": "string",
+              "description": "When this structure is expected or produced."
+            }
+          }
+        }
+      },
+      "service_side_effects": {
+        "type": "object",
+        "description": "Observable side effects of this service beyond its direct contracts. Filesystem, stdout, stderr.",
+        "additionalProperties": false,
+        "properties": {
+          "filesystem": {
+            "type": "array",
+            "description": "File system changes this service may perform.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "condition": {
+                  "type": "string",
+                  "description": "When this filesystem effect occurs."
+                },
+                "action": {
+                  "type": "string",
+                  "description": "What happens (e.g. create, update, delete)."
+                },
+                "location": {
+                  "type": "string",
+                  "description": "Path or glob pattern affected."
+                },
+                "reversible": {
+                  "type": "boolean",
+                  "description": "Whether this effect can be undone."
+                }
+              }
+            }
+          },
+          "stdout": {
+            "type": "array",
+            "description": "Standard output produced (primarily for CLI components).",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "What is written to stdout."
+                },
+                "condition": {
+                  "type": "string",
+                  "description": "When this output is produced."
+                },
+                "format": {
+                  "type": "string",
+                  "description": "Output format (e.g. JSON, plain text, table)."
+                }
+              }
+            }
+          },
+          "stderr": {
+            "type": "array",
+            "description": "Standard error output produced (primarily for CLI components).",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "What is written to stderr."
+                },
+                "condition": {
+                  "type": "string",
+                  "description": "When this error output is produced."
+                },
+                "format": {
+                  "type": "string",
+                  "description": "Error format (e.g. plain text, structured JSON)."
+                }
+              }
+            }
+          }
+        }
+      },
+      "probe": {
+        "type": "object",
+        "description": "An instrument that reads an artifact the model does not author and reports an observation about it in that artifact's own terms. A probe is identified by the question it answers and by the scope of its attention: two probes reporting the same figure are not interchangeable when they cannot see the same things.\n",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "question"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/probe_ref",
+            "description": "Stable probe id (PRB###), making the instrument a referenceable node."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Probe name, as it is invoked or as its supplier calls it."
+          },
+          "question": {
+            "type": "string",
+            "pattern": "^\\S.*\\?$",
+            "description": "The single question this probe answers, phrased as a question. A probe that answers two questions is two probes. An instrument reached for outside the question it was built for still returns an answer, and this field is what makes that visible.\n"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Brief description of what the probe reads and what it reports."
+          },
+          "source_kind": {
+            "type": "string",
+            "description": "The kind of artifact this probe reads, such as a source tree, a documentation space, an issue project, a dependency index or a running system. The medium constrains which techniques are available; it does not pick one, and a single medium commonly needs several probes with different scopes of attention.\n"
+          },
+          "attention_control": {
+            "type": "string",
+            "enum": [
+              "owned",
+              "third-party"
+            ],
+            "description": "Whether the scope of attention is under the control of whoever relies on the probe. `owned` means an omission changes only when the probe changes. `third-party` means it can change without notice, so an observation drawn from it carries a date and is re-established rather than assumed to still hold.\n"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "active",
+              "promoted",
+              "retired"
+            ],
+            "description": "Lifecycle. candidate: the question has been asked more than once and a durable check is the next step. active: in use. promoted: a durable check now answers the question, and the probe is kept until that check has run against real material. retired: the question is settled and the probe is on its way out.\n"
+          },
+          "blind_spots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/blind_spot"
+            },
+            "description": "What this probe does not see. An instrument is characterised as much by its omissions as by its output, and recording them against the instrument rather than against each reading is what lets a newly found omission be traced to everything drawn with it.\n"
+          },
+          "code_refs": {
+            "$ref": "../metamodel.schema.yaml#/$defs/code_refs",
+            "description": "Where the probe lives, for one that is maintained alongside the model."
+          },
+          "implementation": {
+            "$ref": "../metamodel.schema.yaml#/$defs/implementation",
+            "description": "Whether this probe exists yet. Absent means unclear."
+          },
+          "owned_by": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+            "description": "Who maintains the probe, for one that is maintained here."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          }
+        }
+      },
+      "blind_spot": {
+        "type": "object",
+        "description": "One thing a probe does not report, and the standing that statement has. An omission the probe's own contract declares and one found by measuring its output are different claims with different lifetimes, and recording them the same way leaves the first unfalsifiable and the second undated.\n",
+        "additionalProperties": false,
+        "required": [
+          "omitted_fact",
+          "basis"
+        ],
+        "properties": {
+          "omitted_fact": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "What the probe does not report, stated as the fact that is missing rather than as a fault. An instrument that omits what it was never asked for is working correctly.\n"
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "declared",
+              "observed"
+            ],
+            "description": "`declared`: the probe's own contract states the omission, so it holds until the probe changes. `observed`: it was established by measuring the probe's output, so it is dated, refutable, and may be closed at the source without notice.\n"
+          },
+          "cause": {
+            "type": "string",
+            "description": "Why the fact is missing - what the probe reads, or does not read, that leaves it out."
+          },
+          "consequence": {
+            "type": "string",
+            "description": "What a reader would wrongly conclude from this probe's output if the omission were not known. An omission with no stated consequence cannot be weighed against a result, which is how a missing value comes to be read as a measured one.\n"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date",
+            "description": "When the omission was established (ISO 8601). An observed omission without a date cannot be told apart from a current one; a declared omission takes the probe's own version instead.\n"
+          },
+          "established_by": {
+            "type": "string",
+            "description": "How the omission was established - the check, comparison or reading that showed it."
+          },
+          "closed_at": {
+            "type": "string",
+            "format": "date",
+            "description": "When the omission stopped applying, if it has. A closed omission is kept rather than deleted, so an observation taken while it was open can still be read correctly.\n"
+          }
+        }
+      }
+    }
+  },
+  "design/domain.schema.yaml": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Blueprint Domain Operations",
+    "description": "Design Plane - Layer 3: Domain operations with protocol bindings, rule governance, pre/postconditions, and side effects. Ordering is in story (logical) and dynamics (runtime).",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "name",
+      "version",
+      "operations"
+    ],
+    "properties": {
+      "name": {
+        "type": "string",
+        "pattern": "^\\S(?:.*\\S)?$",
+        "description": "Domain or service name (e.g. orders, billing). Used for cross-file identification."
+      },
+      "description": {
+        "type": "string",
+        "description": "Business domain description summarizing this domain from business perspective."
+      },
+      "version": {
+        "$ref": "../metamodel.schema.yaml#/$defs/semver",
+        "description": "Content version of this domain configuration."
+      },
+      "schemaVersion": {
+        "$ref": "../metamodel.schema.yaml#/$defs/schema_version",
+        "description": "Schema version this document conforms to. Omit to assume latest."
+      },
+      "scope": {
+        "$ref": "../metamodel.schema.yaml#/$defs/scope_prefix",
+        "description": "Bounded context this domain belongs to."
+      },
+      "tags": {
+        "$ref": "../metamodel.schema.yaml#/$defs/tags"
+      },
+      "owned_by": {
+        "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+        "description": "File-level ownership default. Entities inherit unless overridden."
+      },
+      "domain_ref": {
+        "$ref": "../metamodel.schema.yaml#/$defs/domain_ref",
+        "description": "The problem-space domain every operation in this document belongs to, stated once in the header. An operation carries no reference of its own: a domain document describes one domain by design, and the file is a free partition, so a model may split a domain across `orders.domain.yaml` and `orders-returns.domain.yaml` and state the same reference in each. Where the header is absent, the domain is the one whose name matches the document's slice folder; a folder matching no declared domain, or matching two, leaves the operation with no domain rather than a guessed one.\n"
+      },
+      "operations": {
+        "type": "object",
+        "description": "Domain operations as a dictionary. The key is a camelCase identifier and is the operation's readable address: `arch.yaml` contract lists name it as `<slice>:<key>`. It is chosen by the author rather than computed from `name` - measured across this repo's models, 291 of 3294 keys are a deliberate shortening of the name (`getVacancyFromTemplate` for \"Get Vacancy Prefilled From Template\"), so a tool that derived one would disagree with the model in roughly one operation in eleven. Each operation also carries a required `id` for machine-stable cross-file references.\n",
+        "propertyNames": {
+          "pattern": "^[a-z][A-Za-z0-9]*$",
+          "description": "The key is an identifier, not a label: contracts address an operation as `<slice>:<key>`, so a key that cannot be written in a ref is a broken address rather than a formatting slip. Derived from the corpus rather than chosen - measured 2026-08-24 across every model in the repo, all 3678 operation and error keys already match this and none carries a space. Duplicate keys need no rule here: YAML itself refuses a map with two of the same. `name` is the human label and is deliberately unconstrained; the two answer different questions, and 2744 of the 3294 names contain spaces precisely because they are prose."
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/operation"
+        }
+      },
+      "errors": {
+        "type": "object",
+        "description": "Unified error type catalog as a dictionary. The key is a camelCase identifier chosen by the author, in the same idiom operations use, and each error also carries a required `id` for machine-stable references.\n",
+        "propertyNames": {
+          "pattern": "^[a-z][A-Za-z0-9]*$",
+          "description": "The key is an identifier, not a label: contracts address an operation as `<slice>:<key>`, so a key that cannot be written in a ref is a broken address rather than a formatting slip. Derived from the corpus rather than chosen - measured 2026-08-24 across every model in the repo, all 3678 operation and error keys already match this and none carries a space. Duplicate keys need no rule here: YAML itself refuses a map with two of the same. `name` is the human label and is deliberately unconstrained; the two answer different questions, and 2744 of the 3294 names contain spaces precisely because they are prose."
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/error_entry"
+        }
+      },
+      "questions": {
+        "type": "array",
+        "description": "Competency questions this domain was created to answer. Each question represents an independent knowledge requirement that the domain must satisfy. Questions exist before their operational answers (queries, commands, events) and persist across implementation changes. Unanswered questions (empty answered_by) represent domain gaps. Rooted in ontology engineering (Gruninger & Fox 1995) and Goal-Question-Metric (Basili 1984).\n",
+        "items": {
+          "$ref": "#/$defs/question"
+        }
+      }
+    },
+    "$defs": {
+      "operation": {
+        "type": "object",
+        "description": "A domain operation with protocol binding, rule governance, and behavioral properties.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/operation_ref",
+            "description": "Unique operation identifier. Prefix encodes kind: CMD=command, EVT=event, QRY=query, DOC=document. The prefix MUST match the operation's kind field. Validator WARNS on mismatch."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "event",
+              "command",
+              "query",
+              "document"
+            ],
+            "description": "Operation category: command=intent to change state, event=fact that happened, query=read-only, document=structured data transfer."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable operation name."
+          },
+          "version": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_version",
+            "description": "Operation version for individual lifecycle tracking."
+          },
+          "description": {
+            "type": "string",
+            "description": "What this operation does and its domain significance."
+          },
+          "rules": {
+            "type": "object",
+            "description": "Legacy free-text business rules. For new documents prefer governed_by, preconditions, postconditions with typed rule refs.",
+            "additionalProperties": true,
+            "properties": {
+              "businessDomain": {
+                "type": "string",
+                "description": "Business domain or subdomain this rule set belongs to."
+              },
+              "invariants": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Free-text invariants that must always hold."
+              },
+              "preConditions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Free-text preconditions (legacy). Prefer typed preconditions[]."
+              },
+              "postConditions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Free-text postconditions (legacy). Prefer typed postconditions[]."
+              },
+              "constraints": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Free-text constraints applying to this operation."
+              }
+            }
+          },
+          "exchange": {
+            "description": "Communication protocol and binding for this operation. Single exchange or array for multi-channel operations.",
+            "oneOf": [
+              {
+                "$ref": "#/$defs/exchange"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/exchange"
+                },
+                "minItems": 1
+              }
+            ]
+          },
+          "dispatch": {
+            "type": "string",
+            "enum": [
+              "inprocess",
+              "in-process"
+            ],
+            "description": "Invocation model, ORTHOGONAL to `exchange` (which is the wire transport). Set `inprocess` to declare that this command/query EXECUTES in-process and has no wire transport of its own - cross-cutting middleware, a request-scoped context or data-access step, pure compute, a write embedded in a parent aggregate's endpoint, or an in-process delegation/write-back from a consuming context. Absent (the default) means the operation is invoked over the wire via `exchange`. `in-process` and `exchange` are mutually exclusive (see the dispatch-with-exchange check). It exempts the operation from the `missing-exchange-binding` completeness check - so use it only for operations that genuinely execute with no transport, NOT for unimplemented/phantom gaps (those should keep surfacing). Events are already exempt and should not set `dispatch`. `in-process` is the superseded spelling of the same value, accepted until the next major line; `inprocess` is the current one, spelled as the `inprocess` contract kind is. The two fields answer different questions and neither derives from the other: `dispatch:` is the operation's own invocation model, one value, mutually exclusive with `exchange:`; a contract kind says how ONE coupling reaches the operation, and an operation may sit in more than one contract.\n"
+          },
+          "payload": {
+            "$ref": "#/$defs/payload",
+            "description": "Message payload schema and content type."
+          },
+          "responses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/response"
+            },
+            "description": "Possible response codes and their meanings."
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/reason"
+            },
+            "description": "Business reasons that may trigger or result from this operation."
+          },
+          "governed_by": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/rule_reference"
+            },
+            "description": "Rules governing this operation's overall behavior. Each entry must reference a typed rule ID."
+          },
+          "initiated_by": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/actor_ref"
+            },
+            "description": "Optional list of actor refs that can initiate this operation (who triggers the command). Used for Event Storming to place actor stickies before the command."
+          },
+          "preconditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/rule_reference"
+            },
+            "description": "Rules that must hold true before this operation can execute. Checked at entry."
+          },
+          "postconditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/rule_reference"
+            },
+            "description": "Rules that must hold true after this operation completes. Verified at exit."
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations that must be available for this operation to function. Capability dependency, not execution order."
+          },
+          "produces": {
+            "type": "object",
+            "description": "Operations this operation emits upon execution. Commands typically produce events and/or documents. Events do not produce; they trigger reactions via reacts_to. Validator WARNS on non-conventional usage. This is the model's statement of CAUSALITY, true of the operation wherever it appears; the order in which operations run inside one process activity is stated by that activity's `steps`, not here.",
+            "additionalProperties": false,
+            "properties": {
+              "operations": {
+                "type": "array",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+                },
+                "description": "References to produced operations. Convention: commands produce events (EVT) and/or documents (DOC)."
+              },
+              "mode": {
+                "$ref": "../metamodel.schema.yaml#/$defs/production_mode",
+                "default": "any",
+                "description": "Production mode: any=subset may be produced, one_of=exactly one (XOR), all=all are produced (AND)."
+              }
+            }
+          },
+          "reacts_to": {
+            "type": "array",
+            "description": "Events or signals this operation reacts to. Each entry is a reactive policy binding: a statement of CAUSALITY, true of the operation wherever it appears. A person deciding what to do after an event is not a policy, and that order is stated by the process activity's `steps`, not here.",
+            "items": {
+              "type": "object",
+              "required": [
+                "operation"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "operation": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/operation_ref",
+                  "description": "Triggering operation. Convention: typically an event (EVT)."
+                },
+                "policy": {
+                  "type": "string",
+                  "description": "Reactive policy name describing why this reaction exists. Maps to Event Storming policy sticky."
+                },
+                "condition": {
+                  "type": "string",
+                  "description": "Guard condition. When absent, reaction is unconditional."
+                },
+                "rule": {
+                  "oneOf": [
+                    {
+                      "$ref": "../metamodel.schema.yaml#/$defs/rule_ref"
+                    },
+                    {
+                      "$ref": "../metamodel.schema.yaml#/$defs/transition_ref"
+                    }
+                  ],
+                  "description": "Business rule governing this reaction."
+                }
+              }
+            }
+          },
+          "translates": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Written on an integration event (an operation of `kind: event` that leaves its bounded context): the domain events of the same context that this event is the published form of. One integration event may translate several domain events, and one domain event may be translated by several integration events. The reference is stated once, on the integration event; the domain event carries no field for it. An event published with no domain event behind it states none. A `translates` entry that names something other than an unpublished event of the same context, or that is written on an event that is not itself published, is reported by the semantic checker. It changes no event's reach: whether an event is published is still read from the contracts and the exchange."
+          },
+          "task_type": {
+            "type": "string",
+            "enum": [
+              "automated",
+              "manual",
+              "user-decision",
+              "external"
+            ],
+            "description": "Execution type: automated=system-executed, manual=human action outside system, user-decision=human choice within system (UI), external=third-party system."
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          },
+          "owned_by": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+            "description": "Operation-level ownership override."
+          },
+          "side_effects": {
+            "type": "object",
+            "description": "Observable effects on external state: data reads and writes.",
+            "additionalProperties": false,
+            "properties": {
+              "reads": {
+                "type": "array",
+                "description": "Data resources this operation reads.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "target"
+                  ],
+                  "properties": {
+                    "target": {
+                      "type": "string",
+                      "pattern": "^\\S(?:.*\\S)?$",
+                      "description": "Resource or concept being read."
+                    },
+                    "pattern": {
+                      "type": "string",
+                      "description": "Access pattern (e.g. file glob, query filter)."
+                    }
+                  }
+                }
+              },
+              "writes": {
+                "type": "array",
+                "description": "Data resources this operation creates or modifies.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "target"
+                  ],
+                  "properties": {
+                    "target": {
+                      "type": "string",
+                      "pattern": "^\\S(?:.*\\S)?$",
+                      "description": "Resource or concept being written."
+                    },
+                    "when": {
+                      "type": "string",
+                      "description": "Condition under which this write occurs."
+                    },
+                    "files": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Specific files written (for file-based operations)."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "traits": {
+            "type": "object",
+            "description": "Behavioral traits affecting composition and optimization. Renamed from 'properties' in v2.3 to free that name for entity metadata.",
+            "additionalProperties": false,
+            "properties": {
+              "pure": {
+                "type": "boolean",
+                "description": "No side effects; always produces same output for same input. Safe to cache, parallelize, and retry."
+              },
+              "expensive": {
+                "type": "boolean",
+                "description": "Resource-intensive (CPU, memory, I/O). May need special scheduling or resource limits."
+              }
+            }
+          },
+          "examples": {
+            "type": "array",
+            "description": "Concrete usage examples for this operation. Used for documentation, contract testing (Pact), and mock server generation.\n",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^\\S(?:.*\\S)?$",
+                  "description": "Example name (e.g., valid-order, duplicate-order)."
+                },
+                "description": {
+                  "type": "string",
+                  "maxLength": 255,
+                  "description": "What this example demonstrates."
+                },
+                "scenario": {
+                  "type": "string",
+                  "enum": [
+                    "happy-path",
+                    "error",
+                    "edge-case"
+                  ],
+                  "description": "Example classification."
+                },
+                "request": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "description": "Request payload example."
+                },
+                "request_headers": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "Request header examples."
+                },
+                "response": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "description": "Expected response payload."
+                },
+                "response_code": {
+                  "type": "string",
+                  "description": "Expected HTTP or application-level response code."
+                },
+                "response_headers": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "description": "Expected response headers."
+                },
+                "provider_state": {
+                  "type": "string",
+                  "description": "Pact provider state for blueprint-driven contract testing. Declares what state the provider must be in for this example to produce the expected response. Maps directly to Pact providerStates[].name in generated interaction files.\n"
+                },
+                "test_ref": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/test_ref",
+                  "description": "Reference to a test case that validates this example."
+                }
+              }
+            }
+          },
+          "idempotent": {
+            "type": "boolean",
+            "description": "Whether this operation is idempotent. Idempotent operations produce the same result regardless of how many times they are called with the same input. Important for retry logic and API design.\n"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "description": "Location of the idempotency key in the request (JSON Path). E.g., $.headers.Idempotency-Key or $.body.request_id. Only meaningful when idempotent is true.\n"
+          },
+          "correlation_id": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Correlation identifier for distributed tracing. Specifies where the correlation ID is located in the message/request.\n",
+            "properties": {
+              "location": {
+                "type": "string",
+                "description": "JSON Path or header name where the correlation ID is found (e.g., $.headers.X-Correlation-ID)."
+              },
+              "description": {
+                "type": "string",
+                "description": "Purpose and format of the correlation ID."
+              }
+            }
+          },
+          "security": {
+            "type": "array",
+            "description": "Security requirements for this operation. Each item references a security scheme from the service's contracts.security_schemes.\n",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "description": "Scheme name → required scopes (empty array for no scopes)."
+            }
+          },
+          "materializes": {
+            "type": "array",
+            "description": "Entities created or modified as a consequence of this operation. Expresses entity lifecycle effects beyond operation-to-operation causal links (produces/reacts_to). E.g., a refund command materializes a CreditSlip read model.\n",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "concept",
+                "action"
+              ],
+              "properties": {
+                "concept": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/concept_ref",
+                  "description": "Concept created or modified by this operation."
+                },
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "create",
+                    "update",
+                    "delete",
+                    "archive"
+                  ],
+                  "description": "What happens to the concept instance."
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Why this materialization occurs."
+                }
+              }
+            }
+          },
+          "delivery_priority": {
+            "$ref": "../metamodel.schema.yaml#/$defs/delivery_priority",
+            "description": "MoSCoW delivery priority for release planning."
+          },
+          "release_target": {
+            "$ref": "../metamodel.schema.yaml#/$defs/release_target",
+            "description": "Target release or milestone for this operation."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties",
+            "description": "Open metadata bag for operation extensions."
+          },
+          "code_refs": {
+            "$ref": "../metamodel.schema.yaml#/$defs/code_refs"
+          },
+          "implementation": {
+            "$ref": "../metamodel.schema.yaml#/$defs/implementation",
+            "description": "Whether the system has this operation yet. Absent means unclear."
+          },
+          "provenance": {
+            "$ref": "../metamodel.schema.yaml#/$defs/provenance",
+            "description": "Epistemic provenance for this operation (brownfield modeling confidence)."
+          }
+        }
+      },
+      "rule_reference": {
+        "type": "object",
+        "description": "Typed reference to a rule from rules.schema.yaml, with optional inline context.",
+        "additionalProperties": false,
+        "required": [
+          "rule"
+        ],
+        "properties": {
+          "rule": {
+            "oneOf": [
+              {
+                "$ref": "../metamodel.schema.yaml#/$defs/rule_ref"
+              },
+              {
+                "$ref": "../metamodel.schema.yaml#/$defs/transition_ref"
+              }
+            ],
+            "description": "Rule ID (SR/CR/DR/EQ/VR prefix) or transition rule ID (TR prefix)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional explanation of why this rule applies to this operation."
+          }
+        }
+      },
+      "exchange": {
+        "type": "object",
+        "description": "Communication protocol and binding. Protocol determines which sub-fields are required.",
+        "unevaluatedProperties": false,
+        "required": [
+          "protocol"
+        ],
+        "properties": {
+          "protocol": {
+            "description": "Communication protocol. Standard protocols or x- prefixed custom.",
+            "oneOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "http",
+                  "http-sse",
+                  "tcp",
+                  "tds/tcp",
+                  "grpc",
+                  "trpc",
+                  "orpc",
+                  "json-rpc",
+                  "x-ws",
+                  "amqp",
+                  "amqp091",
+                  "amqp1",
+                  "mqtt",
+                  "kafka",
+                  "graphql",
+                  "stdio",
+                  "cli"
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^x-[a-z][a-z0-9-]*$"
+              }
+            ]
+          },
+          "endpoint": {
+            "$ref": "#/$defs/endpoint",
+            "description": "Endpoint configuration (required for http, http-sse, stdio and cli protocols)."
+          },
+          "topic": {
+            "$ref": "#/$defs/topic",
+            "description": "Message topic configuration (for AMQP/MQTT protocols)."
+          },
+          "queue": {
+            "$ref": "#/$defs/queue",
+            "description": "Message queue configuration (alternative to topic for AMQP/MQTT)."
+          },
+          "method": {
+            "$ref": "#/$defs/method",
+            "description": "RPC method configuration (required for tcp/grpc/trpc/orpc/json-rpc/x-ws)."
+          },
+          "graphql": {
+            "$ref": "#/$defs/graphql_binding",
+            "description": "GraphQL operation binding (required for graphql protocol)."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "protocol": {
+                  "type": "string",
+                  "enum": [
+                    "amqp",
+                    "amqp091",
+                    "amqp1",
+                    "mqtt",
+                    "kafka"
+                  ]
+                }
+              },
+              "required": [
+                "protocol"
+              ]
+            },
+            "then": {
+              "anyOf": [
+                {
+                  "required": [
+                    "topic"
+                  ]
+                },
+                {
+                  "required": [
+                    "queue"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "protocol": {
+                  "type": "string",
+                  "enum": [
+                    "http",
+                    "http-sse"
+                  ]
+                }
+              },
+              "required": [
+                "protocol"
+              ]
+            },
+            "then": {
+              "required": [
+                "endpoint"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "protocol": {
+                  "type": "string",
+                  "enum": [
+                    "tcp",
+                    "tds/tcp",
+                    "grpc",
+                    "trpc",
+                    "orpc",
+                    "json-rpc",
+                    "x-ws"
+                  ]
+                }
+              },
+              "required": [
+                "protocol"
+              ]
+            },
+            "then": {
+              "required": [
+                "method"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "protocol": {
+                  "type": "string",
+                  "enum": [
+                    "graphql"
+                  ]
+                }
+              },
+              "required": [
+                "protocol"
+              ]
+            },
+            "then": {
+              "required": [
+                "graphql"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "protocol": {
+                  "type": "string",
+                  "enum": [
+                    "stdio",
+                    "cli"
+                  ]
+                }
+              },
+              "required": [
+                "protocol"
+              ]
+            },
+            "then": {
+              "required": [
+                "endpoint"
+              ]
+            }
+          }
+        ]
+      },
+      "endpoint": {
+        "type": "object",
+        "description": "Endpoint configuration. For http/http-sse: URL path + HTTP method. For stdio: tool/method path + CALL method. For cli: the command line as the path + EXEC method.",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "method"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "URL path template (e.g. /orders/{id})."
+          },
+          "description": {
+            "type": "string",
+            "description": "Endpoint description."
+          },
+          "method": {
+            "type": "string",
+            "pattern": "^[A-Za-z]+$",
+            "description": "HTTP method (GET, POST, PUT, DELETE, PATCH)."
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/parameter"
+            },
+            "description": "URL path and query parameters."
+          },
+          "group": {
+            "type": "string",
+            "description": "API group or tag for documentation and code generation."
+          }
+        }
+      },
+      "topic": {
+        "type": "object",
+        "description": "Message topic for pub/sub protocols.",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Topic name. Where `channel_ref` names the channel, the routing key the message is published with on it."
+          },
+          "channel_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/message_channel_ref",
+            "description": "The message channel (`kind: topic`) the message is published to, declared in an architecture document's `channels:` list. `name` keeps naming the topic, or the routing key on that channel."
+          },
+          "description": {
+            "type": "string",
+            "description": "What messages on this topic represent."
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/filter"
+            },
+            "description": "Message filters for selective consumption."
+          }
+        }
+      },
+      "queue": {
+        "type": "object",
+        "description": "Message queue for point-to-point protocols.",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Queue name."
+          },
+          "channel_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/message_channel_ref",
+            "description": "The message channel (`kind: queue`) the message is sent to, declared in an architecture document's `channels:` list."
+          },
+          "description": {
+            "type": "string",
+            "description": "What messages in this queue represent."
+          }
+        }
+      },
+      "filter": {
+        "type": "object",
+        "description": "Message filter for selective topic consumption.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "ref"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Filter name."
+          },
+          "ref": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Reference to the filter value or expression."
+          }
+        }
+      },
+      "graphql_binding": {
+        "type": "object",
+        "description": "GraphQL operation binding (required when protocol is graphql).",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "field"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "query",
+              "mutation",
+              "subscription"
+            ],
+            "description": "GraphQL operation type."
+          },
+          "field": {
+            "type": "string",
+            "pattern": "^[_A-Za-z][_0-9A-Za-z]*$",
+            "description": "Root field name in the schema (e.g., getOrders, createOrder)."
+          }
+        }
+      },
+      "method": {
+        "type": "object",
+        "description": "RPC method configuration for gRPC/TCP/JSON-RPC and similar RPC protocols (method name + params + result + streaming mode).",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "RPC method name, as a client calls it. For gRPC, the fully qualified `package.Service/Method`."
+          },
+          "streaming": {
+            "type": "string",
+            "enum": [
+              "unary",
+              "server",
+              "client",
+              "bidi"
+            ],
+            "description": "Which side sends a stream of messages rather than a single one, as a gRPC method declares it: `unary` (one request, one response), `server` (one request, a stream of responses), `client` (a stream of requests, one response) or `bidi` (a stream each way). Absent means `unary`. A JSON-RPC method is always `unary`."
+          },
+          "description": {
+            "type": "string",
+            "description": "What this method does."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief one-line summary."
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/rpc_parameter"
+            },
+            "description": "Method input parameters."
+          },
+          "result": {
+            "$ref": "#/$defs/rpc_result",
+            "description": "Method return value."
+          }
+        }
+      },
+      "parameter": {
+        "type": "object",
+        "description": "HTTP path or query parameter.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "schema",
+          "type"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "Parameter name."
+          },
+          "schema": {
+            "$ref": "../metamodel.schema.yaml#/$defs/model_ref",
+            "description": "Model schema reference for this parameter's type."
+          },
+          "type": {
+            "$ref": "../metamodel.schema.yaml#/$defs/parameter_location",
+            "description": "Parameter location (path, query, header, cookie)."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether this parameter is required."
+          }
+        }
+      },
+      "rpc_parameter": {
+        "type": "object",
+        "description": "RPC method input parameter.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "schema"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "Parameter name."
+          },
+          "schema": {
+            "$ref": "../metamodel.schema.yaml#/$defs/model_ref",
+            "description": "Model schema reference for this parameter's type."
+          },
+          "description": {
+            "type": "string",
+            "description": "Parameter description."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief summary."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether this parameter is required."
+          }
+        }
+      },
+      "rpc_result": {
+        "type": "object",
+        "description": "RPC method return value.",
+        "additionalProperties": false,
+        "required": [
+          "schema"
+        ],
+        "properties": {
+          "schema": {
+            "$ref": "../metamodel.schema.yaml#/$defs/model_ref",
+            "description": "Model schema reference for the return type."
+          },
+          "description": {
+            "type": "string",
+            "description": "Result description."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Brief summary."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether result is guaranteed non-null."
+          }
+        }
+      },
+      "payload": {
+        "type": "object",
+        "description": "Message payload definition.",
+        "additionalProperties": false,
+        "required": [
+          "schema"
+        ],
+        "properties": {
+          "schema": {
+            "$ref": "../metamodel.schema.yaml#/$defs/model_ref",
+            "description": "Model schema reference for the payload structure."
+          },
+          "description": {
+            "type": "string",
+            "description": "Payload description."
+          },
+          "contentType": {
+            "type": "string",
+            "description": "MIME content type (e.g. application/json)."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether payload is mandatory for this operation."
+          },
+          "version": {
+            "type": "string",
+            "description": "Payload schema version."
+          },
+          "stage": {
+            "type": "string",
+            "description": "Pipeline stage where this payload is used."
+          }
+        }
+      },
+      "response": {
+        "type": "object",
+        "description": "Operation response definition.",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "description"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "HTTP or application-level response code."
+          },
+          "type": {
+            "$ref": "../metamodel.schema.yaml#/$defs/outcome",
+            "description": "Response category: success=expected outcome, failure=business rejection, error=unexpected fault."
+          },
+          "description": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "What this response means to the caller."
+          },
+          "schema": {
+            "$ref": "../metamodel.schema.yaml#/$defs/model_ref",
+            "description": "Model schema reference for the response body."
+          },
+          "contentType": {
+            "type": "string",
+            "description": "MIME content type of the response."
+          },
+          "headers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/response_header"
+            },
+            "description": "Response headers."
+          },
+          "error": {
+            "$ref": "../metamodel.schema.yaml#/$defs/error_ref",
+            "description": "Reference to a domain error type from the errors catalog."
+          }
+        }
+      },
+      "error_entry": {
+        "type": "object",
+        "description": "Domain error type for consistent API error responses.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/error_ref",
+            "description": "Unique error identifier (ERR001, ERR002, etc.)."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Human-readable error name."
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of when and why this error occurs."
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "validation",
+              "authorization",
+              "not-found",
+              "conflict",
+              "timeout",
+              "external",
+              "internal"
+            ],
+            "description": "Error classification for grouping and handling."
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "warning",
+              "error",
+              "critical"
+            ],
+            "description": "Error severity level."
+          },
+          "http_status": {
+            "type": "integer",
+            "description": "Suggested HTTP status code for API generation."
+          },
+          "retry_eligible": {
+            "type": "boolean",
+            "description": "Whether this error type is safe to retry."
+          },
+          "related_rules": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/rule_ref"
+            },
+            "description": "Business rules that can trigger this error."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          },
+          "code_refs": {
+            "$ref": "../metamodel.schema.yaml#/$defs/code_refs"
+          },
+          "implementation": {
+            "$ref": "../metamodel.schema.yaml#/$defs/implementation",
+            "description": "Whether the system raises this error yet. Absent means unclear."
+          }
+        }
+      },
+      "response_header": {
+        "type": "object",
+        "description": "HTTP response header definition.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "schema"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$",
+            "description": "Header name (e.g. X-Request-Id)."
+          },
+          "schema": {
+            "$ref": "../metamodel.schema.yaml#/$defs/model_ref",
+            "description": "Model schema reference for the header value type."
+          }
+        }
+      },
+      "reason": {
+        "type": "object",
+        "description": "Business reason that may trigger or result from this operation.",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "description"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "Reason identifier (e.g. duplicate-order, insufficient-funds)."
+          },
+          "description": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "Human-readable description of this reason."
+          },
+          "version": {
+            "type": "string",
+            "description": "Reason version."
+          }
+        }
+      },
+      "question": {
+        "type": "object",
+        "description": "A competency question this domain was created to answer. Questions are first-class entities with independent identity and lifecycle. They bridge strategic intent (goals, decisions) to operational implementation (operations of any kind: queries, commands, events, documents).\nDesign rationale for separate entity status: (1) Questions exist before operations - requirements precede implementation. (2) Questions span all operation kinds - not limited to queries. (3) Questions have N:M relationships with operations. (4) Questions are referenceable from the strategic layer (goals, decisions, tests). (5) Unanswered questions (empty answered_by) are the most valuable artifact\n    for gap analysis and backlog prioritization.\n\nPattern origin: Competency Questions (Gruninger & Fox 1995), Goal-Question-Metric (Basili 1984).\n",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "statement"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/question_ref",
+            "description": "Unique question identifier (e.g. QN001 or billing.QN001)."
+          },
+          "statement": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "The question as a natural-language interrogative sentence. Should be phrased from the stakeholder's perspective, not the system's. E.g., \"What is the current status of a customer's order?\" E.g., \"Can a customer cancel an order after shipping?\" E.g., \"What happens when inventory reaches zero?\"\n"
+          },
+          "name": {
+            "type": "string",
+            "description": "Short name for listings and graph nodes (e.g. 'Order Status')."
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "One-line summary for listings (≤200 chars)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Extended context: why this question matters, what answering it enables, and what business decisions depend on the answer.\n"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "existence",
+              "enumeration",
+              "relationship",
+              "measurement",
+              "temporal",
+              "behavioral",
+              "compliance",
+              "business",
+              "technical",
+              "ux",
+              "legal",
+              "data",
+              "dependency",
+              "feasibility"
+            ],
+            "description": "Question category. Ontology categories (existence through compliance) classify what the question asks about - from Gruninger & Fox 1995. Domain categories (business through feasibility) classify whose concern it is. Use tags for additional specificity.\n"
+          },
+          "priority": {
+            "$ref": "../metamodel.schema.yaml#/$defs/priority_scale",
+            "description": "Question priority. Critical questions define the domain's raison d'être - if the system can't answer them, the domain has no justification.\n"
+          },
+          "answered_by": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+            },
+            "description": "Operations that answer this question. Accepts ANY operation kind (CMD, EVT, QRY, DOC) - not limited to queries. A question about \"Can X happen?\" may be answered by a command. A question about \"What happens when Y?\" may be answered by an event chain. Multiple operations may partially answer the same question (N:M). An empty array means the question is unanswered - a domain gap that should drive backlog prioritization.\n"
+          },
+          "concepts": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/concept_ref"
+            },
+            "description": "Concepts this question is about. Links questions to the ubiquitous language. E.g., a question about \"order status\" references the Order and OrderStatus concepts.\n"
+          },
+          "bounded_context_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/bounded_context_ref",
+            "description": "The bounded context whose knowledge boundary this competency question defines (v2.7.6, D17). SINGLE-VALUED and EXPLICIT: a competency question is a knowledge requirement of exactly one BC - unlike operations (which are m:n and DERIVED from arch service contracts, so they carry no ref, D14). Questions are referenced by NO arch construct, so this ref is the only explicit binding; it is especially load-bearing for UNANSWERED questions (empty answered_by), which have no operations to inherit a BC from yet still belong to the BC carrying the knowledge gap. Points at an arch `context.id` (BC###, optionally scope-prefixed e.g. shop.BC001; the legacy kebab-context-name is a deprecated compat shim). When absent, the owning BC falls back to the deprecated file `name`/`scope` heuristic; an op-less, ref-less question resolves to 0 contexts → resolvability WARN Strongly encouraged in v2.7.x, aligned to required in v2.8.\n"
+          },
+          "motivated_by": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/goal_ref"
+            },
+            "description": "Goals that motivated this question. Closes the goal→question traceability chain. E.g., goal \"Enable real-time order visibility\" motivates question \"What is the current status of a customer's order?\"\n"
+          },
+          "stakeholders": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/actor_ref"
+            },
+            "description": "Actors who need this question answered. Captures the human demand side - who in the organization needs this knowledge and why.\n"
+          },
+          "owner": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owner_ref",
+            "description": "A person or role (ACT###) or a team (TM###) who drives resolution. Distinct from stakeholders[] (who care about the answer) - owner is who must actually resolve it.\n",
+            "examples": [
+              "ACT001",
+              "TM002"
+            ]
+          },
+          "blocking": {
+            "type": "boolean",
+            "default": false,
+            "description": "True if this question blocks downstream work."
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "description": "Target date for resolution (ISO 8601)."
+          },
+          "resolution": {
+            "type": "string",
+            "description": "Answer or decision once the question is resolved."
+          },
+          "resolved": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this question has been resolved."
+          },
+          "version": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_version",
+            "description": "Question version for lifecycle tracking."
+          },
+          "owned_by": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+            "description": "Question-level ownership override."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          }
+        }
+      }
+    }
+  },
+  "design/infrastructure.schema.yaml": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Blueprint Infrastructure Resources",
+    "description": "Design Plane: Infrastructure resource definitions and deployment topology. Declares platform resources (databases, queues, storage, services), ownership, per-environment configuration, and service placement across tiers. v2.7.7 adds knowledge-graph participation - typed resource ids (IR###), first-class typed Environments (ENV###), TOSCA inter-resource relations, and IaC traceability - all substrate-neutral (cloud, on-premise, hybrid) and strictly additive.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "version"
+    ],
+    "properties": {
+      "version": {
+        "$ref": "../metamodel.schema.yaml#/$defs/semver",
+        "description": "Content version of this resources document."
+      },
+      "schemaVersion": {
+        "$ref": "../metamodel.schema.yaml#/$defs/schema_version",
+        "description": "Schema version this document conforms to. Omit to assume latest."
+      },
+      "scope": {
+        "$ref": "../metamodel.schema.yaml#/$defs/scope_prefix",
+        "description": "Bounded context this resources file belongs to."
+      },
+      "tags": {
+        "$ref": "../metamodel.schema.yaml#/$defs/tags"
+      },
+      "owned_by": {
+        "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+        "description": "File-level ownership default. Entities inherit unless overridden."
+      },
+      "name": {
+        "type": "string",
+        "description": "Name of this resource group or service collection."
+      },
+      "description": {
+        "type": "string",
+        "description": "Purpose and ownership context of these infrastructure resources."
+      },
+      "environments": {
+        "type": "array",
+        "items": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/$defs/environment"
+            }
+          ]
+        },
+        "description": "Declared environments, in either of two forms. The typed object (id ENV###, name, substrate, target_scope, ...) is the form to prefer: it is the only one anything else in the model can point at, so a binding, a server and a per-environment configuration key can all name the same environment and be checked against it. The plain name string declares an environment and nothing more - it carries no class, no substrate and no scope, and nothing resolves to it. Both are valid and neither is deprecated; a string branch is a literal environment name and the object branch requires id and name, so the two cannot overlap and the union is unambiguous.\n"
+      },
+      "resources": {
+        "type": "array",
+        "description": "Infrastructure resources: databases, queues, caches, storage, external services.",
+        "items": {
+          "$ref": "#/$defs/resource"
+        }
+      },
+      "topology": {
+        "$ref": "#/$defs/deployment_topology",
+        "description": "Deployment topology: how services are placed across tiers, regions, and environments."
+      },
+      "bindings": {
+        "type": "array",
+        "description": "(resource-type × environment) → implementation bindings (BND###, v2.7.7). A binding resolves an abstract need / resource-type in a specific environment to a concrete platform module + pinned version + params - the intent→implementation bridge that survived across Radius recipes ≡ Score ≡ Crossplane v2 ≡ Humanitec. Optional/additive. Substrate-neutral: the same neutral type binds to a cloud module in a `cloud` ENV and an on-prem module in an `on-prem` ENV - hybrid falls out as two bindings.\n",
+        "items": {
+          "$ref": "#/$defs/binding"
+        }
+      },
+      "deployment_scopes": {
+        "type": "array",
+        "description": "Deployment scopes (DSC###, v2.7.7) - the management / lifecycle / ownership / billing partitions that OWN resources: Azure Resource Groups + Subscriptions, AWS Accounts / OUs, GCP Projects / Folders, Kubernetes Clusters / Namespaces, on-prem Datacenters / host-pools. Scopes nest via `parent` to form the subscription -> resource-group hierarchy; a resource joins a scope via `resource.scope_ref`. Distinct from TOSCA `hosted_on` (runtime placement) and from the id scope-prefix (authoring grouping). Optional/additive - may live in a shared file so several contexts reference one subscription (concat-merge).\n",
+        "items": {
+          "$ref": "#/$defs/deployment_scope"
+        }
+      }
+    },
+    "$defs": {
+      "substrate": {
+        "type": "string",
+        "enum": [
+          "cloud",
+          "on-prem",
+          "hybrid",
+          "edge"
+        ],
+        "description": "Where something physically runs. cloud: a provider's managed capacity. on-prem: hardware the organization operates. hybrid: federating cloud and on-prem bindings. edge: distributed compute close to where it is used. Declared once because an environment and a deployment scope answer the same question about different subjects, and a reader compares their answers.\n"
+      },
+      "resource": {
+        "type": "object",
+        "description": "An infrastructure resource with platform identity and per-environment configuration.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref",
+            "description": "Typed resource identifier (IR###). Used in topology tier references and as a relation target."
+          },
+          "kind": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            "description": "Resource type (e.g. database, queue, storage, cache, api, function, service). A message broker - a RabbitMQ server, a Kafka cluster, a Service Bus namespace - is `broker`, the kind a messaging contract's `broker_ref` is expected to name; a queue or topic it hosts is `queue`."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Human-readable resource name."
+          },
+          "summary": {
+            "type": "string",
+            "description": "One-line summary for listings."
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of this resource's purpose and usage context."
+          },
+          "owner": {
+            "$ref": "#/$defs/resource_owner",
+            "description": "Ownership and responsibility for this resource."
+          },
+          "platform": {
+            "type": "object",
+            "description": "Platform metadata. name=provider (azure, aws, gcp, k8s), type=resource-specific type.",
+            "additionalProperties": true,
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Platform name (e.g. azure, aws, gcp, k8s)."
+              },
+              "type": {
+                "type": "string",
+                "description": "Platform-specific resource type (e.g. cosmosdb, sqs, gcs, postgres)."
+              }
+            }
+          },
+          "environments": {
+            "type": "object",
+            "description": "Per-environment configuration. A key is a declared environment's typed id (ENV###), the environment's name, or `ALL` for configuration shared across every environment. The typed key is the one that RESOLVES: a key naming an ENV### the model does not declare is a cross-reference error, in the same words as any other dangling reference, while a name is checked against nothing and is reported only as an advisory, because a model may configure for a deployment it has not modelled.\n",
+            "propertyNames": {
+              "anyOf": [
+                {
+                  "$ref": "../metamodel.schema.yaml#/$defs/environment_ref"
+                },
+                {
+                  "const": "ALL"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "description": "The three legal forms, DECLARED rather than restricted: the last branch admits any string, so no key that validated before validates less now. The block exists because one of the branches is a typed reference, and that is the fact a reader and a validator both need. A key is a key, so nothing can infer from the value alone that it points at an entity; saying so here is what lets the reference walk resolve the typed form and leave a name alone."
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/environment_config"
+            }
+          },
+          "owned_by": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+            "description": "Resource-level ownership override."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties",
+            "description": "Open metadata bag for resource-level custom attributes."
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          },
+          "code_refs": {
+            "$ref": "../metamodel.schema.yaml#/$defs/code_refs"
+          },
+          "type_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/resource_type_ref",
+            "description": "Optional typed reference to a resource type (RT###) in the resource-type catalog. Resolves to the type's inputs/outputs contract; the concrete platform realization is chosen per environment by a binding (BND###)."
+          },
+          "scope_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/deployment_scope_ref",
+            "description": "Optional management/lifecycle partition (DSC###) this resource is owned in - its resource-group / namespace / host-pool. Distinct from `hosted_on` (runtime placement): a logical DB may be `scope_ref` its own resource-group yet `hosted_on` a shared SQL elastic pool (the RG-vs-pool distinction). Absent => tooling may derive grouping from the id scope-prefix."
+          },
+          "hosting_model": {
+            "type": "string",
+            "enum": [
+              "managed-service",
+              "vm",
+              "container",
+              "bare-metal",
+              "serverless",
+              "network-link",
+              "external-saas"
+            ],
+            "description": "Substrate-neutral realization classifier: HOW the resource is hosted - a managed cloud/PaaS service, an IaaS/on-prem VM, a container, bare metal, serverless, a hybrid network interconnect (network-link), or an external SaaS. Drives portability/cost/hybrid-boundary analysis and makes cloud-vs-on-prem legible. Additive to the coarse free-string `kind` (WHAT it is: database/queue/…)."
+          },
+          "relations": {
+            "type": "array",
+            "description": "Typed inter-resource relations (TOSCA vocabulary) - the typed replacement for untyped links in the `properties` bag. `hosted_on` is the canonical placement edge; connects_to/depends_on/attaches_to/routes_to express wiring, and `routes_to` may also name a service the resource forwards requests to. For a hybrid interconnect, a network-link resource's connects_to/routes_to targets may sit in a different environment/substrate.",
+            "items": {
+              "$ref": "#/$defs/infra_relation_edge"
+            }
+          },
+          "iac_refs": {
+            "$ref": "#/$defs/iac_refs",
+            "description": "Infrastructure-as-Code traceability for this resource - the analogue of code_refs for infra. Spans cloud provisioners AND on-prem config-management."
+          },
+          "implementation": {
+            "$ref": "../metamodel.schema.yaml#/$defs/implementation",
+            "description": "Whether this resource exists yet. Absent means unclear. For a resource, iac_refs are the evidence the as-is check reads, beside code_refs."
+          },
+          "lifecycle": {
+            "$ref": "#/$defs/lifecycle",
+            "description": "Optional lifecycle/protection posture (architect-altitude)."
+          },
+          "exposure": {
+            "type": "string",
+            "enum": [
+              "public",
+              "internal",
+              "dmz",
+              "private",
+              "air-gapped",
+              "vpn-only",
+              "peered"
+            ],
+            "description": "Neutral network-exposure posture: reachable from the internet (public), internal-only (internal), perimeter (dmz), isolated (private / air-gapped), reachable only via VPN (vpn-only), or over a peered network (peered). The provider-specific mechanism goes in `exposure_detail`, keeping this enum substrate-neutral."
+          },
+          "exposure_detail": {
+            "type": "string",
+            "description": "Optional provider-specific exposure mechanism (free-text): e.g. 'azure-private-endpoint', 'vnet-integrated', 'aws-privatelink', 'on-prem firewall DMZ'. Retains the concrete mechanism while `exposure` stays neutral."
+          },
+          "identity": {
+            "$ref": "#/$defs/resource_identity",
+            "description": "Optional workload identity this resource runs as (cross-cutting). Neutral-named - a cloud managed identity OR an on-prem AD / k8s service account."
+          },
+          "access": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/access_grant"
+            },
+            "description": "Optional RBAC access grants (identity × target × role triples). Neutral - cloud IAM OR on-prem AD/LDAP. Semantic level only; mechanics live in the module."
+          },
+          "observability": {
+            "$ref": "#/$defs/observability_binding",
+            "description": "Optional per-resource telemetry wiring - where this resource sends logs/metrics (AVM calls this 'diagnostics'). Neutral: cloud diagnostics OR on-prem syslog/SNMP/Prometheus. Distinct from the quality-layer observability STRATEGY."
+          },
+          "redundancy": {
+            "$ref": "#/$defs/redundancy",
+            "description": "Optional availability-domain spread (AVM calls this 'zones'). Neutral: cloud AZs/regions OR on-prem sites/racks."
+          },
+          "encryption_key": {
+            "$ref": "#/$defs/encryption_key",
+            "description": "Optional encryption-key posture (AVM calls this 'customer_managed_key'). Neutral: cloud KMS/Key-Vault OR on-prem HSM/Vault. A key REFERENCE, never key material."
+          },
+          "deployment_unit": {
+            "$ref": "#/$defs/deployment_unit",
+            "description": "Optional deployment-unit boundary (carried; no generator consumes it in v2.7.7)."
+          }
+        }
+      },
+      "resource_owner": {
+        "type": "object",
+        "description": "Ownership metadata: vendor, team, and contact information.",
+        "additionalProperties": true,
+        "properties": {
+          "vendor": {
+            "type": "string",
+            "description": "Technology vendor or cloud provider name."
+          },
+          "team": {
+            "type": "string",
+            "description": "Owning team name."
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Team contact email."
+          }
+        }
+      },
+      "environment_config": {
+        "type": "object",
+        "description": "Per-environment resource configuration: connection info, parameters, secrets, and tags.",
+        "additionalProperties": true,
+        "properties": {
+          "resource_name": {
+            "type": "string",
+            "description": "Platform-specific resource name in this environment."
+          },
+          "resource_uri": {
+            "type": "string",
+            "description": "URI or connection string for the resource in this environment."
+          },
+          "host": {
+            "type": "string",
+            "description": "Hostname or endpoint address."
+          },
+          "params": {
+            "type": "object",
+            "description": "Environment-specific parameters.",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "secrets": {
+            "type": "array",
+            "description": "Secrets required in this environment.",
+            "items": {
+              "$ref": "#/$defs/secret_ref"
+            }
+          },
+          "tags": {
+            "type": "array",
+            "description": "Resource tags for cost attribution and categorization.",
+            "items": {
+              "$ref": "#/$defs/tag"
+            }
+          }
+        }
+      },
+      "secret_ref": {
+        "description": "A secret reference: a plain name string (resolved from default vault) or an object with explicit vault details.",
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "description": "Secret name."
+              },
+              "description": {
+                "type": "string",
+                "description": "What this secret is used for."
+              },
+              "secret_name": {
+                "type": "string",
+                "description": "Name in the vault if different from the logical name."
+              },
+              "vault": {
+                "type": "string",
+                "description": "Vault identifier when using a non-default vault."
+              }
+            }
+          }
+        ]
+      },
+      "tag": {
+        "type": "object",
+        "description": "A name-value tag for resource categorization and cost attribution.",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Tag name."
+          },
+          "value": {
+            "type": "string",
+            "description": "Tag value."
+          }
+        }
+      },
+      "deployment_topology": {
+        "type": "object",
+        "description": "Deployment topology describing how services are placed across tiers and regions. Enables visualization of runtime architecture and validates placement decisions.",
+        "additionalProperties": false,
+        "properties": {
+          "tiers": {
+            "type": "array",
+            "description": "Deployment tiers grouping services by infrastructure function (e.g. web-tier, worker-tier, data-tier).",
+            "items": {
+              "$ref": "#/$defs/deployment_tier"
+            }
+          },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Placement constraints expressed as free text (e.g. 'order-api and product-api must be co-located')."
+          }
+        }
+      },
+      "deployment_tier": {
+        "type": "object",
+        "description": "A deployment tier grouping related services for a specific infrastructure function.",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Tier name (e.g. web-tier, worker-tier, data-tier)."
+          },
+          "description": {
+            "type": "string",
+            "description": "Purpose of this deployment tier."
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Resource IDs or service names deployed in this tier (legacy free-string form)."
+          },
+          "resource_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+            },
+            "description": "Typed resource references (IR###) deployed in this tier (v2.7.7). Additive alongside the legacy free-string `services`; prefer this for graph participation. A tier is a grouping VIEW (extraction emits `contains`), distinct from the canonical placement edge `hosted_on` - the resolver de-dupes so a resource in both is not double-counted."
+          },
+          "region": {
+            "type": "string",
+            "description": "Deployment region (e.g. eu-west-1, us-east-2)."
+          },
+          "replicas": {
+            "type": "integer",
+            "description": "Number of replicas for services in this tier."
+          }
+        }
+      },
+      "environment": {
+        "type": "object",
+        "description": "A deployment environment as a first-class, referenceable entity (v2.7.7, ENV###). Environments are a binding dimension (production/staging/dr/…) - each carries its own target scope, credentials, and parameter overlay. Substrate-neutral: cloud, on-premise, and hybrid are equally expressible.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/environment_ref",
+            "description": "Typed environment id (ENV###). Referenced by bindings (BND###) and per-environment config."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Human-readable environment name (e.g. production, staging, dr-site)."
+          },
+          "env_class": {
+            "type": "string",
+            "enum": [
+              "production",
+              "staging",
+              "development",
+              "test",
+              "dr",
+              "sandbox",
+              "other"
+            ],
+            "description": "Environment class. Orthogonal to substrate - a `dr` environment may be cloud OR on-prem."
+          },
+          "substrate": {
+            "$ref": "#/$defs/substrate",
+            "description": "Where this environment physically runs. Makes the cloud-versus-on-prem split legible for impact and cost analysis."
+          },
+          "provider": {
+            "type": "string",
+            "description": "Optional platform provider - free-text so on-prem/private-cloud fit: azure, aws, gcp, vmware, openstack, bare-metal, k8s, … A hybrid environment may carry a compound value (e.g. 'azure+vmware')."
+          },
+          "target_scope": {
+            "$ref": "#/$defs/target_scope",
+            "description": "The deployment partition/boundary this environment maps into (substrate-neutral)."
+          },
+          "credential_scope": {
+            "type": "string",
+            "description": "Optional logical credential/identity scope (e.g. a subscription, a service account, an AD domain). A reference/label, never a secret value."
+          },
+          "param_overlay": {
+            "type": "object",
+            "description": "Optional per-environment parameter overlay applied to bindings (carried; not yet consumed).",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          }
+        }
+      },
+      "target_scope": {
+        "description": "The deployment partition an environment targets. Two additive forms (v2.7.7): the legacy INLINE `{kind, name}` object OR a REFERENCE `{ ref: DSC### }` to a first-class DeploymentScope. Substrate-neutral: cloud (account/subscription/project/resource_group/region/availability_zone), kubernetes (cluster/namespace), and on-premise (datacenter/site/rack/host_pool/vlan) all coexist.",
+        "oneOf": [
+          {
+            "$ref": "#/$defs/target_scope_inline"
+          },
+          {
+            "$ref": "#/$defs/target_scope_ref"
+          }
+        ]
+      },
+      "target_scope_inline": {
+        "type": "object",
+        "description": "Inline substrate-neutral scope partition ({kind, name}). The v2.7.7 form promotes this to a reference (target_scope_ref -> DSC###) when the scope is modelled as a first-class DeploymentScope.",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/$defs/scope_kind",
+            "description": "Partition type across substrates. Cloud, k8s, and on-prem scopes are all first-class."
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional concrete scope name/identifier (e.g. a subscription id, an AWS account, a datacenter code 'dc-1'). A reference/label, not a secret."
+          }
+        }
+      },
+      "target_scope_ref": {
+        "type": "object",
+        "description": "Reference form (v2.7.7): point an environment's target scope at a first-class DeploymentScope (DSC###) instead of inlining {kind, name}. Additive - the inline form stays valid.",
+        "additionalProperties": false,
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/deployment_scope_ref",
+            "description": "The DeploymentScope (DSC###) this environment targets."
+          }
+        }
+      },
+      "scope_kind": {
+        "type": "string",
+        "enum": [
+          "account",
+          "subscription",
+          "project",
+          "resource_group",
+          "region",
+          "availability_zone",
+          "cluster",
+          "namespace",
+          "datacenter",
+          "site",
+          "rack",
+          "host_pool",
+          "vlan",
+          "other"
+        ],
+        "description": "Deployment partition type across substrates (substrate-neutral): cloud (account/subscription/project/resource_group/region/availability_zone), kubernetes (cluster/namespace), on-premise (datacenter/site/rack/host_pool/vlan). The single source shared by `target_scope` (inline) and `deployment_scope.kind`."
+      },
+      "deployment_scope": {
+        "type": "object",
+        "description": "A deployment scope (DSC###, v2.7.7) - a substrate-neutral management / lifecycle / ownership / billing partition. Generalizes an Azure Resource Group or Subscription, an AWS Account / OU, a GCP Project / Folder, a Kubernetes Cluster / Namespace, or an on-prem Datacenter / host-pool. Scopes nest via `parent` (subscription -> resource- group). A resource joins a scope via `resource.scope_ref`. Distinct from TOSCA `hosted_on` (runtime placement): a DB may be `scope_ref` its own resource-group yet `hosted_on` a shared pool (the RG-vs-pool distinction).\n",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/deployment_scope_ref",
+            "description": "Typed scope identifier (DSC###). Matches the reference fields that point at it (`parent`, `resource.scope_ref`, `environment.target_scope.ref`)."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Human-readable scope name (e.g. the 'prod' subscription, the 'Accounting' resource-group)."
+          },
+          "kind": {
+            "$ref": "#/$defs/scope_kind",
+            "description": "Partition type (subscription / resource_group / account / project / cluster / namespace / datacenter / host_pool / ...)."
+          },
+          "parent": {
+            "$ref": "../metamodel.schema.yaml#/$defs/deployment_scope_ref",
+            "description": "Optional parent scope (DSC###) - builds the hierarchy (a resource_group's parent subscription; a namespace's parent cluster). A top-tier scope (subscription/account/project/cluster/datacenter) omits it."
+          },
+          "substrate": {
+            "$ref": "#/$defs/substrate",
+            "description": "Optional substrate this scope lives on. When present it is the MOST authoritative substrate signal for member resources - stronger than transitive `hosted_on` walking or the `platform.name` heuristic."
+          },
+          "provider": {
+            "type": "string",
+            "description": "Optional platform provider (free-text so on-prem fits): azure, aws, gcp, vmware, openstack, k8s, ..."
+          },
+          "owner": {
+            "$ref": "#/$defs/resource_owner",
+            "description": "Optional ownership (vendor / team / contact) for this scope."
+          },
+          "region": {
+            "type": "string",
+            "description": "Optional default region/location for resources in this scope (e.g. westeurope, eu-west-1)."
+          },
+          "summary": {
+            "type": "string",
+            "description": "One-line summary for listings."
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of this scope's purpose and what it contains."
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties",
+            "description": "Open metadata bag for scope-level custom attributes."
+          }
+        }
+      },
+      "infra_relation_edge": {
+        "type": "object",
+        "description": "A typed inter-resource relation (TOSCA vocabulary). `hosted_on` is the canonical placement edge; `connects_to`/`depends_on` may carry attribute-level output refs; `depends_on` is the ordering-only fallback. A `network-link` resource's connects_to/routes_to targets may sit in a different environment/substrate (the hybrid boundary). `routes_to` may also name a service (SVC###): the resource forwards requests to it, as a bought API gateway or load balancer does for the services behind it. Every other verb names a resource.",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "target"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "../metamodel.schema.yaml#/$defs/infra_relation",
+            "description": "TOSCA relation verb: hosted_on / connects_to / depends_on / attaches_to / routes_to."
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+              },
+              {
+                "$ref": "../metamodel.schema.yaml#/$defs/service_ref"
+              }
+            ],
+            "description": "The target: a resource (IR###) for every verb, or a service (SVC###) for `routes_to` only, named by its exact declared id. An id that names nothing declared is a cross-reference error. A resource target may be in another environment/substrate (hybrid interconnect). A resource type (RT###) or a third-party package (PKG###) is never a target.",
+            "examples": [
+              "IR002",
+              "orders.SVC001"
+            ]
+          },
+          "outputs": {
+            "type": "array",
+            "description": "Optional attribute-level outputs of the target this resource consumes - e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for impact analysis. Only a resource target has outputs: a relation whose target is a service carries no `outputs`, not even an empty list.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional human note on this edge (e.g. 'reads via read-replica')."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "routes_to"
+                }
+              },
+              "required": [
+                "type"
+              ]
+            },
+            "else": {
+              "properties": {
+                "target": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "target": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/service_ref"
+                }
+              },
+              "required": [
+                "target"
+              ]
+            },
+            "then": {
+              "properties": {
+                "outputs": false
+              }
+            }
+          }
+        ]
+      },
+      "iac_refs": {
+        "type": "array",
+        "description": "Traceability links from a resource to its Infrastructure-as-Code - the infra analogue of code_refs. Spans cloud provisioners AND on-prem config-management so on-prem IaC is first-class.",
+        "items": {
+          "$ref": "#/$defs/iac_ref"
+        }
+      },
+      "iac_ref": {
+        "type": "object",
+        "description": "A single Infrastructure-as-Code reference: which system defines the resource, and where.",
+        "additionalProperties": false,
+        "required": [
+          "system",
+          "locator"
+        ],
+        "properties": {
+          "system": {
+            "type": "string",
+            "enum": [
+              "terraform",
+              "opentofu",
+              "bicep",
+              "arm",
+              "cloudformation",
+              "pulumi",
+              "crossplane",
+              "kubernetes",
+              "helm",
+              "ansible",
+              "puppet",
+              "chef",
+              "saltstack",
+              "other"
+            ],
+            "description": "The IaC system. Cloud provisioners (terraform/opentofu/bicep/arm/cloudformation/pulumi/crossplane) and on-prem config-management (ansible/puppet/chef/saltstack) plus kubernetes/helm are all first-class."
+          },
+          "locator": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Where the resource is defined in that system (e.g. module path, `file:resource` address, Ansible role, Helm chart)."
+          },
+          "role": {
+            "type": "string",
+            "description": "Optional role of this reference (e.g. 'defines', 'configures', 'deploys'). 'planned' means the locator is where the resource is to be defined and it is not defined there yet; 'gap' means the locator shows the resource is absent where it would be expected. Neither is evidence that the resource is implemented."
+          }
+        }
+      },
+      "lifecycle": {
+        "type": "object",
+        "description": "Optional lifecycle/protection posture for a resource (architect-altitude). Substrate-neutral: 'protected' means change-guarded whether cloud or on-prem.",
+        "additionalProperties": false,
+        "properties": {
+          "protected": {
+            "type": "boolean",
+            "description": "Resource is change-protected (deletion/replacement guarded)."
+          },
+          "create_before_destroy": {
+            "type": "boolean",
+            "description": "Replacements create the new instance before destroying the old."
+          },
+          "retain_on_delete": {
+            "type": "boolean",
+            "description": "Retain the underlying resource when the model entity is removed."
+          }
+        }
+      },
+      "binding": {
+        "type": "object",
+        "description": "Resolves (resource-type × environment) → a concrete implementation: which platform module realizes the type in that environment, with a pinned version and params. The same neutral type binds differently per environment - an azure module in a `cloud` ENV, an on-prem module in an `on-prem` ENV (hybrid = two bindings). Resolution is MOST-SPECIFIC-MATCH: a binding with `need_ref` beats one matching by `type_ref` alone; a binding scoped to an `environment_ref` beats an environment-agnostic default.\n",
+        "additionalProperties": false,
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/binding_ref",
+            "description": "Typed binding id (BND###)."
+          },
+          "type_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/resource_type_ref",
+            "description": "The resource TYPE (RT###) this binding realizes. Pair with `environment_ref` for a (type × env) rule."
+          },
+          "need_ref": {
+            "type": "string",
+            "description": "Optional reference to a service `need` id (the free-string need `id`) this binding satisfies - more specific than binding-by-type. Most-specific-match: a `need_ref` binding wins over a `type_ref`-only binding for the same environment.\n"
+          },
+          "environment_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/environment_ref",
+            "description": "The environment (ENV###) this binding applies to. Omit for an environment-agnostic default (least specific)."
+          },
+          "resource_ref": {
+            "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref",
+            "description": "Optional concrete resource (IR###) this binding produces/targets - closes need → binding → resource."
+          },
+          "module": {
+            "$ref": "#/$defs/binding_module",
+            "description": "The concrete platform module/recipe that realizes the type in this environment."
+          },
+          "profile": {
+            "type": "string",
+            "description": "Optional resource-type profile this binding draws from (neutral/azure/aws/k8s/on-prem/openstack - the resource-type catalog)."
+          },
+          "params": {
+            "type": "object",
+            "description": "Binding-time parameters passed to the module (conceptually merged over need `params` + environment `param_overlay`).",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "number",
+                "boolean"
+              ]
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "description": "Outputs this binding exposes (host/port/connection-string/…). A field may be secret-flagged - a reference/flow marker only, never a value.",
+            "items": {
+              "$ref": "#/$defs/io_field"
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional human note on this binding."
+          }
+        }
+      },
+      "binding_module": {
+        "type": "object",
+        "description": "A concrete platform module/recipe reference with a pinned version (`version_pin` is carried; no generator consumes it in v2.7.7). Substrate-neutral: AVM is ONE realization vocabulary, not THE vocabulary - a Terraform registry module, a Helm chart, or an Ansible role are equally valid.\n",
+        "additionalProperties": false,
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Module/recipe locator - e.g. 'br/public:avm/res/db-for-postgre-sql/flexible-server', a Terraform registry path, a Helm chart, an Ansible role."
+          },
+          "version_pin": {
+            "type": "string",
+            "description": "Optional pinned module version (e.g. '1.2.3', '~> 4.0'). The continuous-readiness field (carried, unused this round)."
+          },
+          "system": {
+            "type": "string",
+            "description": "Optional provisioner hint (free-text: bicep, terraform, helm, ansible, …). Free-text so on-prem systems fit; the authoritative IaC link is `resource.iac_refs`."
+          }
+        }
+      },
+      "io_field": {
+        "type": "object",
+        "description": "A typed input or output field of a resource-type contract or a binding. An output may be secret-flagged - a reference/flow marker only, never a secret VALUE. Mirrors the `io_field` shape in the resource-type profile schema (`profiles/infrastructure/`).\n",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "Field name (e.g. host, port, name, username, password, connection_string, endpoint)."
+          },
+          "type": {
+            "type": "string",
+            "description": "Optional value-type hint (e.g. string, int, hostname, uri)."
+          },
+          "secret": {
+            "type": "boolean",
+            "description": "When true this field is a secret - the model carries the reference/flow, never the value."
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional description of the field."
+          }
+        }
+      },
+      "resource_identity": {
+        "type": "object",
+        "description": "The workload identity a resource runs as / authenticates with - named for the CONCERN, not the Azure product: a cloud managed identity (system/user-assigned), a Kubernetes or on-prem service account, or an AD service account. Semantic level only - mechanics live in the module.\n",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "system-assigned",
+              "user-assigned",
+              "service-account",
+              "ad-service-account",
+              "none"
+            ],
+            "description": "Identity kind, substrate-neutral: cloud system/user-assigned managed identity, a k8s service-account, an on-prem AD service account, or none."
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional identity name/reference (a label, never a secret)."
+          }
+        }
+      },
+      "access_grant": {
+        "type": "object",
+        "description": "An RBAC access triple: which identity may do what to which target. Substrate-neutral - a cloud IAM role assignment OR an on-prem AD/LDAP group grant. Semantic level only.\n",
+        "additionalProperties": false,
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "identity": {
+            "type": "string",
+            "description": "The grantee identity (a `resource_identity` name, a group, or a principal label)."
+          },
+          "target": {
+            "type": "string",
+            "description": "What the access is over (a resource, a scope, a data store - free-text/label; may be an IR###)."
+          },
+          "role": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "The role/permission granted (e.g. reader, contributor, db_datawriter, read-only)."
+          }
+        }
+      },
+      "observability_binding": {
+        "type": "object",
+        "description": "Where this resource sends its telemetry - named for the concern (AVM calls this 'diagnostics'): logs and metrics sinks. Substrate-neutral: cloud diagnostic settings OR on-prem syslog/SNMP/Prometheus. Distinct from the quality-layer `observability` STRATEGY (product-wide); this is per-resource wiring.\n",
+        "additionalProperties": false,
+        "properties": {
+          "logs_to": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Log sink targets (e.g. a log-analytics workspace label, 'syslog://…', a Loki endpoint)."
+          },
+          "metrics_to": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Metrics sink targets (e.g. a monitor workspace, a Prometheus endpoint, an SNMP collector)."
+          }
+        }
+      },
+      "redundancy": {
+        "type": "object",
+        "description": "Availability-domain spread - named for the concern (AVM calls this 'zones'): the fault domains this resource is replicated across. Substrate-neutral: cloud availability zones/regions OR on-prem sites/racks.\n",
+        "additionalProperties": false,
+        "properties": {
+          "domains": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The availability/fault domains (e.g. ['zone-1','zone-2'] cloud, or ['dc-1','dc-2'] / ['rack-a','rack-b'] on-prem)."
+          },
+          "strategy": {
+            "type": "string",
+            "description": "Optional spread strategy note (e.g. 'zone-redundant', 'active-active across sites')."
+          }
+        }
+      },
+      "encryption_key": {
+        "type": "object",
+        "description": "Encryption-key posture - named for the concern (AVM calls this 'customer_managed_key'): a cloud KMS/Key-Vault key OR an on-prem HSM/Vault. Carries a key REFERENCE, never key material.\n",
+        "additionalProperties": false,
+        "properties": {
+          "managed_by": {
+            "type": "string",
+            "enum": [
+              "platform",
+              "customer",
+              "self-hosted"
+            ],
+            "description": "Who manages the key: platform-managed, customer-managed (cloud KMS/Key-Vault), or self-hosted (on-prem HSM/Vault)."
+          },
+          "key_ref": {
+            "type": "string",
+            "description": "Optional key reference/label (a vault path or key id - a reference, never the key material)."
+          }
+        }
+      },
+      "deployment_unit": {
+        "type": "object",
+        "description": "Optional deployment-unit boundary (carried; no generator consumes it in v2.7.7): groups resources that deploy together and names the outputs the unit exports to other units.\n",
+        "additionalProperties": false,
+        "properties": {
+          "unit_id": {
+            "type": "string",
+            "description": "Logical deployment-unit id this resource belongs to (resources sharing a unit_id deploy together)."
+          },
+          "exported_outputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Output names this unit exposes to other units (the cross-unit wiring boundary)."
+          }
+        }
+      }
+    }
+  }
+}

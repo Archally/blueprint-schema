@@ -15,6 +15,8 @@
 # the retry sentence to it. With the old text, every TO-BE build halted here.
 migration:
   id: MIG001
+  owned_by: { team: TM003 }
+  change_stream_ref: CS001
   name: add-payment-retry-concept
   date: "2026-02-18"
   status: pending

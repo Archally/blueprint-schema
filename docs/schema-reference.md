@@ -172,6 +172,8 @@ Rule prefixes: `SR`=structural, `CR`=classification, `DR`=derivation, `EQ`=equiv
 | Package (third-party) | `PKG\d{3,}` | `PKG001` |
 | Domain | `DMN\d{3,}` | `DMN001` (no context prefix) |
 | Subdomain | `SDM\d{3,}` | `SDM001` (no context prefix) |
+| Product | `PDT\d{3,}` | `PDT001` (no context prefix) |
+| Change stream | `CS\d{3,}` | `CS001` (no context prefix) |
 | Probe | `PRB\d{3,}` | `PRB001` |
 
 ### Infrastructure
@@ -192,6 +194,7 @@ Rule prefixes: `SR`=structural, `CR`=classification, `DR`=derivation, `EQ`=equiv
 | Process activity | `PA\d{3}` | `PA001` |
 | User story | `US\d{3,}` | `US001`, `orders.US001` |
 | Use case | `UC\d{3,}` | `UC001`, `orders.UC001` |
+| Use case step | `UCS\d{3,}` | `UCS001` (unique within one main scenario; no context prefix) |
 
 ### Interactions
 
@@ -441,8 +444,15 @@ Cross-layer reference paths for tooling validation:
 | SLA | SLOs | `sla.slos` | Required if SLA exists |
 | Capability | Operations | `capability.operations` | Optional |
 | Capability | Domains / Bounded contexts | `capability.realized_in` | Optional (v2.8) |
+| Capability | Products it is available in (PDT###), declared in `blueprint.yaml` `products[]`; a capability without the list takes the nearest stating ancestor's | `capability.products` | Optional (v2.8) |
+| Migration | Owning team (TM###), the one team that carries it out | `migration.owned_by.team` | Optional (v2.8) |
+| Migration | Change stream (CS###), declared in `blueprint.yaml` `change_streams[]` | `migration.change_stream_ref` | Optional (v2.8) |
+| Migration | Bounded contexts and domains it changes, stated where its changes cannot show them | `migration.reach` | Optional (v2.8) |
 | Decision | Motivation | `decision.motivation_refs` | Optional (recommended) |
 | Decision | Capability | `decision.capability_refs` | Optional |
+| Decision | Participants by role (ACT### or TM###): who decides, who is consulted, who is informed; an empty `consulted` or `informed` states nobody, an absent role is not recorded | `decision.participants.{decision_makers,consulted,informed}` | Optional (v2.8) |
+| Migration register entry | Decisions that motivated it | `migrations[].related_decisions` | Optional (v2.8) |
+| Migration business case | Assumptions the estimate rests on | `business_case.assumption_refs` on `migration` or `migrations[]` | Optional (v2.8) |
 | Test | Rules/Operations/Concepts | `test.validates` | Required |
 | Operation | Rules | `operation.governed_by` | Required (typed ref) |
 | Rule | Concepts | `rule.concepts` | Optional (recommended) |
@@ -481,10 +491,18 @@ Cross-layer reference paths for tooling validation:
 | Goal / Risk / Assumption / Inquiry / Finding | Services (SVC###) | `affects.service_refs` | Optional (v2.8) |
 | Goal / Risk / Assumption / Inquiry / Finding | Third-party packages (PKG###) | `affects.package_refs` | Optional (v2.8) |
 | Risk / Inquiry | Capabilities and features (CAP###), each named directly; children, parents and capabilities sharing an operation are not implied | `affects.capability_refs` | Optional (v2.8) |
+| Inquiry | Any element the model declares by a typed id: an entity of any type (IR###, ENV###, SCR###, WCH###, MIG###, ...) or a part of one (a process activity PA###, a concept attribute CAT###), each named directly; a part names that part only, and children, parents and neighbours are not implied; naming an id here means the same as naming it in its kind list, so each id is named once; the inquiry's own id is refused; never a resource type (RT###), a use case step (UCS###), a scope name or a keyed `scope:key` | `affects.element_refs` | Optional (v2.8) |
+| Watch item | Risks (RSK###) and findings (FN###) the watch item concerns | `watchlist[].risk_refs`, `watchlist[].finding_refs` | Optional (v2.7) |
 | Inquiry | Findings (FN###) | `inquiry.finding_refs` | Optional (v2.8) |
+| Inquiry | Addressee, who is expected to answer it now: an actor (ACT###) or a team (TM###), or a name alone that draws no edge; never inferred from `owner` | `inquiry.asked_of.actor`, `inquiry.asked_of.team` | Optional (v2.8) |
+| Inquiry | Earlier addressees, oldest first, each with how the inquiry left them (`redirected`, `partly-answered`, `reassigned`) | `inquiry.previously_asked_of[].asked_of.actor`, `inquiry.previously_asked_of[].asked_of.team` | Optional (v2.8) |
 | Decision | Bounded contexts / Services / Third-party packages | `declared_impact.direct.bounded_contexts`, `declared_impact.direct.services`, `declared_impact.direct.packages` | Optional (v2.8) |
 | Service | Libraries it is built on: a service (SVC###), normally `kind: library`, or a third-party package (PKG###), in one list | `service.imports` | Optional (v2.8) |
+| Service | Services it forwards requests to (SVC###), stated by a gateway or a backend for frontend (`service.role`) | `service.routes_to` | Optional (v2.8) |
+| Infrastructure resource | A service it forwards requests to (SVC###), for `type: routes_to` only; every other verb names a resource (IR###) | `resource.relations[].target` | Optional (v2.8) |
 | Package | Supplier party (PRT###) | `package.vendor_ref` | Optional (v2.8) |
+| Shared-data contract | The store the shared data lives in (IR###) | `contracts.shareddata.store_ref` | Optional (v2.8) |
+| Link evidence | The target of a link its owner already states, as a map key: a service, package, resource, operation, broker, store or channel | `link_provenance.<field>.<target>` on a service, a contract, a channel, a subscription, a topic or a queue | Optional (v2.8) |
 
 Enforcement levels:
 - **Required:** Schema validation rejects if missing
@@ -558,6 +576,78 @@ state different certainty values. Enclosing entity or provenance certainty remai
 judgement; `confidence_impact: supports | weakens | invalidates` states the direction of the
 item's effect on confidence, independently of its certainty. Sources remain evidence, while
 `code_refs` locates implementation and `validates` states test-to-blueprint traceability.
+
+### Evidence for an architectural link
+
+An entity's `provenance` is about the entity. A link between two entities, such as a dependency
+between bounded contexts or a relation between two resources, states its own evidence, in the same
+`provenance` shape, and the evidence of the records at either end is not evidence for it. A link
+without evidence of its own states none.
+
+Where the link is an object of its own, it carries `provenance` itself:
+
+| Link | Field |
+|---|---|
+| A bounded context's dependency on another context or an external system | `dependency.provenance` |
+| An infrastructure relation, for every verb and either kind of target | `resource.relations[].provenance` |
+| A service's abstract infrastructure need | `service.needs[].provenance` |
+| A service's deployment at a server for an environment | `service.servers[].provenance` |
+| A binding's realization of a type or need in an environment | `binding.provenance` |
+| An operation's protocol binding | `operation.exchange.provenance` |
+
+Where the link is a reference written in a list or a single field, the record that writes it
+carries `link_provenance`: a map keyed by the field's name, then by the target exactly as written
+there, whose values are `provenance`. The map describes links its record states; it neither adds a
+link nor redirects one, and one entry covers every occurrence of its target in a list. A single
+reference has at most one entry.
+
+| Record | Fields `link_provenance` may name |
+|---|---|
+| Service | `imports`, `uses`, `routes_to`, `resource_refs` |
+| Contract of every kind that lists operations | its operation lists: `expose`, `call`, `send`, `receive`, `provide`, `consume`, `write`, `read`; a messaging contract also `broker_ref`, a shared-data contract also `store_ref` |
+| GraphQL contract | `queries`, `mutations`, `subscriptions`, keyed by field name, never by operation reference |
+| Message channel | `broker_ref` |
+| Messaging contract subscription | `channel_ref` |
+| Topic or queue of an operation's exchange | `channel_ref` |
+
+Every contract kind also carries `provenance` for the contract as a whole; it is not evidence for
+any one operation the contract lists. A key that is a typed id resolves like every other reference,
+so a key naming nothing declared is a cross-reference error.
+
+The records at a link's ends state their own evidence in the same shape, and it is about the record
+alone: it is not evidence for a link the record takes part in, and a link's evidence is not evidence
+for the record. Beside the entities that already carry it, these records carry `provenance`:
+
+| Record | Field |
+|---|---|
+| Message channel | `channels[].provenance` (evidence for its broker stays in `link_provenance.broker_ref`) |
+| Infrastructure resource | `resources[].provenance` |
+| Environment, in its object form | `environments[].provenance` |
+| Deployment scope | `deployment_scopes[].provenance` |
+| Access grant, one per grant | `resources[].access[].provenance` |
+
+```yaml
+services:
+  - id: SVC001
+    name: order-api
+    uses: [SVC002]
+    link_provenance:
+      uses:
+        SVC002:
+          certainty: confirmed
+          evidence:
+            - kind: codebase-analysis
+              source: services/orders/payments-client.ts
+              date: "2026-11-02"
+              summary: The order service builds a payments client at start-up.
+    contracts:
+      openapi:
+        contract_name: orders-api
+        expose: [orders.CMD001]
+        link_provenance:
+          expose:
+            orders.CMD001: { certainty: probable }
+```
 
 ### Implementation status (`implementation`)
 
@@ -899,6 +989,32 @@ though it calls nobody - it owns the schema, and the reader is bound to it witho
 interface in a transport-independent, hand-authorable form, so it carries no `file:`, no
 `contract_name` and no placement. The two data kinds keep all three, because the dataset they move
 is what a data contract describes.
+
+A `shareddata` contract may also name the store the data lives in, with `store_ref`: the
+infrastructure resource (IR###) that declares it, usually a `database`, a `storage` or a `cache`.
+One store per contract holds every document the contract lists, and both ends name the same store,
+because the data sits in one place both services address. Without it the contract says that the two
+services share data, not where: a service's `resource_refs` name the resources it uses, not which of
+them holds this data. The reference resolves like every other typed id, so a store nothing declares
+is a cross-reference error.
+
+```yaml
+services:
+  - id: orders.SVC001
+    name: Order Service
+    contracts:
+      shareddata:
+        contract_name: order-ledger
+        write: [orders.DOC001]
+        store_ref: IR001
+  - id: orders.SVC002
+    name: Reporting Service
+    contracts:
+      shareddata:
+        contract_name: order-ledger
+        read: [orders.DOC001]
+        store_ref: IR001
+```
 
 ### Choosing between the three that cross no wire
 
@@ -1531,10 +1647,29 @@ Four change collections:
 
 | Collection | Purpose |
 |------------|---------|
-| **entities** | Add, remove, deprecate, split, or merge whole entities (concepts, operations, rules, etc.). |
+| **entities** | Add, modify, deprecate, remove, rename, split, merge or move whole entities (concepts, operations, rules, etc.). |
 | **properties** | Set, unset, rename, append, or remove-item on existing entity fields. |
 | **relationships** | Add, remove, redirect, or modify edges between entities (produces, reacts_to, governed_by, etc.). |
-| **meta** | Tag operations, bulk-tag, reclassify, move-to-slice, constitution-amend, or note (informational). |
+| **meta** | Tag operations, bulk-tag, reclassify, move-to-slice, constitution-amend, or note (informational). No meta operation changes an entity when the migration applies. |
+
+**Placement:** An entity change of kind `add`, `split` or `merge` may state where the entity it creates is declared, as `placement: { slice, file }` with either or both. With a slice alone, the entity is read from that slice's one file for its layer, or from the layer's plain file name in the slice when it has none. A change of kind `move` requires `placement` and may state `placement_before`, where the entity is declared before the move; it keeps its id and content. Without a placement, an added entity is placed beside entities of the same type that share its id's slice prefix, and one with no such siblings is read from the migration document, so an addition with an unscoped id states its placement. For example:
+
+```yaml
+changes:
+  entities:
+    - kind: add
+      entity_type: resource
+      target: IR014
+      placement: { slice: billing }
+      after: { id: IR014, name: Billing database, kind: database }
+    - kind: move
+      entity_type: resource
+      target: IR009
+      placement: { slice: billing }
+      placement_before: { slice: orders }
+```
+
+A tracked change set stages the same relocation within one slice and layer as a `move` operation (`target`, `file`, optional `from`).
 
 **Atomic groups:** Changes with the same `group` must apply together or not at all. Groups are local to one migration.
 
@@ -1544,6 +1679,25 @@ Four change collections:
 - **Typed ref:** `CN005`, `CMD012`, `SR003` — entity-level within current scope
 - **SpecPath:** `orders/domain/operations/CMD005` — unambiguous cross-slice targeting
 - **Comma-separated:** `CN005,CN006` — for merge operations (multiple sources become one)
+
+### Migration business case
+
+A migration can state its forecast economics in `business_case`, on a migration document (`migration.business_case`) or on a register entry (`migrations[].business_case`). The estimate belongs to the migration, the unit people and time are given to; the decisions and goals it serves give its reasons and carry no amounts. A model declares each migration id once, so one migration carries at most one business case.
+
+| Field | Meaning |
+|-------|---------|
+| `horizon_months` | Whole months the estimate covers, at least 1. Required. |
+| `currency` | ISO 4217 alphabetic code, three uppercase letters (`EUR`). Every amount is in it. Required. |
+| `initial_cost` | One-time cost of carrying out the migration, zero or more. Required. |
+| `recurring_cost` | Running cost the migration adds per `period`, zero or more. Required. |
+| `recurring_benefit` | Benefit expected per `period`, including running costs removed, zero or more. Required. |
+| `period` | `month` or `year`: what the two recurring amounts are stated per. Required. |
+| `assumption_refs` | Assumptions (ASM###) the estimate rests on. Optional. |
+| `evidence` | Sources of the estimate, in the shared evidence shape. Optional. |
+
+All six inputs are required, so a business case is complete or absent; an absent one states no estimate, never zero. Over the horizon the undiscounted totals are: cost = `initial_cost` + `recurring_cost` × periods, and benefit = `recurring_benefit` × periods, where periods is `horizon_months` for `month` and `horizon_months` / 12 for `year`. A business case of 24 months, 12000 EUR, 100 EUR and 900 EUR a month totals 14400 EUR of cost and 21600 EUR of benefit. No discounting, currency conversion or rate of return is implied, and the figures are a forecast, not a measured outcome. A benefit several dependent migrations yield together is recorded once, on the migration that releases it.
+
+A register entry names the decisions behind it in `related_decisions`, as a migration document does. Who takes part in a decision is stated on the decision, in `participants`; those roles are not an approval and leave its `status` unchanged.
 
 ### Migration pre-application validation
 

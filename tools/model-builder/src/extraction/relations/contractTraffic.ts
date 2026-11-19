@@ -1,5 +1,6 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
+import { contractWitness, linkWitness, localEvidence } from './linkEvidence.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 
 /**
@@ -97,6 +98,7 @@ const CONSUMER_VERBS: ReadonlySet<string> = new Set([
 ]);
 
 interface Side {
+  witnesses: Record<string, unknown>[];
   contextId: string;
   protocol: string;
   /** What the join compares: the protocol, or the kind where two kinds share one (see above). */
@@ -105,6 +107,7 @@ interface Side {
 }
 
 interface TrafficAccumulator {
+  witnesses: Map<string, Record<string, unknown>>;
   protocols: Set<string>;
   operations: Set<string>;
   brokerIds: Set<string>;
@@ -132,6 +135,7 @@ export function extractContractTrafficRelations(
   entities: Entity[],
   relations: Relation[],
 ): Relation[] {
+  const entitiesById = new Map(entities.map(entity => [entity.id, entity]));
   const contracts = new Map<string, Entity>();
   for (const entity of entities) {
     if (entity.type === ENTITY_TYPE.Contract) contracts.set(entity.id, entity);
@@ -172,7 +176,7 @@ export function extractContractTrafficRelations(
     if (!protocol) return null;
     const type = (contract.data as { _contractType?: unknown } | undefined)?._contractType as string;
     const surface = SURFACE_BY_CONTRACT_TYPE[type] ?? protocol;
-    return { contextId, protocol, surface, brokerId: brokerOf(contract) };
+    return { contextId, protocol, surface, brokerId: brokerOf(contract), witnesses: [contractWitness(contract, 'declaration', {})] };
   }
 
   // operation -> who provides it and who consumes it, per protocol.
@@ -184,6 +188,22 @@ export function extractContractTrafficRelations(
     if (!provider && !consumer) continue;
     const side = sideOf(relation.source_entity_id);
     if (!side) continue;
+    const declarationSources = relation.data?.declaration_sources;
+    side.witnesses.push(...(Array.isArray(declarationSources) ? declarationSources : [{
+      relation_id: relation.id, origin_ref: relation.origin_ref, ...localEvidence(relation.data ?? {}),
+    }]));
+    const operation = entitiesById.get(relation.target_entity_id);
+    const exchange = operation?.data?.exchange;
+    side.witnesses.push({ operation_id: relation.target_entity_id });
+    const exchanges = Array.isArray(exchange) ? exchange : exchange ? [exchange] : [];
+    for (const [occurrence, declaration] of exchanges.entries()) {
+      if (!operation) continue;
+      side.witnesses.push(linkWitness(operation, `exchange[occurrence=${occurrence}]`, {
+        operation_id: relation.target_entity_id,
+        evidence_role: 'exchange',
+        ...localEvidence(declaration as Record<string, unknown>),
+      }));
+    }
     const target = provider ? providers : consumers;
     const bucket = target.get(relation.target_entity_id);
     if (bucket) bucket.push(side);
@@ -218,8 +238,11 @@ export function extractContractTrafficRelations(
         }
         let accumulated = byProvider.get(provider.contextId);
         if (!accumulated) {
-          accumulated = { protocols: new Set(), operations: new Set(), brokerIds: new Set() };
+          accumulated = { witnesses: new Map(), protocols: new Set(), operations: new Set(), brokerIds: new Set() };
           byProvider.set(provider.contextId, accumulated);
+        }
+        for (const witness of [...consumer.witnesses, ...provider.witnesses]) {
+          accumulated.witnesses.set(JSON.stringify(witness), witness);
         }
         accumulated.protocols.add(consumer.protocol);
         accumulated.operations.add(operationId);
@@ -241,6 +264,8 @@ export function extractContractTrafficRelations(
         type: RELATION_TYPE.ContractTraffic,
         data: {
           resolution: 'contract',
+          derived: true,
+          declaration_sources: [...accumulated.witnesses.values()],
           protocols: [...accumulated.protocols].sort(),
           operations,
           operation_count: operations.length,

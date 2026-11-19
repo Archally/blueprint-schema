@@ -98,6 +98,7 @@ $defs:
           none = no compatibility guarantee (breaking change).
       description:
         type: string
+        pattern: "\\S"
         description: "Human-readable description of this data model."
       additionalProperties: {}
       owned_by:
@@ -308,8 +309,7 @@ $defs:
         type: string
         description: "Parameter name."
       in:
-        type: string
-        enum: [path, query, header, cookie]
+        $ref: "../metamodel.schema.yaml#/$defs/parameter_location"
         description: "Parameter location in the request."
       required:
         type: boolean

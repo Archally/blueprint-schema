@@ -100,7 +100,7 @@ it('jumps from a quoted decision key to its sibling declaration and exact range'
   expect(locations[0].range).toEqual(new host.vscode.Range(1, 8, 1, 19));
 });
 it('shows model title and status using unsaved model content', async () => {
-  host.documents.push(document('decisions:\n  - id: sample.D001\n    title: Revised queue\n    status: proposed\n', modelFile));
+  host.documents.push(document('decisions:\n  - id: sample.D001\n    title: Revised queue\n    name: Queue entity\n    status: proposed\n', modelFile));
   const hover = await provider('hover').provideHover(document(), { line: 0, character: 10 });
   expect(hover.contents.value).toContain('Revised queue');
   expect(hover.contents.value).toContain('proposed');
@@ -156,4 +156,28 @@ it('adds the Confluence Cloud wiki path for a bare root site and reads unsaved h
   host.documents.push(document('kind: content-hub\nsite: https://cloud.example.test\nspace_key: DEMO\n', hub));
   const links = await provider('links').provideDocumentLinks(document());
   expect(links[0].target.toString()).toBe('https://cloud.example.test/wiki/spaces/DEMO/pages/123');
+});
+
+
+it('prefers the layer to migration payloads and restores introductions after layer deletion', async () => {
+  const migrationFile = `${project}/.blueprint/v2.8/migration.yml`;
+  host.files.set(migrationFile, 'migration: {id: MIG001}\nchanges: {entities: [{kind: add, after: {id: sample.D001, title: Future queue, status: proposed}}, {kind: modify, after: {id: sample.D001}}]}');
+  let locations = await provider('definition').provideDefinition(document(), { line: 0, character: 10 });
+  expect(locations.map((location: any) => location.uri.fsPath)).toEqual([modelFile]);
+  host.files.delete(modelFile);
+  locations = await provider('definition').provideDefinition(document(), { line: 0, character: 10 });
+  expect(locations.map((location: any) => location.uri.fsPath)).toEqual([migrationFile]);
+  const hover = await provider('hover').provideHover(document(), { line: 0, character: 10 });
+  expect(hover.contents.value).toContain('Future queue');
+  expect(hover.contents.value).toContain('proposed');
+  host.documents.push(document('change_set: [{kind: split, after: [{id: sample.D001}]}]', migrationFile));
+  expect(await provider('definition').provideDefinition(document(), { line: 0, character: 10 })).toBeUndefined();
+});
+
+it('keeps layer precedence independent across model versions for TO-BE readers', async () => {
+  const future = `${project}/.blueprint/v2.9/migration.yaml`;
+  host.files.set(future, 'change_set: [{kind: new, entity: {id: sample.D001}}]');
+  const locations = await provider('definition').provideDefinition(document(), { line: 0, character: 10 });
+  expect(locations.map((location: any) => location.uri.fsPath)).toEqual([modelFile, future]);
+  expect(host.files.size).toBe(3);
 });

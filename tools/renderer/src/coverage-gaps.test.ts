@@ -37,6 +37,13 @@ describe('renderCoverageGaps', () => {
     expect(result).not.toContain('SR001');
   });
 
+  it('separates an id from its summary with a hyphen, never an em dash', () => {
+    const sr2 = { id: 'SR002', displayId: 'SR002', type: 'Rule', layer: 'design.rules', summary: 'Price must be positive' };
+    const result = renderCoverageGaps([CN1, CMD2, EVT2, sr2], []);
+    expect(result).toContain('- **SR002** - Price must be positive');
+    expect(result).not.toContain('\u2014');
+  });
+
   it('reports no gaps when model is fully connected', () => {
     const result = renderCoverageGaps([CMD1, EVT1], [PRODUCES]);
     expect(result).toContain('No coverage gaps found');

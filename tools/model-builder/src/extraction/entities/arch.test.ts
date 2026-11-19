@@ -488,3 +488,16 @@ describe('extractArch: third-party packages (v2.8.84)', () => {
     expect(types).toEqual([...extractArch(archDoc).map((entity) => entity.type), ENTITY_TYPE.Package]);
   });
 });
+
+
+describe('message channel record evidence', () => {
+  it.each([undefined, {}, { evidence: [] }, { certainty: 'probable', evidence: [{ kind: 'documentation', source: 'channels.md', summary: 'Observed topic', date: '2026-11-14' }] }])('keeps its own proof separate from broker link proof: %j', (provenance) => {
+    const channel = { id: 'MCH001', name: 'Order topic', broker_ref: 'IR001',
+      link_provenance: { broker_ref: { IR001: { certainty: 'speculative' } } },
+      ...(provenance !== undefined ? { provenance } : {}),
+    };
+    const extracted = extractArch({ filePath: 'arch.yaml', data: { channels: [channel] } })[0];
+    expect(extracted.data).toEqual(channel);
+    expect(Object.hasOwn(extracted.data!, 'provenance')).toBe(provenance !== undefined);
+  });
+});

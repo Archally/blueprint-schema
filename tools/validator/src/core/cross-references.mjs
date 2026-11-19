@@ -22,6 +22,8 @@
 import { retiredBandOf, rebanded, outOfBandFinding } from "./id-bands.mjs";
 import { indexDeclarations, resolveReference, suggestDeclaredIds } from "./ref-resolve.mjs";
 import { goalRelationFindings } from "./goal-relations.mjs";
+import { idSliceWarnings } from "./id-slice.mjs";
+import { migrationPlacementFindings } from "./migration-placement.mjs";
 import { detectSchemaType } from "./schema-types.mjs";
 import {
   collectIds,
@@ -338,6 +340,8 @@ export function resolveModelReferences(documents, refKeys, bandTable, declaredBa
   }
 
   return {
+    idSliceWarnings: idSliceWarnings(documents),
+    migrationPlacement: migrationPlacementFindings(documents, (id) => resolveReference(index, id).status !== "unresolved"),
     goalRelations: goalRelationFindings(documents),
     missing,
     duplicates,

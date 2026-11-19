@@ -13,6 +13,22 @@ $defs:
     description: "Identifier of a migration in this register. Numbered in the order the register allocated them, from MIG001, and unscoped: a register belongs to one project, so nothing needs qualifying."
     examples: ["MIG001", "MIG042"]
 
+  tracked_dependency_reason:
+    type: object
+    additionalProperties: false
+    required: [migration, reason]
+    description: "Why this migration waits for one migration it lists in `depends_on`."
+    properties:
+      migration:
+        $ref: "#/$defs/tracked_migration_ref"
+        description: "The migration waited for. It is listed in this migration's `depends_on`; one that is not, or one named in two entries, is reported by validation."
+        examples: [MIG001]
+      reason:
+        type: string
+        pattern: "\\S"
+        description: "Why this migration waits for that one, in plain language, for example a table both change or a decision that must be taken first."
+        examples: ["Both migrations change the order table, and the column split must land first."]
+
   tracked_status:
     type: string
     enum: [draft, pending, applied, rolled-back, rejected, discarded]
@@ -30,7 +46,7 @@ $defs:
     properties:
       op:
         type: string
-        enum: [rename, patch, tag, rewrite-ref, new, delete]
+        enum: [rename, patch, tag, rewrite-ref, new, delete, move]
         description: "What this operation does to the model."
     allOf:
       - if: { properties: { op: { const: rename } }, required: [op] }
@@ -45,6 +61,8 @@ $defs:
         then: { $ref: "#/$defs/patch_op_new" }
       - if: { properties: { op: { const: delete } }, required: [op] }
         then: { $ref: "#/$defs/patch_op_delete" }
+      - if: { properties: { op: { const: move } }, required: [op] }
+        then: { $ref: "#/$defs/patch_op_move" }
 
   patch_op_rename:
     type: object
@@ -57,10 +75,12 @@ $defs:
         description: "Names this operation."
       from:
         type: string
+        pattern: "^\\S+$"
         description: "The id the entity carries now."
         examples: ["catalog.CN001"]
       to:
         type: string
+        pattern: "^\\S+$"
         description: "The id it takes."
         examples: ["catalog.CN099"]
 
@@ -75,6 +95,7 @@ $defs:
         description: "Names this operation."
       target:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "The entity to change, by id or by name."
         examples: ["catalog.CN001", "StockReservation"]
       ops:
@@ -116,10 +137,12 @@ $defs:
         description: "Names this operation."
       from:
         type: string
+        pattern: "^\\S+$"
         description: "The id references currently name."
         examples: ["catalog.CN001"]
       to:
         type: string
+        pattern: "^\\S+$"
         description: "The id they should name instead."
         examples: ["catalog.CN099"]
       scope:
@@ -138,10 +161,12 @@ $defs:
         description: "Names this operation."
       entity_type:
         type: string
+        pattern: "^[a-z][a-z0-9_-]*$"
         description: "What kind of entity to add. Decides which container in the file receives it."
         examples: ["concept", "command", "event", "service"]
       file:
         type: string
+        pattern: "^(?![/\\\\])[^\\\\\\r\\n]*\\.ya?ml$"
         description: "The file to add it to, relative to the model directory."
         examples: ["catalog/product-core.domain.yaml"]
       data:
@@ -167,8 +192,34 @@ $defs:
         description: "Names this operation."
       target:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "The entity to remove, by id or by name."
         examples: ["catalog.CN001"]
+
+  patch_op_move:
+    type: object
+    description: "Move one entity, with its text unchanged, into another file of the same layer and slice. Its id and every reference to it stay as they are. A destination that does not exist is created, and a source file the move empties keeps its empty container."
+    additionalProperties: false
+    required: [op, target, file]
+    properties:
+      op:
+        const: move
+        description: "Names this operation."
+      target:
+        type: string
+        pattern: "^\\S(?:.*\\S)?$"
+        description: "The entity to move, by id or by name."
+        examples: ["catalog.CN001"]
+      file:
+        type: string
+        pattern: "^(?![/\\\\])[^\\\\\\r\\n]*\\.ya?ml$"
+        description: "The file to move it into, relative to the model directory."
+        examples: ["catalog/pricing.concepts.yaml"]
+      from:
+        type: string
+        pattern: "^(?![/\\\\])[^\\\\\\r\\n]*\\.ya?ml$"
+        description: "The file the entity is declared in when the move is staged, relative to the model directory. Applying the move fails when the entity is declared elsewhere. Absent: the move applies wherever the entity is."
+        examples: ["catalog/product-core.concepts.yaml"]
 
   json_patch_op:
     type: object
@@ -181,6 +232,7 @@ $defs:
         description: "What to do at `path`."
       path:
         type: string
+        pattern: "^(?:/(?:[^~/]|~[01])*)+$"
         description: "JSON Pointer to the field, relative to the entity."
         examples: ["/name", "/tags/0"]
       value:
@@ -221,6 +273,7 @@ $defs:
     properties:
       file:
         type: string
+        pattern: "^(?![/\\\\])[^\\\\\\r\\n]*\\.ya?ml$"
         description: "The file, relative to the model directory, with forward slashes."
         examples: ["catalog/supply-chain.concepts.yaml"]
       windows:
@@ -291,6 +344,39 @@ $defs:
         description: "Migrations that must apply before this one."
         items:
           $ref: "#/$defs/tracked_migration_ref"
+      depends_on_reasons:
+        type: array
+        description: "Why this migration waits for a migration in `depends_on`: one entry per dependency with a stated reason. A dependency without an entry states no reason."
+        items:
+          $ref: "#/$defs/tracked_dependency_reason"
+        examples:
+          - [{ migration: MIG001, reason: "Both migrations change the order table, and the column split must land first." }]
+      related_decisions:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/decision_ref"
+        description: "Decisions (DC###) that motivated this migration, each listed once. An id no decisions file of the model declares is a cross-reference error. Without the list, the entry records no decision for this migration; it does not state that none was taken."
+        examples:
+          - [DC001]
+      owned_by:
+        $ref: "metamodel.schema.yaml#/$defs/owned_by"
+        description: "The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct from `author`, who staged the record."
+        examples:
+          - { team: TM001 }
+      change_stream_ref:
+        $ref: "metamodel.schema.yaml#/$defs/change_stream_ref"
+        description: "The change stream this migration belongs to. At most one; absent means none. An id that `change_streams` in the model's blueprint.yaml does not declare is a cross-reference error."
+        examples: [CS001]
+      reach:
+        $ref: "metamodel.schema.yaml#/$defs/migration_reach"
+        description: "The bounded contexts and domains this migration changes, stated by hand only where its changes cannot show them. Otherwise they are derived from the changes, and a statement that disagrees with them is reported by validation."
+        examples:
+          - { bounded_context_refs: [BC001], domain_refs: [DMN001] }
+      tracker_ref:
+        $ref: "metamodel.schema.yaml#/$defs/tracker_ref"
+        description: "The item that stands for this migration in an external issue tracker, resolved to a link like every other `tracker_ref`."
+        examples: [ABC-1234]
       variant_group:
         type: string
         description: "Names a set of mutually exclusive alternatives. Migrations sharing a group are competing answers to the same question: accepting one rejects its siblings, and conflicts between them are expected rather than reported."

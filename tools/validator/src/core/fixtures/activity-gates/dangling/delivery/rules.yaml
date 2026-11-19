@@ -1,0 +1,7 @@
+version: "1.0.0"
+scope: delivery
+validation:
+  - id: delivery.VR001
+    name: Specification passes review
+    description: "A specification goes to development only once the product team has accepted it."
+    modality: obligatory

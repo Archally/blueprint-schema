@@ -53,7 +53,7 @@ function runSuite(suite, root) {
     child.on('close', (code, signal) => {
       clearTimeout(timer);
       const plain = output.replace(/\u001b\[[0-9;]*m/g, '');
-      const nodeCount = /(?:^|\n)# tests (\d+)/m.exec(plain);
+      const nodeCount = /(?:^|\n)(?:#|ℹ) tests (\d+)/m.exec(plain);
       const vitestCount = /(?:^|\n)\s*Tests\s+(.+)/m.exec(plain);
       const tests = nodeCount ? Number(nodeCount[1]) : vitestCount
         ? [...vitestCount[1].matchAll(/(\d+)\s+(?:passed|failed)/g)].reduce((total, match) => total + Number(match[1]), 0) : 0;

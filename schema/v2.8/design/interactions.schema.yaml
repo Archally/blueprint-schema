@@ -75,6 +75,7 @@ $defs:
         description: "Unique screen identifier (SCR001, SCR002, etc.)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable screen name (e.g. 'Order Summary')."
       summary:
         type: string
@@ -141,6 +142,7 @@ $defs:
         description: "Screen this action belongs to."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable action name (e.g. 'Submit Order')."
       description:
         type: string

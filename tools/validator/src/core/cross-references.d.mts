@@ -21,6 +21,8 @@ export interface SourceLocator {
 }
 
 export interface ReferenceFindings {
+  /** Advisory declarations whose known slice prefix disagrees with their written file. */
+  idSliceWarnings: Array<{ file: string; message: string }>;
   goalRelations: { errors: Array<{ file: string; path: string; message: string }>; warnings: Array<{ file: string; path: string; message: string }> };
   /**
    * `suggestions` are the declared ids that differ from `value` only by a prefix (the shared

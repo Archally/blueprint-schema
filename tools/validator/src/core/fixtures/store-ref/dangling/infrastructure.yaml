@@ -1,0 +1,9 @@
+version: "1.0.0"
+name: Order infrastructure
+resources:
+  - id: IR001
+    kind: database
+    name: Order Database
+  - id: IR002
+    kind: cache
+    name: Session Cache

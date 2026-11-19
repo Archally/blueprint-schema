@@ -11,6 +11,7 @@ required:
 properties:
   name:
     type: string
+    pattern: "^\\S(?:.*\\S)?$"
     description: "Domain or service name these processes belong to."
   version:
     $ref: "../metamodel.schema.yaml#/$defs/semver"
@@ -84,6 +85,7 @@ $defs:
         description: "Typed process identifier (PRC### pattern)."
       title:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Process title in imperative or actor-goal form."
       processUri:
         type: string
@@ -165,6 +167,7 @@ $defs:
           properties:
             name:
               type: string
+              pattern: "^\\S(?:.*\\S)?$"
               description: "End state name."
             type:
               type: string
@@ -304,6 +307,7 @@ $defs:
         description: "Unique activity identifier (PA001, PA002, etc.)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable activity name describing this process phase."
       description:
         type: string
@@ -448,6 +452,28 @@ $defs:
           entry repeats one of them so the YAML shows it; where a gateway follows, an entry names
           the activity its branch leads to. Towards work outside the process, an entry names the
           receiving process, team or receiver.
+      questions:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/activity_question"
+        description: >
+          The questions asked every time the work reaches this activity, such as "who reads this
+          page?". Each has a `key` that is unique within the activity, so a record of one run can
+          cite the question as the activity id and the key, `PA001/audience`. An open question the
+          modeller has about the activity is not one of these: it is an inquiry whose `affects`
+          names the activity.
+      gates:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/activity_gate"
+        description: >
+          The pass or fail conditions the work meets at this activity before it goes on, such as
+          "the page passes the accessibility check". Each has a `key` that is unique within the
+          activity, so a record of one run can cite the gate as the activity id and the key,
+          `PA012/release`. A criterion shared by several gates, or one that tests verify, is a
+          rule the model declares, which each gate names in `rule`.
       provenance:
         $ref: "../metamodel.schema.yaml#/$defs/provenance"
         description: >
@@ -529,6 +555,73 @@ $defs:
         $ref: "#/$defs/stated_name"
         description: "The receiver as the source names it, for one the model does not declare."
 
+  activity_item_key:
+    type: string
+    pattern: "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+    description: >
+      The name a question or a gate is cited by, unique among the questions or among the gates of
+      one activity: lowercase words joined by hyphens, for example `audience` or `owner-answer`.
+
+  activity_question:
+    type: object
+    description: >
+      A question asked every time the work reaches an activity. `key` and `statement` are a
+      complete statement; `asked_by`, `asked_of` and `answer` say who asks it, who answers it and
+      where the answer is recorded, where the model declares them.
+    additionalProperties: false
+    required: [key, statement]
+    properties:
+      key:
+        $ref: "#/$defs/activity_item_key"
+        description: "The name the question is cited by, unique among the questions of the activity."
+      statement:
+        type: string
+        pattern: "\\S"
+        description: "The question as it is asked, for example \"Who reads this page?\"."
+      asked_by:
+        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "The actor who asks the question. Absent: whoever performs the activity."
+      asked_of:
+        $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
+        description: "Who answers the question: an actor (ACT###) or a team (TM###)."
+      answer:
+        $ref: "#/$defs/process_artifact"
+        description: "Where the answer is recorded, as a name and, where the model declares it, a concept."
+
+  activity_gate:
+    type: object
+    description: >
+      A pass or fail condition the work meets at an activity before it goes on. `key` and
+      `criterion` are a complete statement; `evaluated_by`, `rule`, `evidence` and `on_fail` say
+      who judges it, which declared rule states it, what shows the result and where the work goes
+      when it fails, where the model declares them.
+    additionalProperties: false
+    required: [key, criterion]
+    properties:
+      key:
+        $ref: "#/$defs/activity_item_key"
+        description: "The name the gate is cited by, unique among the gates of the activity."
+      criterion:
+        type: string
+        pattern: "\\S"
+        description: "What passes the gate, for example \"The page passes the accessibility check\"."
+      evaluated_by:
+        $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
+        description: "Who judges the gate: an actor (ACT###) or a team (TM###)."
+      rule:
+        $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
+        description: >
+          The rule that states the criterion, where the model declares it. Several gates may name
+          one rule, and a test case that verifies the rule reaches every gate that names it.
+      evidence:
+        $ref: "#/$defs/process_artifact"
+        description: "What shows the result of the gate, such as a report or a dated answer."
+      on_fail:
+        $ref: "../metamodel.schema.yaml#/$defs/process_activity_ref"
+        description: >
+          The activity the work goes to when the gate fails: an activity this activity leads to
+          through `next` or `next_activities`. Absent: the model does not say.
+
   # ---------------------------------------------------------------------------
   # User Story (v2.5)
   # Agile user story with MoSCoW delivery priority. States what someone intends to deliver.
@@ -553,6 +646,7 @@ $defs:
         description: "The actor who wants this - the 'As a...' clause."
       goal:
         type: string
+        pattern: "\\S"
         description: "What the actor wants to do - the 'I want...' clause."
       benefit:
         type: string
@@ -597,9 +691,13 @@ $defs:
           stories. The inverse is `concern.about_ref` naming this story.
       operations:
         type: array
+        uniqueItems: true
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-        description: "Domain operations this story exercises."
+        description: >
+          Domain operations this story exercises, each listed once. The list is a set: its order
+          means nothing, and a story states no order of work. The order of steps belongs to a use
+          case's main scenario or to a process.
       test_cases:
         type: array
         items:
@@ -638,9 +736,11 @@ $defs:
         description: "Step number of the main scenario where this branch leaves it."
       condition:
         type: string
+        pattern: "\\S"
         description: "Condition that triggers this branch."
       action:
         type: string
+        pattern: "\\S"
         description: "What happens on this branch."
       operation:
         $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
@@ -648,6 +748,15 @@ $defs:
       actor:
         $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
         description: "Actor who performs this branch, when it is not a modelled operation. Consulted only when `operation` is absent."
+
+  use_case_step_id:
+    type: string
+    pattern: "^UCS\\d{3,}$"
+    description: >
+      Identifier of one step of a use case's main scenario: UCS followed by 3 or more digits, with no
+      context prefix. It is unique within that main scenario and is named only from the same
+      scenario's `after` lists, so another use case may give one of its own steps the same
+      identifier. It identifies a step, not an entity of the model.
 
   use_case:
     type: object
@@ -677,6 +786,7 @@ $defs:
         description: "Unique use case identifier (UC + 3+ digits)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Use case name (e.g., 'Place Order')."
       summary:
         type: string
@@ -711,7 +821,12 @@ $defs:
         description: "Conditions that are true after successful completion."
       main_scenario:
         type: array
-        description: "Main success scenario as ordered steps."
+        description: >
+          Main success scenario: its steps, in the order a reader is shown them. A step that states
+          no `after` must follow the step listed immediately before it, and the first listed step
+          needs no predecessor; `after` replaces that default with the steps it names. Two steps
+          with no required order between them happen in either order, one at a time: freedom of
+          order is not concurrency, which a process states in its activities and joins.
         items:
           type: object
           additionalProperties: false
@@ -720,9 +835,13 @@ $defs:
             step:
               type: integer
               minimum: 1
-              description: "Step number in the scenario."
+              description: >
+                Step number in the scenario: the label a reader sees and the anchor an alternative
+                flow names in its own `step`. The position of the step in the list, not this
+                number, decides which step it follows by default.
             action:
               type: string
+              pattern: "\\S"
               description: "What happens at this step (plain language)."
             operation:
               $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
@@ -747,6 +866,43 @@ $defs:
             pain_point:
               type: string
               description: "UX friction or difficulty at this step."
+            id:
+              $ref: "#/$defs/use_case_step_id"
+              description: >
+                Identifier of this step, needed only when another step of this main scenario names
+                it in `after`. Unique within the main scenario.
+            after:
+              type: array
+              uniqueItems: true
+              items:
+                $ref: "#/$defs/use_case_step_id"
+              description: >
+                The steps of this main scenario that must be finished before this step starts,
+                named by their `id`; every one of them is required. When present, the list replaces
+                the default predecessor, the step listed immediately before, and an empty list
+                states that this step needs no predecessor. An optional step that is skipped counts
+                as finished for this order, and a repeated step is finished after its last
+                repetition.
+            optional:
+              type: boolean
+              description: >
+                Whether this step may be skipped. Omitted or false: the step happens. True: the step
+                happens or is skipped, and a skip lets the steps that must follow it start. A
+                skipped step is recorded as skipped rather than done, and its operation is not
+                performed.
+            repeat:
+              type: boolean
+              description: >
+                Whether this step may happen more than once. Omitted or false: once. True: one or
+                more times, until the actor finishes the step, or zero or more times together with
+                `optional: true`. The steps that must follow it start after its last repetition;
+                a repetition is not a return to an earlier step.
+            rule:
+              $ref: "../metamodel.schema.yaml#/$defs/rule_ref"
+              description: >
+                A business rule of this model that explains a constraint on this step, such as why
+                it must follow another step or when it may be skipped. Naming the rule documents
+                the reason; it does not make the scenario enforce the rule.
       alternative_flows:
         type: array
         description: >

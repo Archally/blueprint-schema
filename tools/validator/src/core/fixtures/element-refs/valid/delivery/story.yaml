@@ -1,0 +1,23 @@
+version: "1.0.0"
+name: Delivery stories
+scope: delivery
+processes:
+  - id: delivery.PRC001
+    title: Refund a lost parcel
+    activities:
+      - id: delivery.PA004
+        name: Export the night's parcels
+      - id: delivery.PA005
+        name: Approve the refund
+user_stories:
+  - id: delivery.US001
+    actor: delivery.ACT001
+    goal: See my evening round
+use_cases:
+  - id: delivery.UC001
+    name: Deliver a parcel
+    primary_actor: delivery.ACT001
+    main_scenario:
+      - id: UCS001
+        step: 1
+        action: The courier scans the parcel.

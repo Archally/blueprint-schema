@@ -1,0 +1,11 @@
+version: "1.0.0"
+scope: delivery
+happy_path:
+  - id: delivery.TC001
+    name: A parcel is delivered
+    validates:
+      operations: [delivery.CMD001]
+fitness_functions:
+  - id: delivery.FF001
+    name: Export duration stays under an hour
+    assertion: The nightly export finishes within an hour.

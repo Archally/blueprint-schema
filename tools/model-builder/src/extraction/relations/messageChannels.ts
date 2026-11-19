@@ -1,5 +1,6 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { indexDeclarations, resolveReference, type RefDeclaration, type RefIndex } from './refResolution.js';
+import { companionEvidence, declarationOrigin, declarationRelationId } from './linkEvidence.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 
@@ -14,9 +15,8 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  * `travels_on` carries `data.role` (`topic` or `queue`, the inline object that named the channel),
  * `data.name` (that object's inline `name`: the routing key on a topic channel) and `data.protocol`
  * (the exchange entry's protocol), so a reader of the edge has what the operation said about this
- * channel without re-reading the operation and re-resolving its references. An operation's `exchange`
- * is an object or an array of them; every entry naming a channel builds an edge, and entries naming
- * one channel twice are one edge, the first one read, because a relation id is built from the pair.
+ * channel without re-reading the operation and re-resolving its references. Each exchange and role
+ * keeps its declaration origin, even when another exchange names the same channel.
  *
  * Every field read here is a typed reference, so a miss builds no edge and no placeholder: it is
  * already a cross-reference error with a file and a location (the rule `infrastructure.ts` states).
@@ -56,8 +56,8 @@ export function extractMessageChannelRelations(entities: Entity[]): Relation[] {
 
   const relations: Relation[] = [];
   const emitted = new Set<string>();
-  const push = (source: Entity, type: string, target: Entity, data?: Record<string, unknown>): void => {
-    const id = `${source.id}--${type}--${target.id}`;
+  const push = (source: Entity, type: string, target: Entity, data?: Record<string, unknown>, selector?: string): void => {
+    const id = selector ? declarationRelationId(source, selector, type) : `${source.id}--${type}--${target.id}`;
     if (emitted.has(id)) return;
     emitted.add(id);
     relations.push({
@@ -65,7 +65,8 @@ export function extractMessageChannelRelations(entities: Entity[]): Relation[] {
       source_entity_id: source.id,
       target_entity_id: target.id,
       type,
-      ...(data ? { data } : {}),
+      ...(data && Object.keys(data).length ? { data } : {}),
+      ...(selector ? { origin_ref: declarationOrigin(source, selector) } : {}),
     });
   };
 
@@ -74,13 +75,13 @@ export function extractMessageChannelRelations(entities: Entity[]): Relation[] {
 
     if (entity.type === ENTITY_TYPE.MessageChannel) {
       const broker = resources.resolve(data.broker_ref);
-      if (broker) push(entity, RELATION_TYPE.ChannelBroker, broker);
+      if (broker) push(entity, RELATION_TYPE.ChannelBroker, broker, companionEvidence(data, 'broker_ref', String(data.broker_ref)), 'broker_ref');
       continue;
     }
 
     if (entity.type === ENTITY_TYPE.Operation) {
       const exchanges = Array.isArray(data.exchange) ? data.exchange : [data.exchange];
-      for (const exchange of exchanges) {
+      for (const [occurrence, exchange] of exchanges.entries()) {
         if (!exchange || typeof exchange !== 'object') continue;
         for (const role of CHANNEL_ROLES) {
           const binding = (exchange as Record<string, unknown>)[role];
@@ -90,10 +91,12 @@ export function extractMessageChannelRelations(entities: Entity[]): Relation[] {
           const name = (binding as Record<string, unknown>).name;
           const protocol = (exchange as Record<string, unknown>).protocol;
           push(entity, RELATION_TYPE.TravelsOn, channel, {
+            ...companionEvidence(binding as Record<string, unknown>, 'channel_ref', String((binding as Record<string, unknown>).channel_ref)),
+            ...(Object.hasOwn(exchange, 'provenance') ? { exchange_provenance: exchange.provenance } : {}),
             role,
             ...(typeof name === 'string' && name.length > 0 ? { name } : {}),
             ...(typeof protocol === 'string' && protocol.length > 0 ? { protocol } : {}),
-          });
+          }, `exchange[occurrence=${occurrence}].${role}.channel_ref`);
         }
       }
       continue;
@@ -102,7 +105,7 @@ export function extractMessageChannelRelations(entities: Entity[]): Relation[] {
     if (entity.type === ENTITY_TYPE.Contract) {
       const subscription = data.subscription as Record<string, unknown> | undefined;
       const channel = channels.resolve(subscription?.channel_ref);
-      if (channel) push(entity, RELATION_TYPE.ContractSubscription, channel);
+      if (channel) push(entity, RELATION_TYPE.ContractSubscription, channel, companionEvidence(subscription!, 'channel_ref', String(subscription!.channel_ref)), 'subscription.channel_ref');
     }
   }
 

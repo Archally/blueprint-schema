@@ -405,6 +405,18 @@ $defs:
       (e.g. SDM001). SOFT-DEPRECATED (v2.8.17). A subdomain is a partition of one domain and is always reached through it, so it takes no identity of its own on the next major line: it is named by its own `name` inside the domain that contains it, and the containing domain is what another entity points at. Still accepted here, and `id` stays required while it exists.
       A reference that names a subdomain becomes a reference to the domain containing it.
 
+  product_ref:
+    type: string
+    pattern: "^PDT\\d{3,}$"
+    description: "Reference to a product declared in blueprint.yaml `products[]` (e.g. PDT001). Model-wide, so no context prefix."
+    examples: [PDT001]
+
+  change_stream_ref:
+    type: string
+    pattern: "^CS\\d{3,}$"
+    description: "Reference to a change stream declared in blueprint.yaml `change_streams[]` (e.g. CS001). Model-wide, so no context prefix."
+    examples: [CS001]
+
   model_ref:
     description: >
       Reference to a model component. Four forms supported:
@@ -645,6 +657,17 @@ $defs:
     enum: [service, worker, api, webapp, cli, library, function]
     description: "Architectural component type: service=backend, worker=job processor, api=endpoint, webapp=frontend, cli=command-line, library=a library the organization builds itself, function=serverless. A third-party library is not a service: it is declared as a package (PKG###) in an architecture document's `packages:` list."
 
+  service_role:
+    type: string
+    enum: [gateway, bff]
+    description: >
+      The responsibility a service takes in front of other services, stated beside its `kind` and
+      independent of it. `gateway`: an entry point that receives requests from clients and forwards
+      them to backend services. `bff` (backend for frontend): a gateway dedicated to one frontend or
+      client experience. A service that states no role has none in the model; no role is inferred
+      from a name, a kind or a tag. Running at the network edge is a placement, not a role: it is
+      the `edge` substrate of the environment or deployment scope the service runs in.
+
   value_stream_ref:
     type: string
     pattern: "^([a-z][a-z0-9-]*\\.)?VS\\d{3,}$"
@@ -686,6 +709,22 @@ $defs:
       reports an observation about it (e.g. PRB001 or integration.PRB001). A probe is a referenceable
       node so that what it does not see is recorded once against the instrument, rather than repeated
       on, or missing from, every observation drawn with it.
+
+  model_element_ref:
+    type: string
+    title: Model element
+    pattern: "^([a-z][a-z0-9-]*\\.)?[A-Z]{1,4}\\d{3,}$"
+    not:
+      pattern: "^([a-z][a-z0-9-]*\\.)?(RT|UCS)\\d"
+    description: >
+      Reference to any element this model declares by a typed id: an entity such as IR003,
+      orders.CMD001 or BC002, or a part of one that carries its own id, such as a process activity
+      (PA004) or a concept attribute (CAT012). It resolves to the declaration whose id is the same
+      string, of whatever type, the scope prefix included; an id nothing declares, or that several
+      elements declare, names no element. Not a resource type (RT###), which lives in the
+      resource-type catalog outside the model, and not a use case step (UCS###), which is unique only
+      within its scenario. A scope name and the keyed `scope:key` form are not typed ids.
+    examples: [IR003, orders.CMD001, delivery.PA002]
 
   message_channel_ref:
     type: string
@@ -1011,6 +1050,126 @@ $defs:
     enum: [major, minor, patch]
     description: "Semantic versioning impact: major=breaking, minor=backward-compatible addition, patch=docs or clarification."
 
+  migration_reach:
+    type: object
+    additionalProperties: false
+    x-vocabulary-distinct: "A fallback statement checked against what a migration's changes show. Not the `affects` of a goal, risk, assumption, inquiry or finding, which is that entity's only statement of what it touches, and not the entities a migration names in its changes, which are read from those changes."
+    description: >
+      The bounded contexts and domains this migration changes, stated by hand only where its
+      changes cannot show them: a change described in prose, or a planned migration whose changes
+      are not written yet. Otherwise they are derived from the changes. A stated context or domain
+      the changes never reach, or one they reach that is not stated, is reported by semantic
+      validation.
+    properties:
+      bounded_context_refs:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/bounded_context_ref"
+        description: "The bounded contexts (BC###) this migration changes, by arch id. An id no arch file declares is a cross-reference error."
+        examples:
+          - [BC001, shop.BC002]
+      domain_refs:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/domain_ref"
+        description: "The domains (DMN###) this migration changes, declared in blueprint.yaml `domains[]`. An id the registry does not declare is a cross-reference error."
+        examples:
+          - [DMN001]
+
+  migration_dependency_reason:
+    type: object
+    additionalProperties: false
+    required: [migration, reason]
+    description: "Why this migration waits for one migration it lists in `depends_on`."
+    properties:
+      migration:
+        $ref: "#/$defs/migration_ref"
+        description: "The migration waited for. It is listed in this migration's `depends_on`; one that is not, or one named in two entries, is reported by semantic validation."
+        examples: [MIG002]
+      reason:
+        type: string
+        pattern: "\\S"
+        description: "Why this migration waits for that one, in plain language, for example a table both change or a decision that must be taken first."
+        examples: ["Both migrations change the order table, and the column split must land first."]
+
+  migration_business_case:
+    type: object
+    additionalProperties: false
+    required: [horizon_months, currency, initial_cost, recurring_cost, recurring_benefit, period]
+    description: >
+      The forecast economics of one migration: what carrying it out costs and what it is expected
+      to return over a stated horizon, in one currency. It is an estimate made by its author, not
+      a measured outcome. It is stated on the migration, the unit people and time are given to;
+      the decisions and goals the migration serves give its reasons and carry no amounts. A
+      migration without a business case states no estimate, and nothing absent is read as zero.
+      All six inputs are required, so a business case is complete or absent, and any two in the
+      same currency can be compared. Over the horizon the undiscounted totals are: cost is
+      `initial_cost` plus `recurring_cost` multiplied by the number of periods, and benefit is
+      `recurring_benefit` multiplied by the number of periods, where the number of periods is
+      `horizon_months` for `period: month` and `horizon_months` divided by 12 for `period: year`.
+      No discounting, currency conversion or rate of return is implied. A benefit that several
+      dependent migrations yield together is recorded once, on the migration that releases it.
+    properties:
+      horizon_months:
+        type: integer
+        minimum: 1
+        maximum: 1.7976931348623157e+308
+        description: "The number of whole months the estimate covers: a finite whole number, at least 1."
+        examples: [24]
+      currency:
+        type: string
+        pattern: "^[A-Z]{3}$"
+        description: "The currency of every amount in this business case, as an ISO 4217 alphabetic code: three uppercase letters such as EUR, USD or PLN. The pattern checks the shape, not that the code is assigned. Amounts in different currencies are never added together."
+        examples: [EUR, USD, PLN]
+      initial_cost:
+        type: number
+        minimum: 0
+        maximum: 1.7976931348623157e+308
+        description: "The one-time cost of carrying out the migration, in `currency`: a finite number, zero or more."
+        examples: [12000]
+      recurring_cost:
+        type: number
+        minimum: 0
+        maximum: 1.7976931348623157e+308
+        description: "The running cost the migration adds in each `period`, in `currency`: a finite number, zero or more. A running cost the migration removes is a benefit, stated in `recurring_benefit`."
+        examples: [100]
+      recurring_benefit:
+        type: number
+        minimum: 0
+        maximum: 1.7976931348623157e+308
+        description: "The benefit the migration is expected to yield in each `period`, in `currency`, including running costs it removes: a finite number, zero or more. A forecast, not a gain already achieved."
+        examples: [900]
+      period:
+        type: string
+        enum: [month, year]
+        description: "The period `recurring_cost` and `recurring_benefit` are each stated per: a month or a year."
+      assumption_refs:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "#/$defs/assumption_ref"
+        description: "Assumptions (ASM###) the estimate rests on, each listed once: if one proves wrong, the estimate is at risk. An id no motivation file declares is a cross-reference error."
+        examples:
+          - [ASM001]
+      evidence:
+        $ref: "#/$defs/evidence"
+        description: "The sources the estimate is drawn from, such as a supplier quote, a benchmark or measured usage."
+    examples:
+      - horizon_months: 24
+        currency: EUR
+        initial_cost: 12000
+        recurring_cost: 100
+        recurring_benefit: 900
+        period: month
+        assumption_refs: [ASM001]
+
+  parameter_location:
+    type: string
+    enum: [path, query, header, cookie]
+    description: "Where a request parameter travels: in the path, the query string, a header or a cookie. The four locations OpenAPI names."
+
   gateway_kind:
     type: string
     enum: [and, xor, or]
@@ -1038,6 +1197,7 @@ $defs:
         description: "Condition or triggering context."
       then:
         type: string
+        pattern: "\\S"
         description: "Required conclusion or obligation."
       else:
         type: string
@@ -1082,6 +1242,7 @@ $defs:
     properties:
       path:
         type: string
+        pattern: "^(?![/\\\\])\\S(?:.*\\S)?$"
         description: >
           File path relative to repository root (e.g., src/models/Order.ts).
           For cross-repo: org/repo#src/models/Order.ts.
@@ -1362,6 +1523,7 @@ $defs:
           description: "When this evidence was collected (ISO 8601)."
         summary:
           type: string
+          pattern: "\\S"
           description: "Brief description of what the evidence shows."
         certainty:
           $ref: "#/$defs/certainty"
@@ -1934,7 +2096,8 @@ x-gdsm:
       schema_version: "2.8.43"
     - lesson: >
         `tracker_ref` is declared on `process`, `user_story` and `use_case`, on a roadmap's
-        `milestone`, `work_item` and blocker, and on nothing else. That is the schema saying which
+        `milestone`, `work_item` and blocker, on a migration in each of its three shapes, and on
+        nothing else. That is the schema saying which
         constructs correspond to a unit of delivered or planned WORK: a tracker item describes
         something a team agreed to build, and an operation is a piece of the domain that several
         such items may touch. Do not reach for a nested `properties.tracker_ref` on an operation to
@@ -2164,3 +2327,33 @@ x-gdsm:
         team or no owner at all. A scan of the models on this line for prose standing in for an
         owner found none, so the shape precedes measured use rather than answering it.
       schema_version: "2.8.81"
+    - lesson: >
+        A question asked every time the work reaches an activity, and a condition the work must meet
+        there before it goes on, belong to the activity as `questions` and `gates`, not to a
+        competency question (answered by an operation, scoped to one bounded context) and not to an
+        inquiry (the modeller's own question, which resolves). Give each a key and cite it as the
+        activity id and the key in a run record. Where several gates share a criterion, or tests
+        verify it, declare it once as a rule and name it in each gate's `rule`, rather than
+        repeating the criterion as prose.
+      category: semantics
+      date: "2026-11-16"
+      evidence: >
+        Two process families on this line kept their recurring stage questions and their gates
+        as prose in descriptions and notes, so no query could list the gates a process has, who
+        judges them or which rule each one enforces.
+      schema_version: "2.8.102"
+    - lesson: >
+        Pin an inquiry to exactly what it asks about. `affects.element_refs` takes any typed id the
+        model declares, an infrastructure resource, an environment, a screen, a migration, a watch
+        item, or one part of an entity (a process activity, a concept attribute), and the kind lists
+        beside it take one kind each with the same meaning, so an id is named once, in one of them.
+        A pin names its target only: it says nothing about the target's children, parent or
+        neighbours, so a question about a whole process names the process, and a question about one
+        of its activities names the activity, never both for one question.
+      category: semantics
+      date: "2026-11-18"
+      evidence: >
+        Inquiries about an infrastructure resource, an environment or a screen had no kind list
+        that accepted the id, so their targets were written in prose and no map or board could place
+        the question beside the element it was about.
+      schema_version: "2.8.106"

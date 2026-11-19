@@ -1,0 +1,167 @@
+version: "1.0.0"
+name: Shop architecture
+channels:
+  - id: MCH001
+    name: order_event_bus
+    kind: topic
+    broker_ref: IR001
+  - id: MCH002
+    name: order_audit
+    kind: queue
+    broker_ref: IR001
+packages:
+  - id: PKG001
+    name: date-fns
+    version: "3.6.0"
+    license:
+      expression: MIT
+contexts:
+  - id: BC001
+    name: Orders
+    kind: core
+    provenance:
+      certainty: confirmed
+      evidence:
+        - kind: workshop
+          source: Order flow board export
+          date: "2026-10-20"
+          summary: The orders context was agreed at the order flow workshop.
+    dependencies:
+      - name: Payments
+        bounded_context_ref: BC002
+        relationship: customer-supplier
+        direction: downstream
+        coupling: http
+      - name: Stock
+        bounded_context_ref: BC003
+        relationship: published-language
+        direction: upstream
+      - name: Card Network
+        relationship: conformist
+        direction: downstream
+      - name: Tax Service
+        relationship: anticorruption-layer
+        direction: downstream
+      - name: Catalog
+        relationship: separate-ways
+    services:
+      - id: SVC001
+        name: order-api
+        kind: api
+        imports: [ SVC010, PKG001 ]
+        uses: [ SVC002 ]
+        resource_refs: [ IR002, IR002 ]
+        provenance:
+          certainty: confirmed
+        needs:
+          - type_ref: RT001
+            id: orders-db
+          - type_ref: RT001
+            id: orders-cache
+        servers:
+          - url: https://orders.example.test
+            environment: ENV001
+          - url: https://orders.staging.example.test
+            environment: staging
+        contracts:
+          openapi:
+            contract_name: orders-api
+            expose: [ orders.CMD001, "orders:cancelOrder" ]
+          httpClient:
+            contract_name: payments-client
+            call: [ payments.CMD001 ]
+          asyncapi:
+            contract_name: order-events
+            broker_ref: IR001
+            send: [ orders.EVT001 ]
+          graphql:
+            contract_name: orders-graph
+            queries: [ orders ]
+            mutations: [ placeOrder ]
+            subscriptions: [ orderPlaced ]
+          openrpc:
+            contract_name: orders-rpc
+            expose: [ orders.QRY002 ]
+          protobuf:
+            file: proto/orders.proto
+            contract_name: orders-proto
+            expose: [ orders.CMD003 ]
+          mcp:
+            contract_name: orders-tools
+            expose: [ orders.CMD004 ]
+          cli:
+            contract_name: orders-cli
+            expose: [ orders.CMD005 ]
+          arazzo:
+            contract_name: order-flows
+            workflows: [ checkout ]
+          cncfsw:
+            contract_name: order-runs
+            workflows: [ refund ]
+          inprocess:
+            provide: [ orders.CMD006 ]
+          shareddata:
+            contract_name: order-ledger
+            write: [ orders.DOC001 ]
+          scheduledtransfer:
+            contract_name: order-export
+            write: [ orders.DOC002 ]
+      - id: SVC003
+        name: edge-gateway
+        kind: api
+        role: gateway
+        routes_to: [ SVC001 ]
+      - id: SVC005
+        name: order-worker
+        kind: worker
+        contracts:
+          inprocess:
+            consume: [ orders.CMD006 ]
+      - id: SVC010
+        name: shared-kernel
+        kind: library
+  - id: BC002
+    name: Payments
+    kind: support
+    services:
+      - id: SVC002
+        name: payments-api
+        kind: api
+        contracts:
+          openapi:
+            contract_name: payments-api
+            expose: [ payments.CMD001 ]
+  - id: BC003
+    name: Stock
+    kind: support
+    services:
+      - id: SVC004
+        name: stock-worker
+        kind: worker
+        contracts:
+          asyncapi:
+            contract_name: stock-events
+            broker_ref: IR001
+            receive: [ orders.EVT001 ]
+            subscription:
+              channel_ref: MCH002
+          openrpc:
+            contract_name: stock-rpc
+            expose: [ stock.QRY001 ]
+            call: [ orders.QRY002 ]
+          protobuf:
+            file: proto/orders.proto
+            contract_name: orders-proto
+            call: [ orders.CMD003 ]
+          mcp:
+            contract_name: orders-tools
+            call: [ orders.CMD004 ]
+          cli:
+            contract_name: orders-cli
+            call: [ orders.CMD005 ]
+          shareddata:
+            contract_name: order-ledger
+            read: [ orders.DOC001 ]
+          scheduledtransfer:
+            contract_name: order-export
+            read: [ orders.DOC002 ]

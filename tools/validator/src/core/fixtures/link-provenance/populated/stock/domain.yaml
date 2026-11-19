@@ -1,0 +1,12 @@
+version: "1.0.0"
+name: Stock domain
+scope: stock
+operations:
+  checkStock:
+    id: stock.QRY001
+    kind: query
+    name: Check Stock
+    exchange:
+      protocol: json-rpc
+      method:
+        name: checkStock

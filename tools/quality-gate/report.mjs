@@ -81,6 +81,21 @@ export function renderReport({ modelRoot, result, fileCount, parseErrors, worstL
     lines.push('');
   }
 
+  if (result.evidence) {
+    const census = result.evidence;
+    lines.push('  Evidence census (recorded support, advisory):');
+    for (const [label, population] of [['Raw typed declarations', census.raw.entities], ['Raw relation declarations', census.raw.relations]]) {
+      lines.push(`    ${label}: ${population.allObjectShare.label} with evidence; carrier eligible ${population.carrierEligibleShare.label}; cannot state ${population.cannotState}; unknown carrier ${population.carrierUnknown}`);
+    }
+    if (census.graph.status === 'available') {
+      lines.push(`    Graph entities: ${census.graph.entities.allObjectShare.label}; graph relations: ${census.graph.relations.allObjectShare.label}`);
+    } else {
+      lines.push(`    Graph: unavailable. ${census.graph.reason}`);
+    }
+    lines.push(`    State ${census.scope.modelState}; schema ${census.scope.schemaVersion ?? 'unknown'}; evaluated ${census.scope.evaluatedAt}`);
+    lines.push('');
+  }
+
   // Entity and file mode lead with the entities, field by field: that is the question they ask.
   // The metric table follows, scored against the patch bar, with only the metrics that saw data.
   if (selectionMode) {
@@ -148,6 +163,10 @@ export function renderReport({ modelRoot, result, fileCount, parseErrors, worstL
     lines.push(...renderStructure(result.structure, modelRoot, worstLimit));
   }
 
+  if (!selectionMode && result.textLength) {
+    lines.push(...renderTextLength(result, modelRoot, worstLimit));
+  }
+
   if (parseErrors.length > 0) {
     lines.push('');
     lines.push(`  Parse errors (${parseErrors.length}) - these files were not measured`);
@@ -199,6 +218,9 @@ function renderEntityBlock(entity, modelRoot, focus, schemaNote) {
     const owned = row.ownedId ? ` [${row.ownedId}]` : '';
     const reason = row.reason ? `  - ${row.reason}` : '';
     lines.push(`   ${pointer}${FIELD_MARK[row.status]}  ${row.field.padEnd(fieldWidth)}  ${row.subject}${owned}${reason}`);
+  }
+  for (const record of entity.textLength ?? []) {
+    lines.push(`    ${textLengthLine(record)} - ${record.path}`);
   }
   if (entity.structure) lines.push(...renderEntityStructure(entity.structure, schemaNote));
   return lines;
@@ -290,5 +312,35 @@ function renderStructure(structure, modelRoot, limit) {
     }
     if (naming.length > limit) lines.push(`    ... and ${naming.length - limit} more; --json lists every one`);
   }
+  return lines;
+}
+
+
+/** One field exceeding its character or sentence limit. */
+function textLengthLine(record) {
+  const chars = record.limit === null ? `${record.length} chars` : `${record.length} chars, limit ${record.limit}`;
+  const sentences = record.sentences === undefined ? '' : `; ${record.sentences} sentences, limit ${record.sentenceLimit}`;
+  return `${record.field} ${chars} (advisory)${sentences}`;
+}
+
+/** Whole-model and scoped text limits, counts and longest offenders. */
+function renderTextLength(result, modelRoot, limit) {
+  const lines = ['', '  Text length (advisory):',
+    '    field           char limit  sentence limit  source    measured  over limit  longest'];
+  for (const [field, row] of Object.entries(result.textLength.fields)) {
+    const chars = row.off ? 'off' : row.max_chars ?? '-';
+    const sentences = row.off ? 'off' : row.max_sentences ?? '-';
+    lines.push(`    ${field.padEnd(15)} ${String(chars).padStart(10)}  ${String(sentences).padStart(14)}`
+      + `  ${String(row.source).padEnd(8)}  ${String(row.measured).padStart(8)}  ${String(row.overLimit).padStart(10)}  ${row.longest}`);
+  }
+  const offenders = result.entities.flatMap(entity => (entity.textLength ?? []).map(record => ({ entity, record })))
+    .sort((a, b) => b.record.length - a.record.length);
+  if (offenders.length > 0) {
+    lines.push('  Longest text fields:');
+    for (const { entity, record } of offenders.slice(0, limit)) {
+      lines.push(`    ${entityHeading(entity)} (${path.relative(modelRoot, entity.file)}): ${textLengthLine(record)} - ${record.path}`);
+    }
+  }
+  lines.push('');
   return lines;
 }

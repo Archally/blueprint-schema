@@ -1,0 +1,16 @@
+engineVersion: "0.1"
+rules:
+  - id: hotspot-statement-empty
+    severity: warn
+    description: >-
+      A present Inquiry, Risk or Finding statement contains no non-whitespace text.
+      A summary or description does not satisfy the required statement field.
+      Missing and non-string statements remain schema validation concerns.
+      This warning does not determine whether a renderer omits the entity.
+    find:
+      entity_type_in: [Inquiry, Risk, Finding]
+    check:
+      custom:
+        module: ./hotspot-statement-empty.mjs
+        export: hotspotStatementEmpty
+    message: '{type} {displayId}: statement is blank; provide a non-whitespace statement.'

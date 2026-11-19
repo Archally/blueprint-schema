@@ -1,0 +1,7 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Link Evidence Shop
+description: >-
+  The same shop as the populated fixture with no link evidence at all: its links state no evidence
+  of their own, while the orders context, the order API and the place-order operation still state
+  evidence about themselves.

@@ -1,0 +1,15 @@
+engineVersion: "0.1"
+rules:
+  - id: messaging-command-receiver
+    severity: warn
+    description: >-
+      A command sent over messaging is handled by its unique receiving service.
+      With zero or several receiving services the handler binding retains its previous
+      answer. Declare one receiving service when the command has a single handler.
+    find:
+      entity_type: Operation
+    check:
+      custom:
+        module: ./messaging-command-receiver.mjs
+        export: messagingCommandReceiver
+    message: 'Sent command {displayId} "{operation_name}" has {count} receiving services ({services}); handler derivation retains its previous answer because no unique receiving service is declared.'

@@ -54,6 +54,7 @@ $defs:
         description: "Migration identifier (MIG001, MIG002, and so on)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Short title, in the words a reader of the model would use."
         examples: ["Accounting Domain Bootstrap"]
       description:
@@ -79,6 +80,42 @@ $defs:
         items:
           $ref: "metamodel.schema.yaml#/$defs/migration_ref"
         description: "Migrations that apply before this one."
+      depends_on_reasons:
+        type: array
+        description: "Why this migration waits for a migration in `depends_on`: one entry per dependency with a stated reason. A dependency without an entry states no reason."
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/migration_dependency_reason"
+        examples:
+          - [{ migration: MIG002, reason: "Both migrations change the order table, and the column split must land first." }]
+      related_decisions:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/decision_ref"
+        description: "Decisions (DC###) that motivated this migration, each listed once: the link a migration document states in `migration.related_decisions`. An id no decisions file declares is a cross-reference error. Without the list, the register records no decision for this migration; it does not state that none was taken."
+        examples:
+          - [DC001]
+      owned_by:
+        $ref: "metamodel.schema.yaml#/$defs/owned_by"
+        description: "The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct from `author`, who wrote the record."
+        examples:
+          - { team: TM001 }
+      change_stream_ref:
+        $ref: "metamodel.schema.yaml#/$defs/change_stream_ref"
+        description: "The change stream this migration belongs to. At most one; absent means none. An id that `change_streams` in blueprint.yaml does not declare is a cross-reference error."
+        examples: [CS001]
+      reach:
+        $ref: "metamodel.schema.yaml#/$defs/migration_reach"
+        description: "The bounded contexts and domains this migration changes, stated by hand only where its changes cannot show them. Otherwise they are derived from the changes, and a statement that disagrees with them is reported by semantic validation."
+        examples:
+          - { bounded_context_refs: [BC001], domain_refs: [DMN001] }
+      tracker_ref:
+        $ref: "metamodel.schema.yaml#/$defs/tracker_ref"
+        description: "The item that stands for this migration in an external issue tracker, resolved to a link like every other `tracker_ref`."
+        examples: [ABC-1234]
+      business_case:
+        $ref: "metamodel.schema.yaml#/$defs/migration_business_case"
+        description: "The forecast cost and benefit of carrying out this migration over a stated horizon. Optional: an entry without it states no estimate. A model declares each migration id once, in a migration document or in a register entry, so one migration carries at most one business case."
       tags:
         $ref: "metamodel.schema.yaml#/$defs/tags"
         description: "Free-form tags for this entry."
@@ -99,6 +136,7 @@ $defs:
         $ref: "#/$defs/register_change_kind"
       description:
         type: string
+        pattern: "\\S"
         description: "What changed, in the words a reader of the model would use."
       entity:
         type: string

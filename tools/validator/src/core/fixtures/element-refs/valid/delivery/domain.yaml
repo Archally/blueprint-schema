@@ -1,0 +1,27 @@
+version: "1.0.0"
+name: Delivery domain
+scope: delivery
+operations:
+  deliverParcel:
+    id: delivery.CMD001
+    kind: command
+    name: Deliver Parcel
+  parcelDelivered:
+    id: delivery.EVT001
+    kind: event
+    name: Parcel Delivered
+  findParcel:
+    id: delivery.QRY001
+    kind: query
+    name: Find Parcel
+  deliveryNote:
+    id: delivery.DOC001
+    kind: document
+    name: Delivery Note
+errors:
+  parcelLost:
+    id: delivery.ERR001
+    name: Parcel Lost
+questions:
+  - id: delivery.QN001
+    statement: Which parcels missed the evening round?

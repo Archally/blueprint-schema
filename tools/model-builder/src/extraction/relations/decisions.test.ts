@@ -189,3 +189,34 @@ describe('extractDecisionRelations - declared_impact.direct.packages (v2.8.84)',
     expect(placeholders.size).toBe(2);
   });
 });
+
+
+describe('decision participant references', () => {
+  it('keeps roles distinct, deduplicates exact refs and exposes missing or ambiguous owners', () => {
+    const decision = makeEntity({ id: 'decision', displayId: 'DC001', type: ENTITY_TYPE.Decision,
+      data: { participants: { decision_makers: ['area.ACT001', 'area.ACT001'], consulted: ['ACT001', 'TM001'], informed: ['TM999'] } } });
+    const actor = makeEntity({ id: 'actor', displayId: 'area.ACT001', type: ENTITY_TYPE.Actor });
+    const team = makeEntity({ id: 'team', displayId: 'TM001', type: ENTITY_TYPE.Team });
+    const duplicate = makeEntity({ id: 'duplicate-team', displayId: 'TM001', type: ENTITY_TYPE.Team });
+    const wrongType = makeEntity({ id: 'wrong-type', displayId: 'TM999', type: ENTITY_TYPE.Concept });
+    const placeholders = new Map<string, Entity>();
+    const relations = extractDecisionRelations([decision, actor, team, duplicate, wrongType], placeholders);
+    const participants = relations.filter(relation => relation.type === RELATION_TYPE.DecisionParticipant);
+    expect(participants).toHaveLength(4);
+    expect(participants.find(relation => relation.predicate === 'decision_makers')!.target_entity_id).toBe('actor');
+    expect([...placeholders.values()].map(entity => entity.displayId)).toEqual(['ACT001', 'TM001', 'TM999']);
+    expect([...placeholders.values()].find(entity => entity.displayId === 'TM001')!.data!.ambiguous).toBe(true);
+    expect(participants.every(relation => relation.source_entity_id === 'decision')).toBe(true);
+    expect(participants.some(relation => relation.type.includes('approval'))).toBe(false);
+  });
+  it('draws no participant and invents no placeholder for a role stated as an empty list', () => {
+    const decision = makeEntity({ id: 'decision', displayId: 'DC001', type: ENTITY_TYPE.Decision,
+      data: { participants: { decision_makers: ['ACT001'], consulted: [], informed: [] } } });
+    const actor = makeEntity({ id: 'actor', displayId: 'ACT001', type: ENTITY_TYPE.Actor });
+    const placeholders = new Map<string, Entity>();
+    const relations = extractDecisionRelations([decision, actor], placeholders);
+    const participants = relations.filter(relation => relation.type === RELATION_TYPE.DecisionParticipant);
+    expect(participants.map(relation => [relation.predicate, relation.target_entity_id])).toEqual([['decision_makers', 'actor']]);
+    expect(placeholders.size).toBe(0);
+  });
+});

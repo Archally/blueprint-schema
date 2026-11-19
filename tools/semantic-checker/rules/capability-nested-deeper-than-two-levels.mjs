@@ -1,4 +1,4 @@
-/** Deeper declarations are reported independently of their realization. */
+/** Deeper capabilities are reported independently of their realization; features are exempt. */
 import { capabilityIndex, declaredId, nameOf } from './capability-hierarchy.mjs';
 
 /**
@@ -6,6 +6,7 @@ import { capabilityIndex, declaredId, nameOf } from './capability-hierarchy.mjs'
  * @param {any} subject
  */
 export const capabilityNestedDeeperThanTwoLevels = (model, subject) => {
+  if (subject.data?.kind === 'feature') return { ok: true };
   const index = capabilityIndex(model);
   const nesting = index.deeper.get(subject.id);
   if (!nesting) return { ok: true };

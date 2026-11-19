@@ -1,0 +1,1389 @@
+{
+  "migration.schema.yaml": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Blueprint Migration Schema",
+    "description": "Versioned, ordered changes to a blueprint model instance. Enables AS-IS to TO-BE model transformation with traceability and rollback.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "migration",
+      "changes"
+    ],
+    "properties": {
+      "schemaVersion": {
+        "$ref": "metamodel.schema.yaml#/$defs/schema_version",
+        "description": "Schema version this migration conforms to. Omit to assume latest."
+      },
+      "migration": {
+        "type": "object",
+        "description": "Migration identity, lifecycle, and traceability metadata.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "date",
+          "status",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "metamodel.schema.yaml#/$defs/migration_ref",
+            "description": "Unique migration identifier (MIG001, MIG002, etc.)."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$",
+            "description": "Kebab-case migration name (e.g., 'add-payment-retry-logic')."
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Migration creation date (YYYY-MM-DD)."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "pending",
+              "applied",
+              "rolled-back"
+            ],
+            "description": "Lifecycle state: draft=authoring, pending=ready for review/application, applied=committed to model, rolled-back=reverted."
+          },
+          "description": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "What this migration does and why, in plain language."
+          },
+          "author": {
+            "type": "string",
+            "description": "Person or agent who created this migration."
+          },
+          "breaking": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this migration introduces breaking changes to generated artifacts."
+          },
+          "semver_impact": {
+            "$ref": "metamodel.schema.yaml#/$defs/semver_impact",
+            "description": "Semantic versioning impact on the blueprint model version."
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "$ref": "metamodel.schema.yaml#/$defs/migration_ref"
+            },
+            "description": "Migrations that must be applied before this one. Loader validates dependency order."
+          },
+          "depends_on_reasons": {
+            "type": "array",
+            "description": "Why this migration waits for a migration in `depends_on`: one entry per dependency with a stated reason. A dependency without an entry states no reason.",
+            "items": {
+              "$ref": "metamodel.schema.yaml#/$defs/migration_dependency_reason"
+            },
+            "examples": [
+              [
+                {
+                  "migration": "MIG002",
+                  "reason": "Both migrations change the order table, and the column split must land first."
+                }
+              ]
+            ]
+          },
+          "related_decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "metamodel.schema.yaml#/$defs/decision_ref"
+            },
+            "description": "Architectural decisions that motivated this migration."
+          },
+          "owned_by": {
+            "$ref": "metamodel.schema.yaml#/$defs/owned_by",
+            "description": "The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct from `author`, who wrote the record.",
+            "examples": [
+              {
+                "team": "TM001"
+              }
+            ]
+          },
+          "change_stream_ref": {
+            "$ref": "metamodel.schema.yaml#/$defs/change_stream_ref",
+            "description": "The change stream this migration belongs to. At most one; absent means none. An id that `change_streams` in blueprint.yaml does not declare is a cross-reference error.",
+            "examples": [
+              "CS001"
+            ]
+          },
+          "reach": {
+            "$ref": "metamodel.schema.yaml#/$defs/migration_reach",
+            "description": "The bounded contexts and domains this migration changes, stated by hand only where its changes cannot show them. Otherwise they are derived from the changes, and a statement that disagrees with them is reported by semantic validation.",
+            "examples": [
+              {
+                "bounded_context_refs": [
+                  "BC001"
+                ],
+                "domain_refs": [
+                  "DMN001"
+                ]
+              }
+            ]
+          },
+          "tracker_ref": {
+            "$ref": "metamodel.schema.yaml#/$defs/tracker_ref",
+            "description": "The item that stands for this migration in an external issue tracker, resolved to a link like every other `tracker_ref`.",
+            "examples": [
+              "ABC-1234"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Detailed reasoning for why this migration is needed."
+          },
+          "business_case": {
+            "$ref": "metamodel.schema.yaml#/$defs/migration_business_case",
+            "description": "The forecast cost and benefit of carrying out this migration over a stated horizon. Optional: a migration without it states no estimate. A model declares each migration id once, in a migration document or in a register entry, so one migration carries at most one business case."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Free-form tags for grouping and filtering migrations."
+          },
+          "properties": {
+            "$ref": "metamodel.schema.yaml#/$defs/entity_properties",
+            "description": "Open metadata bag for migration-level custom attributes."
+          }
+        }
+      },
+      "changes": {
+        "type": "object",
+        "description": "Model changes organized by concern: entities (nodes), properties (attributes), relationships (edges), and meta (cross-cutting). At least one change must be present across all collections.",
+        "additionalProperties": false,
+        "properties": {
+          "entities": {
+            "type": "array",
+            "description": "Entity-level changes: add, remove, deprecate, split, or merge entire blueprint entities.",
+            "items": {
+              "$ref": "#/$defs/entity_change"
+            }
+          },
+          "properties": {
+            "type": "array",
+            "description": "Property-level changes: set, unset, or rename individual fields on existing entities.",
+            "items": {
+              "$ref": "#/$defs/property_change"
+            }
+          },
+          "relationships": {
+            "type": "array",
+            "description": "Relationship changes: add, remove, or redirect edges between entities.",
+            "items": {
+              "$ref": "#/$defs/relationship_change"
+            }
+          },
+          "meta": {
+            "type": "array",
+            "description": "Cross-cutting changes: tags, file restructuring, bulk operations, constitution amendments.",
+            "items": {
+              "$ref": "#/$defs/meta_change"
+            }
+          }
+        }
+      },
+      "rollback": {
+        "type": "object",
+        "description": "Rollback feasibility metadata. Automatic rollback derives inverse operations from before/old_value.",
+        "additionalProperties": false,
+        "properties": {
+          "automatic": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether rollback can be computed from before/old_value fields."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Warnings about rollback risks."
+          },
+          "data_loss": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether rollback would lose information not captured in before/old_value."
+          },
+          "external_actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Manual actions required outside the blueprint if rollback is performed."
+          }
+        }
+      }
+    },
+    "$defs": {
+      "entity_change_kind": {
+        "type": "string",
+        "enum": [
+          "add",
+          "modify",
+          "deprecate",
+          "remove",
+          "rename",
+          "split",
+          "merge"
+        ],
+        "x-vocabulary-distinct": "Names the OPERATION a migration performs on an entity, alongside a target and an ordering. Not the narrative impact classification a decision records.",
+        "description": "What this migration does to one entity. add: a new entity. modify: replace it. deprecate: mark it for removal. remove: delete it. rename: it keeps its identity under a new id. split: one becomes many. merge: many become one. Deliberately NOT a reference to the metamodel's `change_kind`, which carries the same words to classify a decision's impact rather than to be executed.\n"
+      },
+      "entity_change": {
+        "type": "object",
+        "description": "A change to a whole entity (node in the graph).",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "entity_type",
+          "target"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/$defs/entity_change_kind"
+          },
+          "entity_type": {
+            "type": "string",
+            "enum": [
+              "concept",
+              "actor",
+              "enumeration",
+              "association",
+              "operation",
+              "error",
+              "rule",
+              "transition",
+              "model",
+              "process",
+              "process-activity",
+              "user-story",
+              "use-case",
+              "question",
+              "party",
+              "department",
+              "team",
+              "context",
+              "service",
+              "contract",
+              "dependency",
+              "goal",
+              "non-goal",
+              "risk",
+              "assumption",
+              "trade-off",
+              "inquiry",
+              "decision",
+              "capability",
+              "test-case",
+              "fitness-function",
+              "metric",
+              "kpi",
+              "slo",
+              "sla",
+              "security",
+              "compliance",
+              "resilience",
+              "parallelism",
+              "ordering",
+              "race-condition",
+              "screen",
+              "ui-action",
+              "ui-navigation",
+              "resource",
+              "milestone",
+              "value-stream"
+            ],
+            "description": "Blueprint entity type. Routes validation to the appropriate schema."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Entity identifier (typed ref, e.g., CN005, CMD012) or SpecPath. For add: new entity ID. For merge: comma-separated source IDs."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this change."
+          },
+          "before": {
+            "type": "object",
+            "description": "Entity state before change. REQUIRED for modify, remove, merge. Enables rollback."
+          },
+          "after": {
+            "description": "Entity state after change. REQUIRED for add, modify, split. For split: array of entities."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this specific entity change is needed."
+          },
+          "group": {
+            "type": "string",
+            "description": "Atomic group name. All changes with the same group must apply together or not at all."
+          },
+          "order": {
+            "type": "integer",
+            "description": "Explicit ordering within this migration. Lower numbers apply first."
+          }
+        }
+      },
+      "property_change": {
+        "type": "object",
+        "description": "A change to individual properties on an existing entity.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "target",
+          "property"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "set",
+              "unset",
+              "rename",
+              "append",
+              "remove-item"
+            ],
+            "description": "Property operation: set=assign, unset=remove, rename=change name, append=add to array, remove-item=remove from array."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Entity identifier (typed ref, e.g., CN005, CMD012)."
+          },
+          "entity_type": {
+            "type": "string",
+            "description": "Entity type for validation routing. Same enum as entity_change.entity_type."
+          },
+          "property": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "Property name or dot-path for nested properties (e.g., description, payload.model)."
+          },
+          "value": {
+            "description": "New value for set/append operations. Type depends on the property."
+          },
+          "old_value": {
+            "description": "Previous value for conflict detection and rollback."
+          },
+          "new_name": {
+            "type": "string",
+            "description": "New property name for rename operations."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this property change."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this property is being changed."
+          },
+          "group": {
+            "type": "string",
+            "description": "Atomic group name (same semantics as entity_change.group)."
+          },
+          "order": {
+            "type": "integer",
+            "description": "Explicit ordering within this migration."
+          }
+        }
+      },
+      "relationship_change": {
+        "type": "object",
+        "description": "A change to a relationship (edge) between two entities.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "subject",
+          "predicate",
+          "object"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "add",
+              "remove",
+              "redirect",
+              "modify"
+            ],
+            "description": "Edge operation: add=create, remove=delete, redirect=change target, modify=change edge properties."
+          },
+          "subject": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Source entity typed ref (e.g., CMD005). The entity this relationship originates from."
+          },
+          "predicate": {
+            "type": "string",
+            "enum": [
+              "relationship",
+              "transition_rules",
+              "interaction",
+              "association",
+              "produces",
+              "reacts_to",
+              "translates",
+              "concepts",
+              "concept",
+              "governed_by",
+              "precondition",
+              "preconditions",
+              "postcondition",
+              "postconditions",
+              "initiated_by",
+              "depends_on",
+              "context_depends_on",
+              "requires",
+              "has_state",
+              "transition",
+              "constrains",
+              "validates",
+              "motivation_refs",
+              "capability_refs",
+              "declared_impact",
+              "tracks",
+              "targets",
+              "measures",
+              "goal.kpi",
+              "references",
+              "contains",
+              "extends",
+              "typed_by",
+              "has_error",
+              "enters_at",
+              "has_step",
+              "next_activity",
+              "assigned_to_lane",
+              "exposes",
+              "consumes",
+              "related_to",
+              "provides",
+              "story_orders_operation",
+              "org_contains_dept",
+              "dept_has_team",
+              "org_contains_team",
+              "screen_uses_model",
+              "screen_motivated_by",
+              "screen_decision",
+              "screen_validated_by",
+              "screen_story",
+              "action_on_screen",
+              "action_triggers_operation",
+              "nav_from",
+              "nav_to",
+              "question_answered_by",
+              "question_about",
+              "question_motivated_by",
+              "question_stakeholder",
+              "test_validates_question",
+              "decision_motivated_by_question",
+              "example_validates",
+              "user_story_actor",
+              "user_story_operation",
+              "user_story_test_case",
+              "user_story_use_case",
+              "use_case_actor",
+              "use_case_user_story",
+              "use_case_story",
+              "use_case_screen",
+              "use_case_operation",
+              "milestone_dependency",
+              "milestone_deliverable",
+              "question_owner",
+              "risk_owner",
+              "inquiry_goal",
+              "inquiry_risk",
+              "inquiry_question",
+              "inquiry_finding",
+              "inquiry_owner",
+              "inquiry_stakeholder",
+              "risk_goal",
+              "capability_goal",
+              "assumption_risk",
+              "goal_assumption",
+              "value_stream_capability",
+              "value_stream_goal",
+              "value_stream_kpi",
+              "value_stream_actor",
+              "code_ref"
+            ],
+            "description": "Relationship type. Maps to graph edge label."
+          },
+          "object": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Target entity typed ref (e.g., EVT006). For redirect: current target."
+          },
+          "new_object": {
+            "type": "string",
+            "description": "For redirect: the new target entity ref."
+          },
+          "edge_properties": {
+            "type": "object",
+            "description": "Properties on the edge itself (policy, condition, mode for produces/reacts_to).",
+            "additionalProperties": true,
+            "properties": {
+              "policy": {
+                "type": "string",
+                "description": "Reactive policy name (for reacts_to edges)."
+              },
+              "condition": {
+                "type": "string",
+                "description": "Guard condition (for reacts_to edges)."
+              },
+              "mode": {
+                "$ref": "metamodel.schema.yaml#/$defs/production_mode",
+                "description": "Production mode (for produces edges)."
+              },
+              "rule": {
+                "type": "string",
+                "description": "Rule reference governing this relationship."
+              },
+              "relationship_type": {
+                "type": "string",
+                "description": "DDD relationship pattern (for depends_on edges between contexts)."
+              },
+              "relationship": {
+                "$ref": "metamodel.schema.yaml#/$defs/context_relationship",
+                "description": "DDD context-map pattern carried on a context_depends_on edge."
+              },
+              "direction": {
+                "$ref": "metamodel.schema.yaml#/$defs/context_direction",
+                "description": "This context's role on a context_depends_on edge."
+              }
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this relationship change."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this relationship is being changed."
+          },
+          "group": {
+            "type": "string",
+            "description": "Atomic group name."
+          },
+          "order": {
+            "type": "integer",
+            "description": "Explicit ordering within this migration."
+          }
+        }
+      },
+      "meta_change": {
+        "type": "object",
+        "description": "Cross-cutting changes: tags, file restructuring, bulk operations, constitution amendments.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "target"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tag-add",
+              "tag-remove",
+              "tag-rename",
+              "bulk-tag",
+              "reclassify",
+              "move-to-slice",
+              "constitution-amend",
+              "declare-shared-layer",
+              "document-add",
+              "document-move",
+              "document-split",
+              "document-merge",
+              "note"
+            ],
+            "description": "Meta operation: tag-add/remove/rename, bulk-tag, reclassify, move-to-slice, constitution-amend, declare-shared-layer, document-add/move/split/merge, or note (informational)."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Entity ref, tag name, slice name, or constitution section depending on kind."
+          },
+          "value": {
+            "description": "New value (tag name, new slice, amended text, etc.)."
+          },
+          "old_value": {
+            "description": "Previous value for rollback."
+          },
+          "filter": {
+            "type": "object",
+            "description": "For bulk operations: filter criteria to select target entities.",
+            "properties": {
+              "entity_type": {
+                "type": "string",
+                "description": "Filter by entity type."
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Filter by existing tags (entities matching ANY)."
+              },
+              "slice": {
+                "type": "string",
+                "description": "Filter by domain slice name."
+              },
+              "layer": {
+                "type": "string",
+                "description": "Filter by canonical model layer (e.g. design.ui, governance.roadmap)."
+              }
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this meta change is needed."
+          },
+          "group": {
+            "type": "string",
+            "description": "Atomic group name."
+          },
+          "order": {
+            "type": "integer",
+            "description": "Explicit ordering within this migration."
+          }
+        }
+      }
+    },
+    "x-gdsm": {
+      "version": "1.0.0",
+      "methodology": "GDSM v1.0 (Goal-Driven Schema Modeling)",
+      "status": "draft",
+      "plane": null,
+      "purpose": "One migration of a blueprint model: what it changes, in what order, how it is undone, and who carries it out. The same identity, ownership and grouping fields appear on an entry of the migration register and of the tracked register, so a reader of any of the three finds a migration's team, change stream and reasons for waiting in the same place.\n",
+      "designed_for": [
+        {
+          "id": "T1",
+          "name": "A migration map grouped by change stream",
+          "mfs_target": 80
+        }
+      ],
+      "competency_questions": [
+        "Which team carries out migration M, and which change stream does it belong to?",
+        "Which migrations wait for a migration carried out by another team or in another change stream, and why?",
+        "Which bounded contexts and domains does migration M reach, and is that derived from its changes or stated by hand?"
+      ],
+      "non_goals": [
+        "Placing migrations in time: dates, durations and sprints belong to a roadmap, and a migration states only what it waits for.",
+        "Naming a lead team for a change stream: a stream's teams are the owners of its migrations."
+      ]
+    }
+  },
+  "tracked-migrations.schema.yaml": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Blueprint Tracked Migration Register",
+    "description": "The staged changes a blueprint model is carrying, each one replayable and each one reversible. A project in tracked mode collects its mutations here instead of applying them the moment they are asked for, so a set of related edits lands as one act and can be undone as one. The file sits beside the model directory rather than inside it, at `.blueprint/migrations.yaml`, because it records work ON the model rather than part of it. It is a sequence, not a mapping. A register written for a reader, describing in prose what a model has been through, is a `migrations.yaml` document inside the model directory instead; a single migration authored by hand is a `migration.yaml` document.",
+    "type": "array",
+    "items": {
+      "$ref": "#/$defs/tracked_entry"
+    },
+    "$defs": {
+      "tracked_migration_ref": {
+        "type": "string",
+        "pattern": "^MIG\\d{3,}$",
+        "description": "Identifier of a migration in this register. Numbered in the order the register allocated them, from MIG001, and unscoped: a register belongs to one project, so nothing needs qualifying.",
+        "examples": [
+          "MIG001",
+          "MIG042"
+        ]
+      },
+      "tracked_dependency_reason": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "migration",
+          "reason"
+        ],
+        "description": "Why this migration waits for one migration it lists in `depends_on`.",
+        "properties": {
+          "migration": {
+            "$ref": "#/$defs/tracked_migration_ref",
+            "description": "The migration waited for. It is listed in this migration's `depends_on`; one that is not, or one named in two entries, is reported by validation.",
+            "examples": [
+              "MIG001"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "Why this migration waits for that one, in plain language, for example a table both change or a decision that must be taken first.",
+            "examples": [
+              "Both migrations change the order table, and the column split must land first."
+            ]
+          }
+        }
+      },
+      "tracked_status": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "pending",
+          "applied",
+          "rolled-back",
+          "rejected",
+          "discarded"
+        ],
+        "x-vocabulary-distinct": "Where one migration stands in its own authoring lifecycle, from staged to applied to undone. Not where a migration stands in a model's history as a reader sees it, which is the migration register's `status`, and not the semantic classification of a change.",
+        "description": "Where this migration stands. draft: staged, still collecting changes. pending: complete and waiting to be applied. applied: carried out against the model. rolled-back: applied and then undone. rejected: a variant that lost to a sibling in its group. discarded: abandoned before being applied.\n"
+      },
+      "patch_op": {
+        "type": "object",
+        "description": "One change, expressed so that it can be replayed against the model. Which properties an operation carries is decided by its `op`, and each `op` is checked against its own shape alone, so a fault is reported against the operation it is in rather than against every shape it is not.",
+        "required": [
+          "op"
+        ],
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "rename",
+              "patch",
+              "tag",
+              "rewrite-ref",
+              "new",
+              "delete"
+            ],
+            "description": "What this operation does to the model."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "op": {
+                  "const": "rename"
+                }
+              },
+              "required": [
+                "op"
+              ]
+            },
+            "then": {
+              "$ref": "#/$defs/patch_op_rename"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "op": {
+                  "const": "patch"
+                }
+              },
+              "required": [
+                "op"
+              ]
+            },
+            "then": {
+              "$ref": "#/$defs/patch_op_patch"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "op": {
+                  "const": "tag"
+                }
+              },
+              "required": [
+                "op"
+              ]
+            },
+            "then": {
+              "$ref": "#/$defs/patch_op_tag"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "op": {
+                  "const": "rewrite-ref"
+                }
+              },
+              "required": [
+                "op"
+              ]
+            },
+            "then": {
+              "$ref": "#/$defs/patch_op_rewrite_ref"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "op": {
+                  "const": "new"
+                }
+              },
+              "required": [
+                "op"
+              ]
+            },
+            "then": {
+              "$ref": "#/$defs/patch_op_new"
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "op": {
+                  "const": "delete"
+                }
+              },
+              "required": [
+                "op"
+              ]
+            },
+            "then": {
+              "$ref": "#/$defs/patch_op_delete"
+            }
+          }
+        ]
+      },
+      "patch_op_rename": {
+        "type": "object",
+        "description": "Give an entity a new id, and redirect every reference that named the old one.",
+        "additionalProperties": false,
+        "required": [
+          "op",
+          "from",
+          "to"
+        ],
+        "properties": {
+          "op": {
+            "const": "rename",
+            "description": "Names this operation."
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "The id the entity carries now.",
+            "examples": [
+              "catalog.CN001"
+            ]
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "The id it takes.",
+            "examples": [
+              "catalog.CN099"
+            ]
+          }
+        }
+      },
+      "patch_op_patch": {
+        "type": "object",
+        "description": "Change fields of one entity, addressed by id or by name.",
+        "additionalProperties": false,
+        "required": [
+          "op",
+          "target",
+          "ops"
+        ],
+        "properties": {
+          "op": {
+            "const": "patch",
+            "description": "Names this operation."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "The entity to change, by id or by name.",
+            "examples": [
+              "catalog.CN001",
+              "StockReservation"
+            ]
+          },
+          "ops": {
+            "type": "array",
+            "description": "The field changes to make, in order.",
+            "items": {
+              "$ref": "#/$defs/json_patch_op"
+            }
+          }
+        }
+      },
+      "patch_op_tag": {
+        "type": "object",
+        "description": "Set tags on every entity matching a selection, so a whole slice can be labelled in one act.",
+        "additionalProperties": false,
+        "required": [
+          "op",
+          "where",
+          "set"
+        ],
+        "properties": {
+          "op": {
+            "const": "tag",
+            "description": "Names this operation."
+          },
+          "where": {
+            "type": "object",
+            "description": "The selection: each key must equal its value for an entity to be included.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "examples": [
+              {
+                "slice": "catalog"
+              }
+            ]
+          },
+          "set": {
+            "type": "object",
+            "description": "The tags to set on everything selected.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "examples": [
+              {
+                "review": "2026-Q4"
+              }
+            ]
+          }
+        }
+      },
+      "patch_op_rewrite_ref": {
+        "type": "object",
+        "description": "Redirect references from one id to another without touching the entities themselves. Used where a reference should move but the entity it pointed at stays.",
+        "additionalProperties": false,
+        "required": [
+          "op",
+          "from",
+          "to"
+        ],
+        "properties": {
+          "op": {
+            "const": "rewrite-ref",
+            "description": "Names this operation."
+          },
+          "from": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "The id references currently name.",
+            "examples": [
+              "catalog.CN001"
+            ]
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "The id they should name instead.",
+            "examples": [
+              "catalog.CN099"
+            ]
+          },
+          "scope": {
+            "type": "string",
+            "description": "Limit the rewrite to one slice. Absent rewrites everywhere in the model.",
+            "examples": [
+              "checkout"
+            ]
+          }
+        }
+      },
+      "patch_op_new": {
+        "type": "object",
+        "description": "Add one entity to a file.",
+        "additionalProperties": false,
+        "required": [
+          "op",
+          "entity_type",
+          "file",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "new",
+            "description": "Names this operation."
+          },
+          "entity_type": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]*$",
+            "description": "What kind of entity to add. Decides which container in the file receives it.",
+            "examples": [
+              "concept",
+              "command",
+              "event",
+              "service"
+            ]
+          },
+          "file": {
+            "type": "string",
+            "pattern": "^(?![/\\\\])[^\\\\\\r\\n]*\\.ya?ml$",
+            "description": "The file to add it to, relative to the model directory.",
+            "examples": [
+              "catalog/product-core.domain.yaml"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "description": "The entity itself, in the shape its own schema declares."
+          },
+          "key": {
+            "type": "string",
+            "description": "The entry's key, where the container is a mapping rather than a sequence. Operations and errors are held by key, and the key is the readable address a contract list names, so it is authored data no other field carries. Absent for every container that is a sequence.",
+            "examples": [
+              "reserveStock"
+            ]
+          },
+          "under": {
+            "type": "string",
+            "description": "The parent instance the entity hangs off, where its container is nested rather than at the root of the file. Services live under a party's context, so placing one names which context, by id or by name. Absent for every container at the root of its file.",
+            "examples": [
+              "Catalog",
+              "BC002"
+            ]
+          }
+        }
+      },
+      "patch_op_delete": {
+        "type": "object",
+        "description": "Remove one entity, addressed by id or by name.",
+        "additionalProperties": false,
+        "required": [
+          "op",
+          "target"
+        ],
+        "properties": {
+          "op": {
+            "const": "delete",
+            "description": "Names this operation."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "The entity to remove, by id or by name.",
+            "examples": [
+              "catalog.CN001"
+            ]
+          }
+        }
+      },
+      "json_patch_op": {
+        "type": "object",
+        "description": "One field change, in JSON Patch terms (RFC 6902).",
+        "required": [
+          "op",
+          "path"
+        ],
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "add",
+              "remove",
+              "replace",
+              "move",
+              "copy",
+              "test"
+            ],
+            "description": "What to do at `path`."
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(?:/(?:[^~/]|~[01])*)+$",
+            "description": "JSON Pointer to the field, relative to the entity.",
+            "examples": [
+              "/name",
+              "/tags/0"
+            ]
+          },
+          "value": {
+            "description": "The value to write. Carried by add, replace and test."
+          },
+          "from": {
+            "type": "string",
+            "description": "JSON Pointer to the source field. Carried by move and copy.",
+            "examples": [
+              "/description"
+            ]
+          }
+        }
+      },
+      "validation_delta": {
+        "type": "object",
+        "description": "What applying this migration did to the model's validity, measured before and after. Recorded so that a migration which introduced errors can be recognised as the one that did.",
+        "additionalProperties": false,
+        "required": [
+          "warnings_before",
+          "warnings_after",
+          "errors_before",
+          "errors_after"
+        ],
+        "properties": {
+          "warnings_before": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Warnings the model reported before this migration applied."
+          },
+          "warnings_after": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Warnings it reported afterwards."
+          },
+          "errors_before": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Errors the model reported before this migration applied."
+          },
+          "errors_after": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Errors it reported afterwards."
+          }
+        }
+      },
+      "edit_site": {
+        "type": "object",
+        "description": "What one operation of an applied migration did to one file: the runs of text it replaced, what stood there before, and a digest of the whole file on each side of the change. Offsets count UTF-16 code units of the file's text, as read in UTF-8.",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "windows",
+          "before_sha",
+          "after_sha"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "pattern": "^(?![/\\\\])[^\\\\\\r\\n]*\\.ya?ml$",
+            "description": "The file, relative to the model directory, with forward slashes.",
+            "examples": [
+              "catalog/supply-chain.concepts.yaml"
+            ]
+          },
+          "windows": {
+            "type": "array",
+            "description": "The runs of text the operation changed in this file, ascending by `start` and not overlapping.",
+            "items": {
+              "$ref": "#/$defs/edit_window"
+            }
+          },
+          "before_sha": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "description": "Digest of the whole file before the operation ran. A rollback checks that the file it restores has this digest."
+          },
+          "after_sha": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "description": "Digest of the whole file after the operation ran. A rollback proceeds only while the file still has this digest."
+          }
+        }
+      },
+      "edit_window": {
+        "type": "object",
+        "description": "One contiguous run of text an operation replaced, and the text that stood there before.",
+        "additionalProperties": false,
+        "required": [
+          "start",
+          "end",
+          "prior"
+        ],
+        "properties": {
+          "start": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Where the run starts in the file as the operation left it."
+          },
+          "end": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Where the run ends in the file as the operation left it, exclusive. Equal to `start` when the operation removed text without adding any."
+          },
+          "prior": {
+            "type": "string",
+            "description": "The text that stood in the run before the operation. Empty when the operation only inserted text."
+          }
+        }
+      },
+      "tracked_entry": {
+        "type": "object",
+        "description": "One migration: a named set of changes with a status, and once applied, a record of what it changed and the changes that would undo it.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "status",
+          "change_set"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/tracked_migration_ref"
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+            "description": "Short name for the migration, in kebab-case, naming what it does rather than when it was made.",
+            "examples": [
+              "reserve-stock-at-checkout",
+              "refactor-orders"
+            ]
+          },
+          "status": {
+            "$ref": "#/$defs/tracked_status"
+          },
+          "author": {
+            "type": "string",
+            "description": "Who staged this migration.",
+            "examples": [
+              "adam"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "When the migration was created (YYYY-MM-DD).",
+            "examples": [
+              "2026-09-16"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "What this migration does and why, in plain language."
+          },
+          "breaking": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether applying this migration breaks readers of the model as it stands."
+          },
+          "depends_on": {
+            "type": "array",
+            "description": "Migrations that must apply before this one.",
+            "items": {
+              "$ref": "#/$defs/tracked_migration_ref"
+            }
+          },
+          "depends_on_reasons": {
+            "type": "array",
+            "description": "Why this migration waits for a migration in `depends_on`: one entry per dependency with a stated reason. A dependency without an entry states no reason.",
+            "items": {
+              "$ref": "#/$defs/tracked_dependency_reason"
+            },
+            "examples": [
+              [
+                {
+                  "migration": "MIG001",
+                  "reason": "Both migrations change the order table, and the column split must land first."
+                }
+              ]
+            ]
+          },
+          "related_decisions": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "metamodel.schema.yaml#/$defs/decision_ref"
+            },
+            "description": "Decisions (DC###) that motivated this migration, each listed once. An id no decisions file of the model declares is a cross-reference error. Without the list, the entry records no decision for this migration; it does not state that none was taken.",
+            "examples": [
+              [
+                "DC001"
+              ]
+            ]
+          },
+          "owned_by": {
+            "$ref": "metamodel.schema.yaml#/$defs/owned_by",
+            "description": "The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct from `author`, who staged the record.",
+            "examples": [
+              {
+                "team": "TM001"
+              }
+            ]
+          },
+          "change_stream_ref": {
+            "$ref": "metamodel.schema.yaml#/$defs/change_stream_ref",
+            "description": "The change stream this migration belongs to. At most one; absent means none. An id that `change_streams` in the model's blueprint.yaml does not declare is a cross-reference error.",
+            "examples": [
+              "CS001"
+            ]
+          },
+          "reach": {
+            "$ref": "metamodel.schema.yaml#/$defs/migration_reach",
+            "description": "The bounded contexts and domains this migration changes, stated by hand only where its changes cannot show them. Otherwise they are derived from the changes, and a statement that disagrees with them is reported by validation.",
+            "examples": [
+              {
+                "bounded_context_refs": [
+                  "BC001"
+                ],
+                "domain_refs": [
+                  "DMN001"
+                ]
+              }
+            ]
+          },
+          "tracker_ref": {
+            "$ref": "metamodel.schema.yaml#/$defs/tracker_ref",
+            "description": "The item that stands for this migration in an external issue tracker, resolved to a link like every other `tracker_ref`.",
+            "examples": [
+              "ABC-1234"
+            ]
+          },
+          "variant_group": {
+            "type": "string",
+            "description": "Names a set of mutually exclusive alternatives. Migrations sharing a group are competing answers to the same question: accepting one rejects its siblings, and conflicts between them are expected rather than reported.",
+            "examples": [
+              "auth-rewrite"
+            ]
+          },
+          "change_set": {
+            "type": "array",
+            "description": "The changes this migration makes, in the order they apply. Empty while the migration is still collecting them.",
+            "items": {
+              "$ref": "#/$defs/patch_op"
+            }
+          },
+          "inverse_change_set": {
+            "type": "array",
+            "description": "The changes that undo this migration, recorded when it was applied. It describes the rollback rather than performing it: rolling back restores the recorded `edit_sites`. Empty when at least one operation has no faithful inverse, and `inverse_unavailable` then says which. Absent until the migration is applied, and removed again once it is rolled back.",
+            "items": {
+              "$ref": "#/$defs/patch_op"
+            }
+          },
+          "inverse_unavailable": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Why no inverse could be described, one line per operation that has none. Recorded when the migration is applied, and only when `inverse_change_set` is empty for that reason. The migration can still be rolled back from its `edit_sites`. Kept after a rollback.",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              [
+                "rewrite-ref catalog.CN001 -> catalog.CN002: references already pointed at the target before this ran, so reversing it would move them too"
+              ]
+            ]
+          },
+          "edit_sites": {
+            "type": "array",
+            "description": "What this migration changed, file by file, recorded when it was applied: one site per operation per file it touched, in the order the operations ran. Rolling the migration back restores these sites from the last to the first, and refuses without changing anything when a file no longer matches what the migration left. Absent until the migration is applied, and removed again once it is rolled back.",
+            "items": {
+              "$ref": "#/$defs/edit_site"
+            }
+          },
+          "validation_delta": {
+            "$ref": "#/$defs/validation_delta"
+          }
+        }
+      }
+    }
+  }
+}

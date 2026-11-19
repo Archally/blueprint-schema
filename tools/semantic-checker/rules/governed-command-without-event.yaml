@@ -1,0 +1,12 @@
+engineVersion: "0.1"
+rules:
+  - id: governed-command-without-event
+    severity: info
+    description: A governed command whose produces names no event invites review of its decision outcome.
+    find:
+      entity_type: Operation
+    check:
+      custom:
+        module: ./command-outcomes.mjs
+        export: governedCommandHasEvent
+    message: 'Governed command "{displayId}" ({name|''unnamed''}) produces no event. Review whether its decision outcome is stated; this hint does not require an event.'

@@ -14,7 +14,7 @@ authors, and this module is where that derivation lives, once, for every consume
 | `normaliseService(service)` | one service from either input shape into the common one |
 | `buildContractSurface(services)` | the operation index: ref to the services that expose, call, send or receive it |
 | `deriveServiceEdges(surface)` | service-to-service edges with protocol, direction, operations and broker |
-| `deriveSurfaceGaps(surface, declared)` | refs nobody exposes, exposures nobody calls, and declared pairs with no traffic |
+| `deriveSurfaceGaps(surface, declared)` | refs nobody exposes, exposures nobody calls, declared pairs with no traffic, and in-process consumes whose provider is not in the surface (`consumedUnprovided`, not a gap: a caller looks the provider up elsewhere) |
 | `aggregateEdges(edges, groupOf)` | the same edges lifted to any grouping, such as service to context |
 | `PROTOCOL_ORDER`, `PROTOCOL_LABEL` | the protocol vocabulary and its display strings |
 

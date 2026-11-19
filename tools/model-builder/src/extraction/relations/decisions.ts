@@ -74,6 +74,29 @@ export function extractDecisionRelations(
     const data = entity.data as Record<string, unknown> | undefined;
     if (!data) continue;
 
+    // Participant roles are separate from ownership and from stakeholder signoff evidence.
+    const participants = data.participants as Record<string, unknown> | undefined;
+    const participantPool = entities.filter(candidate => candidate.type === ENTITY_TYPE.Actor || candidate.type === ENTITY_TYPE.Team);
+    for (const role of ['decision_makers', 'consulted', 'informed']) {
+      const references = participants?.[role];
+      if (!Array.isArray(references)) {
+        continue;
+      }
+      for (const reference of new Set(references)) {
+        if (typeof reference !== 'string' || !reference) {
+          continue;
+        }
+        const targetId = resolveOrPlaceholder(reference, domain, participantPool, placeholders);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.DecisionParticipant}--${role}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.DecisionParticipant,
+          predicate: role,
+        });
+      }
+    }
+
     // motivation_refs: { goals[], risks[], assumptions[], trade_offs[] }
     const motivationRefs = data.motivation_refs as Record<string, unknown> | undefined;
     if (motivationRefs && typeof motivationRefs === 'object') {

@@ -63,6 +63,7 @@ $defs:
         description: "Unique fitness function identifier (FF001, FF002, etc.)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable fitness function name."
       description:
         type: string
@@ -73,6 +74,7 @@ $defs:
         description: "Blueprint layer this fitness function targets."
       assertion:
         type: string
+        pattern: "\\S"
         description: "The constraint itself, in words a reader can judge. Prose rather than an expression: it is the statement a person signs off on, and nothing evaluates it on its own."
       severity:
         type: string
@@ -169,6 +171,7 @@ $defs:
         description: "Human-readable description."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable scenario name (e.g. 'Submit order with valid items')."
       summary:
         type: string
@@ -219,9 +222,11 @@ $defs:
         properties:
           kind:
             type: string
+            pattern: "^[a-z][a-z0-9_-]*$"
             description: "Contract format (e.g. pact, openapi, asyncapi)."
           file:
             type: string
+            pattern: "^(?![/\\\\])\\S(?:.*\\S)?$"
             description: "Path to the contract file."
       owned_by:
         $ref: "../metamodel.schema.yaml#/$defs/owned_by"
@@ -393,6 +398,7 @@ $defs:
           - { cartId: "cart-42", paymentMethod: "card", voucherCode: "SPRING20" }
       description:
         type: string
+        pattern: "\\S"
         description: "The act in one sentence, as a tester would perform it (e.g. 'The customer submits the cart for checkout'). Implementation notes belong in the test case's `note`."
         examples: ["The customer submits the cart for checkout with voucher SPRING20."]
 

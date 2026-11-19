@@ -105,3 +105,23 @@ describe('extractInfrastructure', () => {
     expect(entities).toHaveLength(0);
   });
 });
+
+
+describe('record evidence at infrastructure link ends', () => {
+  it.each([undefined, {}, { evidence: [] }, { certainty: 'confirmed', evidence: [{ kind: 'documentation', source: 'inventory.md', date: '2026-11-14', summary: 'Observed store' }] }])('keeps each carrier and grant provenance unchanged: %j', (provenance) => {
+    const stated = provenance === undefined ? {} : { provenance };
+    const access = [{ identity: 'writer', role: 'write', target: 'IR001', ...stated }, { identity: 'reader', role: 'read' }];
+    const entities = extractInfrastructure(doc({
+      resources: [{ id: 'IR001', name: 'Store', access, ...stated }],
+      environments: [{ id: 'ENV001', name: 'Production', ...stated }],
+      deployment_scopes: [{ id: 'DSC001', name: 'Data', ...stated }],
+    }));
+    expect(entities).toHaveLength(3);
+    for (const entity of entities) {
+      expect(entity.data?.provenance).toEqual(provenance);
+      expect(Object.hasOwn(entity.data!, 'provenance')).toBe(provenance !== undefined);
+    }
+    expect(entities[0].data?.access).toEqual(access);
+    expect(access[1]).not.toHaveProperty('provenance');
+  });
+});

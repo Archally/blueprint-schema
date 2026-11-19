@@ -1,0 +1,14 @@
+engineVersion: "0.1"
+rules:
+  - id: routes-target-is-library
+    severity: warn
+    description: >-
+      A resolved forwarding target states kind library. Applies to service and infrastructure resource routes. An absent kind is not inferred.
+      Override per-project via .blueprint-lint.yaml.
+    find:
+      entity_type_in: [Service, InfraResource]
+    check:
+      custom:
+        module: ./service-routes.mjs
+        export: routesTargetIsLibrary
+    message: '{findings}'

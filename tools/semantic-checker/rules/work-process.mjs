@@ -89,3 +89,51 @@ export function activityToolPartyNotSystem(model, subject) {
   }
   return result(problems);
 }
+
+/** Keys that occur more than once in one list, in first-seen order. */
+function repeatedKeys(items) {
+  const counts = new Map();
+  for (const item of items) {
+    if (typeof item.key === 'string') {
+      counts.set(item.key, (counts.get(item.key) ?? 0) + 1);
+    }
+  }
+  return [...counts].filter(([, count]) => count > 1).map(([key]) => key);
+}
+
+/** @type {import('@archally/semantic-checker').CustomRuleFunction} */
+export function activityItemKeyRepeated(_model, subject) {
+  const problems = [];
+  for (const activity of records(subject.data?.activities)) {
+    for (const field of ['questions', 'gates']) {
+      for (const key of repeatedKeys(records(activity[field]))) {
+        problems.push(`${activity.id}: ${field} key "${key}" occurs more than once`);
+      }
+    }
+  }
+  return result(problems);
+}
+
+/** The activities an activity leads to: the builder's derived `_next`, else what the author wrote. */
+function successorsOf(activity) {
+  if (Array.isArray(activity._next)) {
+    return new Set(records(activity._next).map((branch) => branch.to));
+  }
+  const stated = records(activity.next).map((branch) => branch.to);
+  const legacy = Array.isArray(activity.next_activities) ? activity.next_activities : [];
+  return new Set([...stated, ...legacy]);
+}
+
+/** @type {import('@archally/semantic-checker').CustomRuleFunction} */
+export function gateOnFailNotASuccessor(_model, subject) {
+  const problems = [];
+  for (const activity of records(subject.data?.activities)) {
+    const successors = successorsOf(activity);
+    for (const gate of records(activity.gates)) {
+      if (typeof gate.on_fail === 'string' && !successors.has(gate.on_fail)) {
+        problems.push(`${activity.id}/${gate.key}: on_fail ${gate.on_fail} is not an activity ${activity.id} leads to`);
+      }
+    }
+  }
+  return result(problems);
+}

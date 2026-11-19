@@ -1,0 +1,123 @@
+version: "1.0.0"
+scope: delivery
+goals:
+  - id: delivery.GL001
+    statement: Every parcel is delivered within a day.
+    priority: high
+non_goals:
+  - id: delivery.NG001
+    statement: Same-hour delivery.
+    reason: The couriers work one round a day.
+risks:
+  - id: delivery.RSK001
+    statement: The nightly export slows the courier app.
+    likelihood: medium
+    impact: high
+    mitigation: Export from a replica.
+assumptions:
+  - id: delivery.ASM001
+    statement: The replica lags by less than a minute.
+    consequence: The export misses the last parcels of the day.
+trade_offs:
+  - id: delivery.TRO001
+    choice: Where the export reads from
+    selected: A replica
+    rejected: The primary database
+    rationale: The primary database serves the courier app.
+concerns:
+  - id: delivery.CNC001
+    statement: Couriers lose time on paper notes.
+inquiries:
+  # Every family of typed ids, one element each, pinned by one inquiry.
+  - id: delivery.INQ001
+    statement: Which elements does the night export touch?
+    status: open
+    affects:
+      element_refs:
+        - DMN001
+        - SDM001
+        - PDT001
+        - CS001
+        - delivery.BC001
+        - delivery.SVC001
+        - delivery.PRT002
+        - delivery.PKG001
+        - delivery.MCH001
+        - delivery.PRB001
+        - delivery.CN001
+        - delivery.ACT001
+        - delivery.PER001
+        - delivery.EN001
+        - delivery.ASC001
+        - delivery.CAT004
+        - delivery.CMD001
+        - delivery.EVT001
+        - delivery.QRY001
+        - delivery.DOC001
+        - delivery.ERR001
+        - delivery.QN001
+        - delivery.PAR001
+        - delivery.ORD001
+        - delivery.RC001
+        - IR003
+        - ENV001
+        - DSC001
+        - BND001
+        - delivery.SCR001
+        - delivery.UAC001
+        - delivery.UNV001
+        - delivery.MT001
+        - delivery.KPI001
+        - delivery.SLO001
+        - delivery.SLA001
+        - delivery.SEC001
+        - delivery.CMP001
+        - delivery.RES001
+        - delivery.FN001
+        - delivery.SR001
+        - delivery.CR001
+        - delivery.DR001
+        - delivery.EQ001
+        - delivery.VR001
+        - delivery.TR001
+        - delivery.MDL001
+        - delivery.PRC001
+        - delivery.US001
+        - delivery.UC001
+        - delivery.PA005
+        - CAP001
+        - delivery.DC001
+        - delivery.BD001
+        - LP001
+        - WCH001
+        - delivery.GL001
+        - delivery.NG001
+        - delivery.RSK001
+        - delivery.ASM001
+        - delivery.TRO001
+        - delivery.INQ002
+        - delivery.CNC001
+        - DPT001
+        - TM001
+        - MS001
+        - WI001
+        - delivery.FF001
+        - delivery.TC001
+        - VS001
+        - MIG001
+  - id: delivery.INQ002
+    statement: Does the nightly export need its own database, or can it read the replica?
+    status: open
+    affects:
+      element_refs: [IR003, ENV001, delivery.PA004]
+      concept_refs: [delivery.CN001]
+  - id: delivery.INQ003
+    statement: Who approves a refund above the limit?
+    status: investigating
+    affects:
+      element_refs: [delivery.PA005]
+  - id: delivery.INQ004
+    statement: Is the refund process still needed after the payment provider change?
+    status: deferred
+    affects:
+      process_refs: [delivery.PRC001]

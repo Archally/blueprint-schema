@@ -1,26 +1,30 @@
-/**
- * Report locations only: neither a URL nor a URL parser's error may enter a finding.
- * Evidence is flat on governance entities and nested under provenance on design entities
- * (including test cases). Inspect those two fields without searching unrelated source fields.
- */
+import { visitLinkCarriers } from './link-provenance.mjs';
+
+/** Findings contain locations only, never credential values or URL parser errors. */
 export const evidenceSourceCredentials = (model, subject) => {
   const paths = [];
-  for (const [path, evidence] of [
-    ['evidence', subject?.data?.evidence],
-    ['provenance.evidence', subject?.data?.provenance?.evidence],
-  ]) {
-    if (!Array.isArray(evidence)) continue;
+  const inspect = (path, evidence) => {
+    if (!Array.isArray(evidence)) return;
     evidence.forEach((item, index) => {
       if (typeof item?.source !== 'string') return;
       try {
-        // No base: relative references and plain document names are not absolute URLs.
         const url = new URL(item.source);
         if (url.username || url.password) paths.push(`${path}[${index}].source`);
       } catch {
-        // Invalid URL text is permitted by the evidence schema and is outside this warning.
+        // Malformed URLs and plain document names remain outside this warning.
       }
     });
-  }
+  };
+  inspect('evidence', subject?.data?.evidence);
+  visitLinkCarriers(subject?.data, (carrier, path) => {
+    const prefix = path ? `${path}.` : '';
+    inspect(`${prefix}provenance.evidence`, carrier.provenance?.evidence);
+    for (const [field, entries] of Object.entries(carrier.link_provenance ?? {})) {
+      for (const [target, provenance] of Object.entries(entries ?? {})) {
+        inspect(`${prefix}link_provenance.${field}[${JSON.stringify(target)}].evidence`, provenance?.evidence);
+      }
+    }
+  });
   if (paths.length === 0) return { ok: true };
   return {
     ok: false,

@@ -118,4 +118,72 @@ describe('extractInquiryRelations', () => {
     const placeholder = Array.from(placeholders.values())[0]!;
     expect(placeholder.type).toBe(ENTITY_TYPE.Missing);
   });
+  describe('the addressee and the earlier addressees', () => {
+    const TEAM3 = makeEntity({ id: 'org-organization.yaml-TM003', displayId: 'TM003', type: ENTITY_TYPE.Team, layer: 'organization', fileOrigin: 'organization.yaml' });
+    const inquiryWith = (data: Record<string, unknown>) => makeEntity({
+      id: 'orders-motivation.yaml-INQ101', displayId: 'orders.INQ101', type: ENTITY_TYPE.Inquiry,
+      data: { id: 'orders.INQ101', statement: 'How long are declined payments kept?', ...data },
+    });
+
+    it('asked_of draws InquiryAskedOf to its actor or team, apart from the owner edge', () => {
+      const placeholders = new Map<string, Entity>();
+      const relations = extractInquiryRelations(
+        [inquiryWith({ owner: 'orders.TM001', asked_of: { team: 'TM003', name: 'Architects' } }), TEAM, TEAM3],
+        placeholders,
+      );
+      expect(relations.map((relation) => [relation.type, relation.target_entity_id, relation.data])).toEqual([
+        [RELATION_TYPE.InquiryOwner, TEAM.id, undefined],
+        [RELATION_TYPE.InquiryAskedOf, TEAM3.id, { name: 'Architects' }],
+      ]);
+      expect(placeholders.size).toBe(0);
+    });
+
+    it('a name alone draws no edge and creates no placeholder', () => {
+      const placeholders = new Map<string, Entity>();
+      const relations = extractInquiryRelations(
+        [inquiryWith({ asked_of: { name: 'Domain expert' }, previously_asked_of: [{ asked_of: { name: 'Support desk' }, outcome: 'redirected' }] })],
+        placeholders,
+      );
+      expect(relations).toEqual([]);
+      expect(placeholders.size).toBe(0);
+    });
+
+    it('each earlier addressee is one InquiryPreviouslyAskedOf edge with its position, outcome and date, a repeat included', () => {
+      const placeholders = new Map<string, Entity>();
+      const relations = extractInquiryRelations([
+        inquiryWith({
+          asked_of: { team: 'TM003' },
+          previously_asked_of: [
+            { asked_of: { actor: 'orders.ACT001' }, outcome: 'partly-answered', date: '2026-10-02' },
+            { asked_of: { team: 'TM003' }, outcome: 'reassigned' },
+            { asked_of: { actor: 'orders.ACT001' }, outcome: 'redirected' },
+          ],
+        }),
+        ACTOR1, TEAM3,
+      ], placeholders);
+      const earlier = relations.filter((relation) => relation.type === RELATION_TYPE.InquiryPreviouslyAskedOf);
+      expect(earlier.map((relation) => [relation.target_entity_id, relation.data])).toEqual([
+        [ACTOR1.id, { position: 0, outcome: 'partly-answered', date: '2026-10-02' }],
+        [TEAM3.id, { position: 1, outcome: 'reassigned' }],
+        [ACTOR1.id, { position: 2, outcome: 'redirected' }],
+      ]);
+      expect(new Set(earlier.map((relation) => relation.id)).size).toBe(3);
+      expect(relations.filter((relation) => relation.type === RELATION_TYPE.InquiryAskedOf).map((relation) => relation.target_entity_id)).toEqual([TEAM3.id]);
+    });
+
+    it('an addressee nobody declares points at a Missing placeholder, current and earlier alike', () => {
+      const placeholders = new Map<string, Entity>();
+      const relations = extractInquiryRelations(
+        [inquiryWith({ asked_of: { actor: 'orders.ACT099' }, previously_asked_of: [{ asked_of: { team: 'TM999' }, outcome: 'reassigned' }] })],
+        placeholders,
+      );
+      expect(relations.map((relation) => relation.target_entity_id)).toEqual(['missing-orders-ACT099', 'missing-TM999']);
+      expect([...placeholders.values()].map((placeholder) => placeholder.type)).toEqual([ENTITY_TYPE.Missing, ENTITY_TYPE.Missing]);
+    });
+
+    it('an inquiry with an owner and no addressee draws no addressee edge', () => {
+      const relations = extractInquiryRelations([inquiryWith({ owner: 'orders.TM001', status: 'deferred' }), TEAM], new Map());
+      expect(relations.map((relation) => relation.type)).toEqual([RELATION_TYPE.InquiryOwner]);
+    });
+  });
 });

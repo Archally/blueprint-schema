@@ -24,6 +24,10 @@
  *   --schemas <dir>       schema tree the structure signals read types from: a version root
  *                         (`.../v2.8`) or a directory of versions. Default: found by walking up
  *                         from the model, then from this tool's directory
+ *   --graph-census <file> optional serialized graph population with a matching scope identity
+ *   --evidence-type <t>   evidence-only exact type filter (schema or graph vocabulary)
+ *   --evidence-family <f> evidence-only exact relation-family filter
+ *   --project-id <id>     explicit census project identity (bp forwards its resolved id)
  *   --config <file>       alternative project config (default: .blueprint-quality.yaml)
  *   --update-baseline     write the current scores back as the ratchet baseline
  *   --worst <n>           worst-file and worst-entity rows to print (default 15)
@@ -40,10 +44,12 @@ import { collectObservations } from './collect.mjs';
 import { evaluate, nextBaseline } from './evaluate.mjs';
 import { renderReport } from './report.mjs';
 import { changedFilesSince } from './git-changes.mjs';
-import { loadSpec, loadProjectConfig, writeBaseline, PROJECT_CONFIG_NAME } from './config.mjs';
+import { loadSpec, loadProjectConfig, writeBaseline, resolveTextLength, PROJECT_CONFIG_NAME } from './config.mjs';
 import { normalizeSliceArg, observedSlices } from './slice.mjs';
 import { selectEntity, selectFile } from './entities.mjs';
-import { locateSchemaRoot, loadSchemaIndex, measureStructure } from './structure.mjs';
+import { locateSchemaRoot, loadSchemaIndex, measureStructure, measureTextLength } from './structure.mjs';
+import { measureEvidence } from './evidence-census.mjs';
+import { fileSetIdentity, inventoryEvidence, loadEvidenceSchemas } from './evidence-documents.mjs';
 
 const TOOL_DIR = path.dirname(new URL(import.meta.url).pathname);
 
@@ -54,7 +60,7 @@ const SCOPING_FLAGS = ['since', 'slice', 'entity', 'file'];
 
 /** @param {string[]} argv */
 export function parseArguments(argv) {
-  /** @type {{roots: string[], strict: boolean, since?: string, slice?: string, entity?: string, file?: string, json: boolean, jsonFile?: string, spec?: string, schemas?: string, config?: string, updateBaseline: boolean, worst: number, quiet: boolean}} */
+  /** @type {{roots: string[], strict: boolean, since?: string, slice?: string, entity?: string, file?: string, json: boolean, jsonFile?: string, spec?: string, schemas?: string, graphCensus?: string, evidenceType?: string, evidenceFamily?: string, projectId?: string, config?: string, updateBaseline: boolean, worst: number, quiet: boolean}} */
   const options = { roots: [], strict: false, json: false, updateBaseline: false, worst: 15, quiet: false };
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index];
@@ -68,6 +74,18 @@ export function parseArguments(argv) {
       case '--file': options.file = requireValue(argument, argv[++index]); break;
       case '--spec': options.spec = argv[++index]; break;
       case '--schemas': options.schemas = requireValue(argument, argv[++index]); break;
+      case '--graph-census':
+        options.graphCensus = requireValue(argument, argv[++index]);
+        break;
+      case '--evidence-type':
+        options.evidenceType = requireValue(argument, argv[++index]);
+        break;
+      case '--evidence-family':
+        options.evidenceFamily = requireValue(argument, argv[++index]);
+        break;
+      case '--project-id':
+        options.projectId = requireValue(argument, argv[++index]);
+        break;
       case '--config': options.config = argv[++index]; break;
       case '--worst': options.worst = Number(argv[++index]); break;
       case '--json': {
@@ -131,6 +149,7 @@ function runOne(modelRoot, options, spec) {
   }
 
   const { config, path: configPath } = loadProjectConfig(resolvedRoot, options.config);
+  const textLengthLimits = resolveTextLength(spec, config);
   const changedFiles = options.since ? changedFilesSince(resolvedRoot, options.since) : undefined;
 
   // Entity and file mode refuse an empty selection for the same reason slice mode does.
@@ -147,7 +166,27 @@ function runOne(modelRoot, options, spec) {
   const structure = measureStructure({ documents, schemaIndex, structureSpec: spec.structure });
 
   const result = evaluate({ observations, spec, config, changedFiles, slice: options.slice, selection, schemaVersion, structure });
+  result.textLength = measureTextLength({ documents, entities: result.entities, limits: textLengthLimits });
   const workProcessProvenance = measureWorkProcessProvenance(documents, { slice: options.slice, changedFiles, selection });
+  const censusSelection = {
+    slice: options.slice ?? null,
+    type: options.evidenceType ?? null,
+    family: options.evidenceFamily ?? null,
+    file: selection?.mode === 'file' ? path.relative(resolvedRoot, [...selection.selected][0].file) : null,
+    files: changedFiles ? [...changedFiles].map(file => path.relative(resolvedRoot, file)).sort() : null,
+    entityIds: selection?.mode === 'entity' ? [...new Set([...selection.selected].map(row => row.entityId))].sort() : null,
+  };
+  const inventory = inventoryEvidence(documents, resolvedRoot, loadEvidenceSchemas(schema.root), censusSelection);
+  const scope = {
+    project: options.projectId ?? path.basename(path.dirname(path.dirname(resolvedRoot))),
+    modelState: 'as-is', schemaVersion: schemaVersion ?? null,
+    fileSetIdentity: fileSetIdentity(documents, resolvedRoot),
+    selection: censusSelection, evaluatedAt: new Date().toISOString(),
+    exclusions: inventory.exclusions,
+  };
+  result.evidence = measureEvidence({ scope, declarations: inventory.entities, relationDeclarations: inventory.relations,
+    ...(options.graphCensus ? { graphInput: JSON.parse(fs.readFileSync(options.graphCensus, 'utf8')) } : {}),
+    fieldCompleteness: result.metrics });
   if (workProcessProvenance.total > 0) {
     result.workProcessProvenance = workProcessProvenance;
   }
@@ -241,6 +280,8 @@ function main() {
         entityMode: run.result.entityMode,
         fileMode: run.result.fileMode,
         parseErrors: run.parseErrors,
+        evidence: run.result.evidence,
+        textLength: run.result.textLength,
         ...(run.result.workProcessProvenance ? { workProcessProvenance: run.result.workProcessProvenance } : {}),
         metrics: run.result.metrics,
         findings: run.result.findings.map((finding) => ({
@@ -258,6 +299,7 @@ function main() {
           file: path.relative(run.modelRoot, entity.file),
           ...(entity.ownedIds.length > 0 ? { ownedIds: entity.ownedIds } : {}),
           counts: entity.counts,
+          textLength: entity.textLength,
           findings: entity.fields.filter((row) => row.status !== 'covered'),
           ...(entity.structure ? { structure: structureJson(entity.structure) } : {}),
         })),

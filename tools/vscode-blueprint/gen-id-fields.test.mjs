@@ -5,7 +5,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { prefixesForDef, prefixesFromPattern } from './gen-id-fields.mjs';
+import { prefixesForDef, prefixesFromPattern, referenceFields } from './gen-id-fields.mjs';
 
 const sorted = (values) => [...values].sort();
 
@@ -61,4 +61,30 @@ describe('prefixesForDef', () => {
   test('a $ref to a def that does not exist yields nothing', () => {
     assert.deepEqual(prefixesForDef({ $ref: '#/$defs/absent_ref' }, defs), []);
   });
+});
+
+import { readFileSync } from 'node:fs';
+import { parse } from 'yaml';
+const schema = path => parse(readFileSync(new URL('../../../schemas/blueprint/v2.8/schema/' + path, import.meta.url), 'utf8'));
+
+test('discovers both actual imports arms and retains capability product references', () => {
+  const defs = schema('metamodel.schema.yaml').$defs;
+  const refs = new Map(Object.entries(defs).filter(([name]) => name.endsWith('_ref')).map(([name, def]) => [name, prefixesForDef(def, defs)]));
+  const fields = referenceFields([schema('design/arch.schema.yaml'), schema('governance/capability.schema.yaml')], refs);
+  assert.deepEqual(sorted(fields.get('imports') ?? []), ['PKG', 'SVC']);
+  assert.deepEqual(sorted(fields.get('products') ?? []), ['PDT']);
+  assert.deepEqual(sorted(fields.get('owner') ?? []), ['ACT', 'TM']);
+});
+
+test('preserves oneOf discovery, deduplicates nested unions and withholds declarations', () => {
+  const reference = { $ref: '../metamodel.schema.yaml#/$defs/service_ref' };
+  const root = { properties: {
+    refs: { oneOf: [reference, { type: 'array', items: { anyOf: [reference, reference] } }] },
+    containers: { anyOf: [reference, { items: { $ref: '#/$defs/entity' } }] },
+    id: reference,
+  }, $defs: { entity: { properties: { id: reference } } } };
+  const fields = referenceFields([root], new Map([['service_ref', ['SVC']]]));
+  assert.deepEqual(sorted(fields.get('refs') ?? []), ['SVC']);
+  assert.equal(fields.has('containers'), false);
+  assert.equal(fields.has('id'), false);
 });

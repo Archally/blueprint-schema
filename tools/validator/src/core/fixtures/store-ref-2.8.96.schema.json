@@ -1,0 +1,81 @@
+{
+  "type": "object",
+  "description": "Shared-data coupling: a store both services reach, where one writes the data and the other reads it, and neither calls the other. The Shared Database style in Enterprise Integration Patterns - the quickest coupling to build and the hardest to change, because the reader is bound to the writer's schema without being asked and nothing in either service records the dependency. Declaring it here is what makes it visible. Its operations are `document` transfers; the specification a generator emits for it is a data contract describing the dataset. Against `scheduledtransfer`: the data sits in one place both services address, and the reader sees it as of its own read. A store a reader polls on a schedule is still this kind, because the schedule is the reader's policy rather than part of the coupling.",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "$ref": "#/$defs/contract_identity"
+    }
+  ],
+  "properties": {
+    "file": {
+      "type": "string",
+      "description": "Path to the data contract describing the shared dataset."
+    },
+    "contract_name": {
+      "$ref": "#/$defs/contract_name"
+    },
+    "slice": {
+      "$ref": "#/$defs/contract_slice"
+    },
+    "cross_cutting": {
+      "$ref": "#/$defs/contract_cross_cutting"
+    },
+    "output": {
+      "$ref": "#/$defs/contract_output"
+    },
+    "write": {
+      "type": "array",
+      "items": {
+        "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+      },
+      "description": "Document operations whose data this service writes into the shared store. The writer owns the schema, so this is the provider end even though no call is made."
+    },
+    "read": {
+      "type": "array",
+      "items": {
+        "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+      },
+      "description": "Document operations this service reads out of the shared store, written by another service. The consumer end: this service is bound to a schema it does not own."
+    },
+    "link_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Evidence for individual operations this contract lists. Under the name of the list, each key is an operation reference exactly as written there, in either of its forms, and its value is the shared provenance of that one link: how sure the model is that this service reaches that operation through this contract as the list says, and on what evidence. An entry describes a link the list states; it adds none, and one entry covers every occurrence of its reference in the list. A link without an entry states no evidence of its own; neither the contract's `provenance` nor the operation's is evidence for it.",
+      "properties": {
+        "write": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+          },
+          "additionalProperties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/provenance"
+          },
+          "description": "Evidence for each operation in `write`, keyed by its reference."
+        },
+        "read": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+          },
+          "additionalProperties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/provenance"
+          },
+          "description": "Evidence for each operation in `read`, keyed by its reference."
+        }
+      }
+    },
+    "provenance": {
+      "$ref": "../metamodel.schema.yaml#/$defs/provenance",
+      "description": "How sure the model is that this contract is declared as stated, and on what evidence. It is about the contract as a whole and is not evidence for any one operation it lists; `link_provenance` states that."
+    },
+    "input_structures": {
+      "$ref": "#/$defs/contract_structures",
+      "description": "Named structures this service writes into the shared store."
+    },
+    "output_structures": {
+      "$ref": "#/$defs/contract_structures",
+      "description": "Named structures this service reads out of the shared store."
+    }
+  }
+}

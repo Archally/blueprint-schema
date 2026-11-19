@@ -1,0 +1,23 @@
+version: "1.0.0"
+scope: delivery
+structural:
+  - id: delivery.SR001
+    name: A parcel has one recipient
+classification:
+  - id: delivery.CR001
+    name: A heavy parcel weighs over twenty kilograms
+derivation:
+  - id: delivery.DR001
+    name: The delivery fee follows the weight
+equivalence:
+  - id: delivery.EQ001
+    name: A redelivery is a delivery
+validation:
+  - id: delivery.VR001
+    name: A weight is positive
+transition:
+  - id: delivery.TR001
+    name: A parcel is delivered once
+    concept: delivery.CN001
+    from: in-transit
+    to: delivered

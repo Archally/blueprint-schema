@@ -1,0 +1,229 @@
+{
+  "design/arch.schema.yaml": {
+    "service": {
+      "type": "object",
+      "description": "A deployable service or component within a bounded context.",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "../metamodel.schema.yaml#/$defs/service_ref",
+          "description": "Stable service id (SVC###) - makes the service a first-class, referenceable graph node.\n"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^\\S(?:.*\\S)?$",
+          "description": "Service name (e.g. order-api, payment-worker)."
+        },
+        "kind": {
+          "$ref": "../metamodel.schema.yaml#/$defs/service_kind",
+          "description": "Architectural component type. Determines applicable contract patterns."
+        },
+        "system_ref": {
+          "$ref": "../metamodel.schema.yaml#/$defs/party_ref",
+          "description": "The system party (PRT###) this service is a component of. A service nested under a party is a component of that party and may omit it; naming a different party there is a cross-reference error. A service under a root-declared context names it here or inherits the document's `system_ref` default, and one that does neither is reported by the semantic checker as a service without a system. Distinct from `owned_by`, which says who owns the service rather than what it is part of.\n"
+        },
+        "imports": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "../metamodel.schema.yaml#/$defs/service_ref"
+              },
+              {
+                "$ref": "../metamodel.schema.yaml#/$defs/package_ref"
+              }
+            ]
+          },
+          "description": "The libraries this service is built on: a package it imports or a component it embeds, so that its build contains them. Each item names, by its exact declared id, scope prefix included, either another service, normally one of `kind: library`, for a library the organization builds, or a third-party package (PKG###) declared in a `packages:` list; an item that names nothing declared is a cross-reference error. One list holds both, and the model graph draws a `service_imports` edge to each named service or package, so impact analysis reaches every service built on a changed library. A call over an interface to a running service is not an import: state it in `uses`, and in the contracts once they are written. Optional.\n",
+          "examples": [
+            [
+              "platform.SVC012",
+              "platform.SVC014"
+            ],
+            [
+              "platform.SVC012",
+              "PKG001"
+            ]
+          ]
+        },
+        "uses": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/service_ref"
+          },
+          "description": "The services this one depends on while running, stated at the level of a container diagram (\"orders uses payments\"): the statement to make before the contracts between the two are written. Each item names another service by its exact declared id, scope prefix included; an item that names no declared service is a cross-reference error. The model graph draws a `service_uses` edge to each named service, so impact analysis reaches every service that depends on a changed one. A library this service is built on belongs in `imports`. Once contracts are written, they state the operations, direction and transport of the dependency. Optional.\n",
+          "examples": [
+            [
+              "payments.SVC003"
+            ]
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "description": "Brief description of what this service does."
+        },
+        "description": {
+          "type": "string",
+          "description": "Full description of this service's purpose, responsibilities, and domain role."
+        },
+        "properties": {
+          "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+        },
+        "vendor": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/team"
+          },
+          "description": "Teams or vendors responsible for this service."
+        },
+        "resource_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+          },
+          "description": "Typed infrastructure resources this service requires (IR### - `infra_resource_ref`), resolving to `resource` entities in the infrastructure layer. This is the canonical *intent* edge to a CONCRETE resource; the infrastructure layer's `hosted_on` relation is the *placement* edge. Optional. Since v2.8 it is the only way a service names its resources: the free-string `resources` list is no longer accepted. See `needs` for the abstract (type-level) intent.\n"
+        },
+        "needs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/service_need"
+          },
+          "description": "Abstract infrastructure NEEDS (Score `type`/`class`/`id`/`params` vocabulary) this service declares - TYPE-level intent, resolved to a concrete resource per environment by a binding (BND###). The three altitudes: `needs` (type) → binding (type × environment) → `resource_refs` / `resource` (IR### instance). A need names WHAT the service requires without pinning a platform, so the same need realizes on cloud, on-prem, or hybrid. Additive/optional (v2.7.7).\n"
+        },
+        "owned_by": {
+          "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+          "description": "Service-level ownership override."
+        },
+        "servers": {
+          "type": "array",
+          "description": "Server instances where this service is deployed. Follows OpenAPI server object pattern.\n",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "url",
+              "environment"
+            ],
+            "properties": {
+              "url": {
+                "type": "string",
+                "pattern": "^\\S+$",
+                "description": "Base URL template (e.g., https://api.example.com/v1)."
+              },
+              "environment": {
+                "description": "Which deployment environment this server instance serves. A value takes exactly one of three forms, and the three cannot overlap: a name from the common vocabulary (production, staging, development, test); a typed environment reference (ENV###) naming an environment the model declares, so the server points at the entity carrying that environment's class, substrate, provider and target scope; or an `x-` prefixed name, for an environment outside the common vocabulary. Only the typed form resolves - naming an ENV### the model does not declare is a cross-reference error, while a name is checked against nothing.\n",
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "production",
+                      "staging",
+                      "development",
+                      "test"
+                    ]
+                  },
+                  {
+                    "$ref": "../metamodel.schema.yaml#/$defs/environment_ref"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^x-[a-z][a-z0-9-]*$"
+                  }
+                ]
+              },
+              "protocol": {
+                "type": "string",
+                "description": "Protocol if different from service default."
+              },
+              "description": {
+                "type": "string",
+                "description": "Server instance description."
+              },
+              "variables": {
+                "type": "object",
+                "description": "URL template variables.",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "default": {
+                      "type": "string",
+                      "description": "Default value for this variable."
+                    },
+                    "enum": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Allowed values for this variable."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "contracts": {
+          "$ref": "#/$defs/contracts",
+          "description": "External contracts exposing and consuming interfaces for this service."
+        },
+        "side_effects": {
+          "$ref": "#/$defs/service_side_effects",
+          "description": "Observable side effects beyond request/response: filesystem, stdout, stderr."
+        },
+        "tags": {
+          "$ref": "../metamodel.schema.yaml#/$defs/tags"
+        },
+        "code_refs": {
+          "$ref": "../metamodel.schema.yaml#/$defs/code_refs"
+        },
+        "implementation": {
+          "$ref": "../metamodel.schema.yaml#/$defs/implementation",
+          "description": "Whether this service exists yet. Absent means unclear."
+        },
+        "provenance": {
+          "$ref": "../metamodel.schema.yaml#/$defs/provenance",
+          "description": "Epistemic provenance for this service (brownfield modeling confidence)."
+        }
+      }
+    }
+  },
+  "design/infrastructure.schema.yaml": {
+    "infra_relation_edge": {
+      "type": "object",
+      "description": "A typed inter-resource relation (TOSCA vocabulary). `hosted_on` is the canonical placement edge; `connects_to`/`depends_on` may carry attribute-level output refs; `depends_on` is the ordering-only fallback. A `network-link` resource's connects_to/routes_to targets may sit in a different environment/substrate (the hybrid boundary).",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "target"
+      ],
+      "properties": {
+        "type": {
+          "$ref": "../metamodel.schema.yaml#/$defs/infra_relation",
+          "description": "TOSCA relation verb: hosted_on / connects_to / depends_on / attaches_to / routes_to."
+        },
+        "target": {
+          "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref",
+          "description": "The target resource (IR###). May be in another environment/substrate (hybrid interconnect)."
+        },
+        "outputs": {
+          "type": "array",
+          "description": "Optional attribute-level outputs of the target this resource consumes - e.g. host, port, connection-string. Makes connects_to/depends_on wiring explicit for impact analysis.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional human note on this edge (e.g. 'reads via read-replica')."
+        }
+      }
+    }
+  }
+}

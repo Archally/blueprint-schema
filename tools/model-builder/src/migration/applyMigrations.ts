@@ -234,7 +234,7 @@ function validateMigrationChanges(
       if (ch.before != null && kind === 'add') {
         warnings.push(pathFor(p, 'add with before (ignored)'));
       }
-    } else if (kind === 'modify' || kind === 'remove' || kind === 'deprecate' || kind === 'split' || kind === 'merge') {
+    } else if (kind === 'modify' || kind === 'remove' || kind === 'deprecate' || kind === 'split' || kind === 'merge' || kind === 'move') {
       if (kind === 'merge') {
         const sourceRefs = target.split(',').map((s) => s.trim()).filter(Boolean);
         if (sourceRefs.length < 2) {
@@ -254,7 +254,7 @@ function validateMigrationChanges(
           const before = ch.before as Record<string, unknown>;
           const data = entity.data ?? {};
           const currentValue = (key: string): unknown => {
-            if (key === 'id') return entity.displayId ?? data.id;
+            if (key === 'id') return data.id ?? entity.displayId;
             if (key === 'term' || key === 'name') return entity.term ?? data.term ?? data.name;
             if (key === 'definition' || key === 'description') return entity.description ?? data.definition ?? data.description;
             if (key === 'summary') return entity.summary ?? data.summary;

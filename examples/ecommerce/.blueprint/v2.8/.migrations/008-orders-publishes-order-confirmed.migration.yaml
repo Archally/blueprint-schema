@@ -17,6 +17,8 @@
 schemaVersion: "2.8.0"
 migration:
   id: MIG008
+  owned_by: { team: TM001 }
+  change_stream_ref: CS003
   name: orders-publishes-order-confirmed
   date: "2026-09-23"
   status: pending

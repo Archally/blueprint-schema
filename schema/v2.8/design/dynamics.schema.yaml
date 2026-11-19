@@ -85,6 +85,7 @@ $defs:
         description: "Unique parallelism identifier (PAR + NNN)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable name (e.g. 'Parallel inventory scanning')."
       summary:
         type: string
@@ -201,6 +202,7 @@ $defs:
         description: "Unique race condition identifier (RC + NNN)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable name for this hazard."
       summary:
         type: string
@@ -208,15 +210,18 @@ $defs:
         description: "One-line summary for listings."
       scenario:
         type: string
+        pattern: "\\S"
         description: "How this race occurs - the specific interleaving of operations that leads to incorrect behavior."
       impact:
         type: string
+        pattern: "\\S"
         description: "What happens if unmitigated (e.g. 'Duplicate orders created')."
       likelihood:
         $ref: "../metamodel.schema.yaml#/$defs/likelihood_scale"
         description: "Probability in production based on traffic patterns, concurrency level, and timing windows. very-high: the timing window is hit under normal load, not only under stress."
       mitigation:
         type: string
+        pattern: "\\S"
         description: "Strategy to prevent or handle this race (e.g. 'Optimistic locking with retry')."
       affects:
         type: array

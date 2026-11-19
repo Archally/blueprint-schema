@@ -1,0 +1,8 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Record Evidence Shop
+description: >-
+  A shop whose records at the ends of its architectural links state the evidence behind them: a
+  message channel, infrastructure resources, environments, deployment scopes and access grants.
+  Some state full evidence, some only a stage or a certainty, some an empty evidence list, and
+  some none.

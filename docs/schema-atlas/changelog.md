@@ -11,9 +11,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 | Impact | Count |
 | --- | --- |
 | Breaking (major) | 34 |
-| Additive (minor) | 277 |
+| Additive (minor) | 320 |
 | Clarification (patch) | 0 |
-| **Total changes** | 311 |
+| **Total changes** | 354 |
 
 ## ⚠ Breaking changes
 
@@ -158,7 +158,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved` - Property `resolved` marked deprecated.
   - _Sources: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved`, `schema/v2.6/governance/motivation.schema.yaml#/$defs/inquiry/properties/resolved`_
 
-## Modified (28)
+## Modified (29)
 
 - [additive] `blueprint.schema.yaml#/properties/schemaVersion` - Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/blueprint.schema.yaml#/properties/schemaVersion`, `schema/v2.6/blueprint.schema.yaml#/properties/schemaVersion`_
@@ -171,6 +171,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/concepts.schema.yaml#/properties/schemaVersion` - Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/design/concepts.schema.yaml#/properties/schemaVersion`, `schema/v2.6/design/concepts.schema.yaml#/properties/schemaVersion`_
+
+- [additive] `design/domain.schema.yaml#/$defs/parameter/properties/type` - Property `type` enum values added: `path`, `query`, `header`, `cookie`.
+  - _Sources: `schema/v2.8/design/domain.schema.yaml#/$defs/parameter/properties/type`, `schema/v2.6/design/domain.schema.yaml#/$defs/parameter/properties/type`_
 
 - **[breaking]** `design/domain.schema.yaml#/$defs/question/properties/owner` - Property `owner` type changed `ref → actor_ref` → `ref → owner_ref`.
   - _Sources: `schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/owner`, `schema/v2.6/design/domain.schema.yaml#/$defs/question/properties/owner`_
@@ -235,7 +238,7 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - **[breaking]** `migration.schema.yaml#/$defs/entity_change/properties/entity_type` - Property `entity_type` enum values removed: `story`, `activity`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/$defs/entity_change/properties/entity_type`, `schema/v2.6/migration.schema.yaml#/$defs/entity_change/properties/entity_type`_
 
-- [additive] `migration.schema.yaml#/$defs/entity_change/properties/kind` - Property `kind` enum values added: `rename`.
+- [additive] `migration.schema.yaml#/$defs/entity_change/properties/kind` - Property `kind` enum values added: `rename`, `move`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/$defs/entity_change/properties/kind`, `schema/v2.6/migration.schema.yaml#/$defs/entity_change/properties/kind`_
 
 - [additive] `migration.schema.yaml#/$defs/relationship_change/properties/predicate` - Property `predicate` enum values added: `translates`, `context_depends_on`, `inquiry_finding`, `goal_assumption`.
@@ -244,10 +247,16 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `migration.schema.yaml#/properties/schemaVersion` - Property `schemaVersion` enum values added: `2.8.0`, `2.7.0`.
   - _Sources: `schema/v2.8/migration.schema.yaml#/properties/schemaVersion`, `schema/v2.6/migration.schema.yaml#/properties/schemaVersion`_
 
-## Added (253)
+## Added (295)
+
+- [additive] `blueprint.schema.yaml#/$defs/change_stream` - New definition `change_stream` added to `blueprint.schema.yaml`.
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/change_stream`_
 
 - [additive] `blueprint.schema.yaml#/$defs/domain` - New definition `domain` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/domain`_
+
+- [additive] `blueprint.schema.yaml#/$defs/product` - New definition `product` added to `blueprint.schema.yaml`.
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/product`_
 
 - [additive] `blueprint.schema.yaml#/$defs/repository_config` - New definition `repository_config` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/repository_config`_
@@ -261,11 +270,17 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `blueprint.schema.yaml#/$defs/tracker_config` - New definition `tracker_config` added to `blueprint.schema.yaml`.
   - _Source: `schema/v2.8/blueprint.schema.yaml#/$defs/tracker_config`_
 
+- [additive] `blueprint.schema.yaml#/properties/change_streams` - Property `change_streams` added (optional).
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/change_streams`_
+
 - [additive] `blueprint.schema.yaml#/properties/default_tracker` - Property `default_tracker` added (optional).
   - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/default_tracker`_
 
 - [additive] `blueprint.schema.yaml#/properties/domains` - Property `domains` added (optional).
   - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/domains`_
+
+- [additive] `blueprint.schema.yaml#/properties/products` - Property `products` added (optional).
+  - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/products`_
 
 - [additive] `blueprint.schema.yaml#/properties/repositories` - Property `repositories` added (optional).
   - _Source: `schema/v2.8/blueprint.schema.yaml#/properties/repositories`_
@@ -284,6 +299,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/cross_cutting` - Property `cross_cutting` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/cross_cutting`_
+
+- [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/link_provenance` - Property `link_provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/link_provenance`_
+
+- [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/provenance` - Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/provenance`_
 
 - [additive] `design/arch.schema.yaml#/$defs/channel_contract/properties/slice` - Property `slice` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/slice`_
@@ -354,11 +375,20 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/dependency/properties/coupling` - Property `coupling` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/coupling`_
 
+- [additive] `design/arch.schema.yaml#/$defs/dependency/properties/provenance` - Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/provenance`_
+
 - [additive] `design/arch.schema.yaml#/$defs/endpoint_contract/properties/contract_name` - Property `contract_name` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract/properties/contract_name`_
 
 - [additive] `design/arch.schema.yaml#/$defs/endpoint_contract/properties/cross_cutting` - Property `cross_cutting` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract/properties/cross_cutting`_
+
+- [additive] `design/arch.schema.yaml#/$defs/endpoint_contract/properties/link_provenance` - Property `link_provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract/properties/link_provenance`_
+
+- [additive] `design/arch.schema.yaml#/$defs/endpoint_contract/properties/provenance` - Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract/properties/provenance`_
 
 - [additive] `design/arch.schema.yaml#/$defs/endpoint_contract/properties/slice` - Property `slice` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/endpoint_contract/properties/slice`_
@@ -369,6 +399,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/flow_contract/properties/cross_cutting` - Property `cross_cutting` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/flow_contract/properties/cross_cutting`_
 
+- [additive] `design/arch.schema.yaml#/$defs/flow_contract/properties/provenance` - Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/flow_contract/properties/provenance`_
+
 - [additive] `design/arch.schema.yaml#/$defs/flow_contract/properties/slice` - Property `slice` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/flow_contract/properties/slice`_
 
@@ -377,6 +410,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/http_client_contract/properties/cross_cutting` - Property `cross_cutting` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/http_client_contract/properties/cross_cutting`_
+
+- [additive] `design/arch.schema.yaml#/$defs/http_client_contract/properties/link_provenance` - Property `link_provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/http_client_contract/properties/link_provenance`_
+
+- [additive] `design/arch.schema.yaml#/$defs/http_client_contract/properties/provenance` - Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/http_client_contract/properties/provenance`_
 
 - [additive] `design/arch.schema.yaml#/$defs/http_client_contract/properties/slice` - Property `slice` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/http_client_contract/properties/slice`_
@@ -411,6 +450,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/rpc_contract/properties/cross_cutting` - Property `cross_cutting` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract/properties/cross_cutting`_
 
+- [additive] `design/arch.schema.yaml#/$defs/rpc_contract/properties/link_provenance` - Property `link_provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract/properties/link_provenance`_
+
+- [additive] `design/arch.schema.yaml#/$defs/rpc_contract/properties/provenance` - Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract/properties/provenance`_
+
 - [additive] `design/arch.schema.yaml#/$defs/rpc_contract/properties/slice` - Property `slice` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/rpc_contract/properties/slice`_
 
@@ -429,6 +474,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/imports` - Property `imports` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/imports`_
 
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/link_provenance` - Property `link_provenance` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/link_provenance`_
+
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/needs` - Property `needs` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/needs`_
 
@@ -437,6 +485,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/resource_refs` - Property `resource_refs` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/resource_refs`_
+
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/role` - Property `role` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/role`_
+
+- [additive] `design/arch.schema.yaml#/$defs/service/properties/routes_to` - Property `routes_to` added (optional).
+  - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/routes_to`_
 
 - [additive] `design/arch.schema.yaml#/$defs/service/properties/system_ref` - Property `system_ref` added (optional).
   - _Source: `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/system_ref`_
@@ -513,6 +567,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/domain.schema.yaml#/$defs/error_entry/properties/implementation` - Property `implementation` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/error_entry/properties/implementation`_
 
+- [additive] `design/domain.schema.yaml#/$defs/exchange/properties/provenance` - Property `provenance` added (optional).
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/exchange/properties/provenance`_
+
 - [additive] `design/domain.schema.yaml#/$defs/method/properties/streaming` - Property `streaming` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/method/properties/streaming`_
 
@@ -534,8 +591,14 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/domain.schema.yaml#/$defs/queue/properties/channel_ref` - Property `channel_ref` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/queue/properties/channel_ref`_
 
+- [additive] `design/domain.schema.yaml#/$defs/queue/properties/link_provenance` - Property `link_provenance` added (optional).
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/queue/properties/link_provenance`_
+
 - [additive] `design/domain.schema.yaml#/$defs/topic/properties/channel_ref` - Property `channel_ref` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/topic/properties/channel_ref`_
+
+- [additive] `design/domain.schema.yaml#/$defs/topic/properties/link_provenance` - Property `link_provenance` added (optional).
+  - _Source: `schema/v2.8/design/domain.schema.yaml#/$defs/topic/properties/link_provenance`_
 
 - [additive] `design/domain.schema.yaml#/properties/domain_ref` - Property `domain_ref` added (optional).
   - _Source: `schema/v2.8/design/domain.schema.yaml#/properties/domain_ref`_
@@ -621,6 +684,15 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `design/rules.schema.yaml#/$defs/transition_rule/properties/provenance` - Property `provenance` added (optional).
   - _Source: `schema/v2.8/design/rules.schema.yaml#/$defs/transition_rule/properties/provenance`_
 
+- [additive] `design/story.schema.yaml#/$defs/activity_gate` - New definition `activity_gate` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/activity_gate`_
+
+- [additive] `design/story.schema.yaml#/$defs/activity_item_key` - New definition `activity_item_key` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/activity_item_key`_
+
+- [additive] `design/story.schema.yaml#/$defs/activity_question` - New definition `activity_question` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/activity_question`_
+
 - [additive] `design/story.schema.yaml#/$defs/alternative_flow` - New definition `alternative_flow` added to `design/story.schema.yaml`.
   - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/alternative_flow`_
 
@@ -650,6 +722,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `design/story.schema.yaml#/$defs/stated_name` - New definition `stated_name` added to `design/story.schema.yaml`.
   - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/stated_name`_
+
+- [additive] `design/story.schema.yaml#/$defs/use_case_step_id` - New definition `use_case_step_id` added to `design/story.schema.yaml`.
+  - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case_step_id`_
 
 - [additive] `design/story.schema.yaml#/$defs/use_case/properties/alternative_flows` - Property `alternative_flows` added (optional).
   - _Source: `schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/alternative_flows`_
@@ -681,6 +756,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/capability.schema.yaml#/$defs/capability/properties/kind` - Property `kind` added (optional).
   - _Source: `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/kind`_
 
+- [additive] `governance/capability.schema.yaml#/$defs/capability/properties/products` - Property `products` added (optional).
+  - _Source: `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/products`_
+
 - [additive] `governance/capability.schema.yaml#/$defs/capability/properties/realized_in` - Property `realized_in` added (optional).
   - _Source: `schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/realized_in`_
 
@@ -692,6 +770,12 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `governance/decisions.schema.yaml#/$defs/decision_links/properties/related` - Property `related` added (optional).
   - _Source: `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_links/properties/related`_
+
+- [additive] `governance/decisions.schema.yaml#/$defs/decision_participants` - New definition `decision_participants` added to `governance/decisions.schema.yaml`.
+  - _Source: `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants`_
+
+- [additive] `governance/decisions.schema.yaml#/$defs/decision/properties/participants` - Property `participants` added (optional).
+  - _Source: `schema/v2.8/governance/decisions.schema.yaml#/$defs/decision/properties/participants`_
 
 - [additive] `governance/leverage.schema.yaml` - New schema file `governance/leverage.schema.yaml` added.
   - _Source: `schema/v2.8/governance/leverage.schema.yaml`_
@@ -720,11 +804,23 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `governance/motivation.schema.yaml#/$defs/goal/properties/goal_relations` - Property `goal_relations` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/goal_relations`_
 
+- [additive] `governance/motivation.schema.yaml#/$defs/inquiry_addressee` - New definition `inquiry_addressee` added to `governance/motivation.schema.yaml`.
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry_addressee`_
+
+- [additive] `governance/motivation.schema.yaml#/$defs/inquiry_earlier_addressee` - New definition `inquiry_earlier_addressee` added to `governance/motivation.schema.yaml`.
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry_earlier_addressee`_
+
 - [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/affects` - Property `affects` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects`_
 
+- [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/asked_of` - Property `asked_of` added (optional).
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/asked_of`_
+
 - [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/finding_refs` - Property `finding_refs` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/finding_refs`_
+
+- [additive] `governance/motivation.schema.yaml#/$defs/inquiry/properties/previously_asked_of` - Property `previously_asked_of` added (optional).
+  - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/previously_asked_of`_
 
 - [additive] `governance/motivation.schema.yaml#/$defs/risk/properties/affects` - Property `affects` added (optional).
   - _Source: `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects`_
@@ -840,6 +936,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/capability_realization_ref` - New definition `capability_realization_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/capability_realization_ref`_
 
+- [additive] `metamodel.schema.yaml#/$defs/change_stream_ref` - New definition `change_stream_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/change_stream_ref`_
+
 - [additive] `metamodel.schema.yaml#/$defs/complexity_pattern` - New definition `complexity_pattern` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/complexity_pattern`_
 
@@ -903,8 +1002,20 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/message_channel_ref` - New definition `message_channel_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/message_channel_ref`_
 
+- [additive] `metamodel.schema.yaml#/$defs/migration_business_case` - New definition `migration_business_case` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/migration_business_case`_
+
+- [additive] `metamodel.schema.yaml#/$defs/migration_dependency_reason` - New definition `migration_dependency_reason` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/migration_dependency_reason`_
+
+- [additive] `metamodel.schema.yaml#/$defs/migration_reach` - New definition `migration_reach` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/migration_reach`_
+
 - [additive] `metamodel.schema.yaml#/$defs/milestone_status` - New definition `milestone_status` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/milestone_status`_
+
+- [additive] `metamodel.schema.yaml#/$defs/model_element_ref` - New definition `model_element_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/model_element_ref`_
 
 - [additive] `metamodel.schema.yaml#/$defs/model_traits_item` - New definition `model_traits_item` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/model_traits_item`_
@@ -923,6 +1034,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `metamodel.schema.yaml#/$defs/package_ref` - New definition `package_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/package_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/parameter_location` - New definition `parameter_location` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/parameter_location`_
 
 - [additive] `metamodel.schema.yaml#/$defs/party_kind` - New definition `party_kind` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/party_kind`_
@@ -945,6 +1059,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 - [additive] `metamodel.schema.yaml#/$defs/process_ref` - New definition `process_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/process_ref`_
 
+- [additive] `metamodel.schema.yaml#/$defs/product_ref` - New definition `product_ref` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/product_ref`_
+
 - [additive] `metamodel.schema.yaml#/$defs/production_mode` - New definition `production_mode` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/production_mode`_
 
@@ -965,6 +1082,9 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `metamodel.schema.yaml#/$defs/service_ref` - New definition `service_ref` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/service_ref`_
+
+- [additive] `metamodel.schema.yaml#/$defs/service_role` - New definition `service_role` added to `metamodel.schema.yaml`.
+  - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/service_role`_
 
 - [additive] `metamodel.schema.yaml#/$defs/severity_scale` - New definition `severity_scale` added to `metamodel.schema.yaml`.
   - _Source: `schema/v2.8/metamodel.schema.yaml#/$defs/severity_scale`_
@@ -992,6 +1112,15 @@ A generated structural changelog for the **`v2.6` → `v2.8`** diff path. It exp
 
 - [additive] `migration.schema.yaml#/$defs/entity_change_kind` - New definition `entity_change_kind` added to `migration.schema.yaml`.
   - _Source: `schema/v2.8/migration.schema.yaml#/$defs/entity_change_kind`_
+
+- [additive] `migration.schema.yaml#/$defs/entity_change/properties/placement` - Property `placement` added (optional).
+  - _Source: `schema/v2.8/migration.schema.yaml#/$defs/entity_change/properties/placement`_
+
+- [additive] `migration.schema.yaml#/$defs/entity_change/properties/placement_before` - Property `placement_before` added (optional).
+  - _Source: `schema/v2.8/migration.schema.yaml#/$defs/entity_change/properties/placement_before`_
+
+- [additive] `migration.schema.yaml#/$defs/entity_placement` - New definition `entity_placement` added to `migration.schema.yaml`.
+  - _Source: `schema/v2.8/migration.schema.yaml#/$defs/entity_placement`_
 
 - [additive] `migrations.schema.yaml` - New schema file `migrations.schema.yaml` added.
   - _Source: `schema/v2.8/migrations.schema.yaml`_

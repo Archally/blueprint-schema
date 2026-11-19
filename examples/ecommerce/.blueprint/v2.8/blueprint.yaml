@@ -176,6 +176,18 @@ domains:
     complexity: state-management
     model_traits: [controller, interfacer]
 
+# Change streams group related delivery work; migration owners remain the responsible teams.
+change_streams:
+  - id: CS001
+    name: Payment reliability
+    description: Retry payments and describe the operations that handle payment failures.
+  - id: CS002
+    name: Customer experience
+    description: Evolve loyalty and the storefront's customer-account workflow.
+  - id: CS003
+    name: Order fulfilment
+    description: Clarify order state, inventory collaboration and the handoff to delivery.
+
 # Migrations: file refs listed here are "applied" (define AS-IS state).
 # Files in .migrations/ NOT listed here are "pending" (visible in TO-BE).
 #

@@ -8,9 +8,9 @@ A generated, human-readable projection of the JSON Schema. **JSON Schema remains
 | --- | --- |
 | Schema files | 25 |
 | Planes | 3 |
-| Object definitions | 189 |
-| Typed-ID entity types | 69 |
-| Cross-file reference edges | 40 |
+| Object definitions | 202 |
+| Typed-ID entity types | 71 |
+| Cross-file reference edges | 41 |
 
 ## Plane map
 

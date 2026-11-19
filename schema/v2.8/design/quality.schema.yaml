@@ -101,6 +101,7 @@ $defs:
         description: "Unique metric identifier (MT + NNN)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable metric name (e.g. 'Order Processing Latency')."
       summary:
         type: string
@@ -119,6 +120,7 @@ $defs:
         description: "Metric category: latency=time-to-complete, throughput=processing rate, availability=uptime, error-rate=failure rate, saturation=resource utilization, business=domain KPI, custom=other."
       unit:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Unit of measurement (e.g. 'ms', 'req/s', '%', 'orders/hour')."
       measures:
         type: object
@@ -244,12 +246,14 @@ $defs:
         description: "Unique KPI identifier (KPI + NNN)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable KPI name."
       metric:
         $ref: "../metamodel.schema.yaml#/$defs/metric_ref"
         description: "Metric this KPI is based on. Omit if metric not yet formally defined."
       target:
         type: string
+        pattern: "\\S"
         description: >
           The target as the sentence a person agrees to (e.g. '99.5%', '< 200ms p95', '> 1000
           orders/hour'). It is what is signed off and what generated documents carry. A reader
@@ -323,12 +327,14 @@ $defs:
         description: "Unique SLO identifier (SLO + NNN)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable SLO name."
       metric:
         $ref: "../metamodel.schema.yaml#/$defs/metric_ref"
         description: "Metric this SLO targets."
       target:
         type: string
+        pattern: "\\S"
         description: >
           The target as the sentence a person agrees to (e.g. '99.9%', 'p95 under 800 ms'). It is what
           is signed off and what generated documents carry. A reader compares a result with
@@ -403,6 +409,7 @@ $defs:
         description: "Unique SLA identifier (SLA + NNN)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable SLA name."
       slos:
         type: array
@@ -432,9 +439,11 @@ $defs:
           properties:
             condition:
               type: string
+              pattern: "\\S"
               description: "When penalty applies (e.g. 'SLO001 breached for >4h')."
             action:
               type: string
+              pattern: "\\S"
               description: "Penalty action (e.g. '10% service credit')."
       review_period:
         type: string
@@ -474,6 +483,7 @@ $defs:
         description: "Unique security requirement identifier (SEC + NNN)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable name."
       type:
         type: string
@@ -487,6 +497,7 @@ $defs:
         description: "Security concern category."
       requirement:
         type: string
+        pattern: "\\S"
         description: "What is required (e.g. 'All API endpoints require JWT authentication with RS256 signing')."
       operations:
         type: array
@@ -536,12 +547,15 @@ $defs:
         description: "Unique compliance requirement identifier (CMP + NNN)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable name."
       regulation:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Regulation or standard (e.g. 'GDPR', 'SOC2', 'PCI-DSS', 'HIPAA')."
       requirement:
         type: string
+        pattern: "\\S"
         description: "What is required by the regulation."
       concepts:
         type: array
@@ -594,6 +608,7 @@ $defs:
         description: "Unique resilience requirement identifier (RES + NNN)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable name."
       type:
         type: string
@@ -666,6 +681,7 @@ $defs:
         description: "Unique finding identifier (FN + NNN, e.g. FN001 or ordering.FN001)."
       title:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Short descriptive title understandable without reading the full statement."
       summary:
         type: string
@@ -720,6 +736,7 @@ $defs:
         description: "Rough remediation effort (t-shirt size). Optional."
       statement:
         type: string
+        pattern: "\\S"
         description: "The observation - what is wrong and where, in plain language."
       recommendation:
         type: string
@@ -869,6 +886,7 @@ $defs:
         description: "Signal name (e.g. 'order-processing-duration')."
       description:
         type: string
+        pattern: "\\S"
         description: "What this signal captures and why it matters."
       type:
         type: string

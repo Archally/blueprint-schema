@@ -1,0 +1,16 @@
+version: "1.0.0"
+scope: delivery
+parallelism:
+  - id: delivery.PAR001
+    name: Sort while loading
+    operations: [delivery.CMD001, delivery.QRY001]
+    relationship: independent
+ordering:
+  - id: delivery.ORD001
+    summary: Find before delivering
+race_conditions:
+  - id: delivery.RC001
+    name: Double delivery
+    scenario: Two couriers deliver one parcel.
+    impact: The parcel is recorded twice.
+    mitigation: One courier holds the parcel.

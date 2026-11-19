@@ -83,6 +83,7 @@ $defs:
         description: "Unique leverage-point identifier (LP + 3 digits, optional context prefix)."
       title:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Short imperative title of the intervention (e.g. 'Isolate reporting workloads from the interactive path')."
       summary:
         type: string
@@ -90,6 +91,7 @@ $defs:
         description: "One-line summary for listings (≤200 chars)."
       one_thing:
         type: string
+        pattern: "\\S"
         description: >
           The single highest-value thing this intervention achieves, in prose. The definitional core:
           if you did only one thing here, this is it (e.g. 'make schema evolution safe enough to ship
@@ -221,6 +223,7 @@ $defs:
           their watch items apart.
       title:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "What is being watched (e.g. 'Retire compatibility-only runtime islands')."
       note:
         type: string

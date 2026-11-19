@@ -1,5 +1,7 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
+import { companionEvidence, contractWitness } from './linkEvidence.js';
+import { messagingCommandReceiver, messagingServiceIdentity } from './messagingCommandReceiver.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 
 /**
@@ -14,7 +16,8 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *
  * This ports the EXACT resolution the backend arch resolver used to recompute
  * (`resolvers.arch.ts` buildContractIndexes + operationRefsOf) so the
- * observable stickies are unchanged — the resolver becomes a pure reader of these edges.
+ * resolver reads these edges. Sent commands with exactly one receiving service bind through
+ * receive declarations; events and ambiguous command receivers retain the provider binding.
  *
  * D14: there is NO domain `bounded_context_ref` for operations (contracts are the
  * forward mechanism). D17: questions DO carry an explicit `bounded_context_ref`
@@ -97,9 +100,22 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     contextsByPartyAndName.set(`${party}::${name}`, ctx);
   }
 
-  // PROVIDE-membership: contextId -> op-refs its services provide (expose, send, provide, write).
+  const contracts = entities.filter(entity => entity.type === ENTITY_TYPE.Contract);
+  const messagingServices = contracts.map(contract => ({
+    serviceId: messagingServiceIdentity(contract),
+    send: asStringArray(getData(contract).send),
+    receive: asStringArray(getData(contract).receive),
+  }));
+  const receiverByOperation = new Map(operations.map(operation => [
+    operation.id,
+    messagingCommandReceiver(getData(operation).kind, operationRefForms(operation), messagingServices),
+  ]));
+
+  // Candidate membership declarations, including receive for sent commands with one receiver.
   // Exact case only. The union across every context is no longer kept: it existed to decide whether
   // the name/scope fallback could apply to an operation, and that fallback is gone (step-32).
+  const witnessDeclarations = new WeakMap<Record<string, unknown>, { contract: Entity; field: string }>();
+  const witnessesByContext = new Map<string, Map<string, Record<string, unknown>[]>>();
   const providedExactByContextId = new Map<string, Set<string>>();
   const ensure = (map: Map<string, Set<string>>, key: string): Set<string> => {
     let set = map.get(key);
@@ -109,7 +125,7 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     }
     return set;
   };
-  const addProvided = (entity: Entity, refs: string[]): void => {
+  const addProvided = (entity: Entity, field: string, refs: string[]): void => {
     if (!refs.length) return;
     const data = getData(entity);
     const ownerName = typeof data._context === 'string' ? data._context : null;
@@ -118,21 +134,24 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
     const owner = contextsByPartyAndName.get(`${party}::${ownerName}`);
     if (!owner) return;
     const exactSet = ensure(providedExactByContextId, owner.id);
-    for (const ref of refs) exactSet.add(ref);
+    const byReference = witnessesByContext.get(owner.id) ?? new Map<string, Record<string, unknown>[]>();
+    witnessesByContext.set(owner.id, byReference);
+    for (const [occurrence, ref] of refs.entries()) {
+      exactSet.add(ref);
+      const witnesses = byReference.get(ref) ?? [];
+      const witness = contractWitness(entity, `${field}[target=${encodeURIComponent(ref)}][occurrence=${occurrence}]`, companionEvidence(data, field, ref));
+      witnessDeclarations.set(witness, { contract: entity, field });
+      witnesses.push(witness);
+      byReference.set(ref, witnesses);
+    }
   };
 
   for (const contract of entities) {
     if (contract.type !== ENTITY_TYPE.Contract) continue;
     const data = getData(contract);
-    addProvided(contract, [
-      ...asStringArray(data.expose),
-      ...asStringArray(data.send),
-      // The transport-free provider verbs bind exactly as `expose` and `send` do. What they do NOT
-      // do is assert a channel, which is the whole reason they exist; the binding is the same fact
-      // either way, so it is materialised on the same edge.
-      ...asStringArray(data.provide),
-      ...asStringArray(data.write),
-    ]);
+    for (const field of ['expose', 'send', 'receive', 'provide', 'write']) {
+      addProvided(contract, field, asStringArray(data[field]));
+    }
   }
 
   // A provider that asserts no transport is `contracts.inprocess.provide`, read by the contract pass
@@ -153,15 +172,38 @@ export function extractMembershipRelations(entities: Entity[]): Relation[] {
   // ── Operation --handled_by--> Context (m:n) ──────────────────────────────
   for (const op of operations) {
     const forms = operationRefForms(op);
+    const receiver = receiverByOperation.get(op.id);
     for (const ctx of contexts) {
       const exactHere = providedExactByContextId.get(ctx.id);
       if (!exactHere || !forms.some((ref) => exactHere.has(ref))) continue;
+      const declarations = forms.flatMap(ref => witnessesByContext.get(ctx.id)?.get(ref) ?? []);
+      const selected = declarations.filter(witness => {
+        const declaration = witnessDeclarations.get(witness)!;
+        if (declaration.field === 'receive') {
+          if (receiver === undefined) {
+            return false;
+          }
+          return messagingServiceIdentity(declaration.contract) === receiver;
+        }
+        if (declaration.field === 'send') {
+          return receiver === undefined;
+        }
+        return true;
+      });
+      if (selected.length === 0) {
+        continue;
+      }
       relations.push({
         id: relationId(op.id, RELATION_TYPE.HandledBy, ctx.id),
         source_entity_id: op.id,
         target_entity_id: ctx.id,
         type: RELATION_TYPE.HandledBy,
-        data: { resolution: 'contract' },
+        data: {
+          resolution: 'contract',
+          evidence_role: 'structural',
+          derived: true,
+          declaration_sources: selected,
+        },
       });
     }
   }

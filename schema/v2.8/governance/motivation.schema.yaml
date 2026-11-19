@@ -71,6 +71,7 @@ $defs:
     properties:
       statement:
         type: string
+        pattern: "\\S"
         description: "The vision as one or two sentences naming what the product is and aspires to be."
       aspiration:
         type: string
@@ -124,6 +125,7 @@ $defs:
         description: "Human-readable description."
       statement:
         type: string
+        pattern: "\\S"
         description: "The goal as a clear, actionable statement (e.g. 'Reduce order processing time to under 2 seconds')."
       summary:
         type: string
@@ -299,9 +301,11 @@ $defs:
         description: "Human-readable description."
       statement:
         type: string
+        pattern: "\\S"
         description: "What the system explicitly does NOT do (e.g. 'This system does not handle payment processing')."
       reason:
         type: string
+        pattern: "\\S"
         description: "Why this is excluded. Helps future stakeholders understand the boundary was intentional."
       discovery_stage:
         $ref: "../metamodel.schema.yaml#/$defs/discovery_stage"
@@ -336,6 +340,7 @@ $defs:
         description: "Human-readable description."
       statement:
         type: string
+        pattern: "\\S"
         description: "What could go wrong."
       summary:
         type: string
@@ -349,6 +354,7 @@ $defs:
         description: "Severity if materialized: critical=system failure, high=major degradation, medium=noticeable impact, low=minor inconvenience."
       mitigation:
         type: string
+        pattern: "\\S"
         description: "Strategy to prevent or reduce this risk. Should be actionable and specific."
       contingency:
         type: string
@@ -468,9 +474,11 @@ $defs:
         description: "Human-readable description."
       statement:
         type: string
+        pattern: "\\S"
         description: "What is assumed to be true."
       consequence:
         type: string
+        pattern: "\\S"
         description: "What happens if this assumption is wrong - the risk carried by the assumption."
       domain_scope:
         $ref: "../metamodel.schema.yaml#/$defs/scope_prefix"
@@ -573,15 +581,19 @@ $defs:
         description: "Human-readable description."
       choice:
         type: string
+        pattern: "\\S"
         description: "The tension or competing concern being resolved."
       selected:
         type: string
+        pattern: "\\S"
         description: "What was chosen."
       rejected:
         type: string
+        pattern: "\\S"
         description: "What was rejected."
       rationale:
         type: string
+        pattern: "\\S"
         description: "Why the selected option is preferable given the context."
       accepted_risk:
         type: string
@@ -621,6 +633,7 @@ $defs:
         description: "Unique inquiry identifier (INQ + 3+ digits)."
       statement:
         type: string
+        pattern: "\\S"
         description: "The unresolved concern or question."
       summary:
         type: string
@@ -672,9 +685,26 @@ $defs:
         description: "Actors who care about the resolution."
       affects:
         type: object
-        description: "Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board or a wall can pin it beside the operation, concept, bounded context, service, package, capability, story or process activity it is about."
+        description: "Blueprint entities this inquiry touches: where it sticks on the domain model, so a story board, a wall or a map can pin it beside the entity, or the part of one, it is about. `element_refs` takes any typed id; each list beside it takes one kind, with the same meaning."
         additionalProperties: false
         properties:
+          element_refs:
+            type: array
+            title: Model elements
+            uniqueItems: true
+            items:
+              $ref: "../metamodel.schema.yaml#/$defs/model_element_ref"
+            description: >
+              Model elements this inquiry is about, each by the typed id it is declared with: an
+              infrastructure resource, an environment, a finding, a screen, a migration, a watch item
+              or any other entity, or one part of an entity that carries its own id, such as a process
+              activity or a concept attribute. A part names that part only, never its process or
+              concept as a whole, and an entity names itself only: its children, parent and
+              neighbours are not implied. Naming an id here means the same as naming it in the list
+              for its kind, so name each id once. An id no file declares is a cross-reference error,
+              and an inquiry cannot name itself.
+            examples:
+              - [IR003, ENV001, delivery.PA002, orders.CAT004]
           operation_refs:
             type: array
             items:
@@ -743,8 +773,39 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/owner_ref"
         description: >
           A person or role (ACT###) or a team (TM###) who drives this inquiry to its resolution.
-          Distinct from owned_by (the unit accountable for it).
+          Distinct from owned_by (the unit accountable for it), and from `asked_of`, who is
+          expected to answer it.
         examples: [ACT001, TM002]
+      asked_of:
+        $ref: "#/$defs/inquiry_addressee"
+        title: Addressee
+        description: >
+          Who is expected to answer this inquiry now: an actor (ACT###, a person or a role), a
+          team (TM###), or a name for an addressee the model does not declare. Distinct from
+          `owner`, who drives the inquiry to its resolution, from `owned_by`, the unit accountable
+          for it, and from `stakeholders`, who care about the answer; the addressee may work
+          outside the area the inquiry is about. One addressee at a time. Absent: the model does
+          not say who is asked, and nothing is inferred from `owner`.
+        examples:
+          - team: TM003
+          - name: Domain expert
+          - actor: payments.ACT004
+            name: The payments developer
+      previously_asked_of:
+        type: array
+        title: Earlier addressees
+        description: >
+          Whom this inquiry was asked of before `asked_of`, oldest first, each with how the inquiry
+          left them. Passing an inquiry on changes who is asked and leaves `status` as it is. An
+          entry is recorded only where a source states it, and the current addressee is never
+          listed here. An unsettled inquiry that lists earlier addressees and states no `asked_of`
+          is reported by a semantic warning: it was passed on, and the model does not say to whom.
+        items:
+          $ref: "#/$defs/inquiry_earlier_addressee"
+        examples:
+          - - asked_of: { actor: payments.ACT004 }
+              outcome: partly-answered
+              date: "2026-10-02"
       blocking:
         type: boolean
         default: false
@@ -789,6 +850,88 @@ $defs:
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
 
+  inquiry_addressee:
+    type: object
+    title: Addressee
+    description: >
+      Who is or was expected to answer an inquiry: a reference to an actor (ACT###) or a team
+      (TM###), a `name`, or a name beside one reference. A name alone is a complete statement for
+      an addressee the model does not declare, for example a role such as "Domain expert"; it
+      draws no graph edge, and two addressees stated by name are the same addressee only when the
+      names are written identically. Beside a reference, the reference is the addressee and the
+      name is the addressee as the source states it. At most one reference. A reference to an
+      actor or team nobody declares is a cross-reference error.
+    additionalProperties: false
+    properties:
+      actor:
+        $ref: "../metamodel.schema.yaml#/$defs/actor_ref"
+        description: "The addressee as an actor: a person or a role (ACT###)."
+        examples: [payments.ACT004]
+      team:
+        $ref: "../metamodel.schema.yaml#/$defs/team_ref"
+        description: "The addressee as a team (TM###)."
+        examples: [TM003]
+      name:
+        type: string
+        description: >
+          The addressee as written in the source, for example "Domain expert". Alone, it is the
+          addressee; beside a reference, it is the addressee as stated. It contains at least one
+          non-space character and is never a typed id: write an actor or a team as its reference
+          key instead.
+        pattern: "\\S"
+        not:
+          pattern: "^([a-z][a-z0-9-]*\\.)?[A-Z]{1,4}\\d{3,}$"
+        examples: [Domain expert]
+    anyOf:
+      - required: [actor]
+      - required: [team]
+      - required: [name]
+    not:
+      required: [actor, team]
+    examples:
+      - team: TM003
+      - name: Domain expert
+      - actor: payments.ACT004
+        name: The payments developer
+
+  inquiry_earlier_addressee:
+    type: object
+    title: Earlier addressee
+    description: >
+      One earlier addressee of an inquiry and how the inquiry left them. `asked_of` and `outcome`
+      are a complete statement; `date` and `note` are stated only where a source gives them.
+    additionalProperties: false
+    required: [asked_of, outcome]
+    properties:
+      asked_of:
+        $ref: "#/$defs/inquiry_addressee"
+        description: "The earlier addressee: an actor (ACT###), a team (TM###) or a name."
+        examples:
+          - actor: payments.ACT004
+      outcome:
+        type: string
+        enum: [redirected, partly-answered, reassigned]
+        description: >
+          How the inquiry left this addressee. redirected: the addressee passed it on without an
+          answer. partly-answered: the addressee answered part of it and passed the rest on.
+          reassigned: whoever drives the inquiry moved it to another addressee.
+        examples: [partly-answered]
+      date:
+        type: string
+        format: date
+        description: "When the inquiry left this addressee (ISO 8601), where a source states it."
+        examples: ["2026-10-02"]
+      note:
+        type: string
+        pattern: "\\S"
+        description: "What the addressee said or answered when the inquiry left them, as the source states it."
+        examples: ["The validation rules are known; the retention period is for the architecture team."]
+    examples:
+      - asked_of: { actor: payments.ACT004 }
+        outcome: partly-answered
+        date: "2026-10-02"
+        note: "The validation rules are known; the retention period is for the architecture team."
+
   concern:
     type: object
     description: >
@@ -813,6 +956,7 @@ $defs:
         description: "Short name for listings (e.g. 'Knows an order is on its way')."
       statement:
         type: string
+        pattern: "\\S"
         description: >
           What the persona expects, in their terms. It may read as a question ('Can I tell when my
           order will arrive?') or as a claim ('I can tell when my order will arrive'); both say the

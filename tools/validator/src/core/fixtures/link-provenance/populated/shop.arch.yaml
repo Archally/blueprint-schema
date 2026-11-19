@@ -1,0 +1,359 @@
+version: "1.0.0"
+name: Shop architecture
+channels:
+  - id: MCH001
+    name: order_event_bus
+    kind: topic
+    broker_ref: IR001
+    link_provenance:
+      broker_ref:
+        IR001:
+          discovery_stage: validated
+          certainty: confirmed
+          evidence:
+            - kind: codebase-analysis
+              source: deploy/broker/exchanges.tf
+              date: "2026-11-03"
+              summary: The exchange is declared on the order event bus.
+              confidence_impact: supports
+  - id: MCH002
+    name: order_audit
+    kind: queue
+    broker_ref: IR001
+packages:
+  - id: PKG001
+    name: date-fns
+    version: "3.6.0"
+    license:
+      expression: MIT
+contexts:
+  - id: BC001
+    name: Orders
+    kind: core
+    provenance:
+      certainty: confirmed
+      evidence:
+        - kind: workshop
+          source: Order flow board export
+          date: "2026-10-20"
+          summary: The orders context was agreed at the order flow workshop.
+    dependencies:
+      - name: Payments
+        bounded_context_ref: BC002
+        relationship: customer-supplier
+        direction: downstream
+        coupling: http
+        provenance:
+          discovery_stage: validated
+          certainty: confirmed
+          evidence:
+            - kind: codebase-analysis
+              source: services/orders/payments-client.ts
+              date: "2026-11-02"
+              summary: The order service calls the payments API to charge a card.
+              certainty: confirmed
+              confidence_impact: supports
+            - kind: interview
+              source: Payments team lead
+              date: "2026-11-04"
+              summary: The payments team confirmed orders is a downstream customer.
+      - name: Stock
+        bounded_context_ref: BC003
+        relationship: published-language
+        direction: upstream
+        provenance:
+          discovery_stage: exploring
+      - name: Card Network
+        relationship: conformist
+        direction: downstream
+        provenance:
+          certainty: speculative
+      - name: Tax Service
+        relationship: anticorruption-layer
+        direction: downstream
+        provenance:
+          evidence: []
+      - name: Catalog
+        relationship: separate-ways
+    services:
+      - id: SVC001
+        name: order-api
+        kind: api
+        imports: [SVC010, PKG001]
+        uses: [SVC002]
+        resource_refs: [IR002, IR002]
+        provenance:
+          certainty: confirmed
+        link_provenance:
+          imports:
+            SVC010:
+              discovery_stage: validated
+            PKG001:
+              evidence: []
+          uses:
+            SVC002:
+              certainty: probable
+              evidence:
+                - kind: codebase-analysis
+                  source: services/orders/payments-client.ts
+                  date: "2026-11-02"
+                  summary: The order service builds a payments client at start-up.
+          resource_refs:
+            IR002:
+              evidence:
+                - kind: documentation
+                  source: Orders runbook
+                  summary: The runbook names the orders database as the service's store.
+        needs:
+          - type_ref: RT001
+            id: orders-db
+            provenance:
+              certainty: confirmed
+          - type_ref: RT001
+            id: orders-cache
+        servers:
+          - url: https://orders.example.test
+            environment: ENV001
+            provenance:
+              discovery_stage: committed
+              evidence:
+                - kind: analytics
+                  source: Gateway access log
+                  date: "2026-11-05"
+                  summary: Production traffic reaches this host.
+          - url: https://orders.staging.example.test
+            environment: staging
+        contracts:
+          openapi:
+            contract_name: orders-api
+            expose: [orders.CMD001, "orders:cancelOrder"]
+            link_provenance:
+              expose:
+                orders.CMD001:
+                  certainty: confirmed
+                "orders:cancelOrder":
+                  certainty: probable
+            provenance:
+              discovery_stage: validated
+          httpClient:
+            contract_name: payments-client
+            call: [payments.CMD001]
+            link_provenance:
+              call:
+                payments.CMD001:
+                  evidence:
+                    - kind: codebase-analysis
+                      source: services/orders/payments-client.ts
+                      date: "2026-11-02"
+                      summary: The client posts a charge request.
+          asyncapi:
+            contract_name: order-events
+            broker_ref: IR001
+            send: [orders.EVT001]
+            link_provenance:
+              send:
+                orders.EVT001:
+                  certainty: confirmed
+              broker_ref:
+                IR001:
+                  discovery_stage: validated
+            provenance:
+              certainty: probable
+          graphql:
+            contract_name: orders-graph
+            queries: [orders]
+            mutations: [placeOrder]
+            subscriptions: [orderPlaced]
+            link_provenance:
+              queries:
+                orders:
+                  certainty: confirmed
+              mutations:
+                placeOrder:
+                  discovery_stage: exploring
+              subscriptions:
+                orderPlaced:
+                  evidence:
+                    - kind: documentation
+                      source: orders.graphql
+                      summary: The schema declares the orderPlaced subscription.
+            provenance:
+              certainty: probable
+          openrpc:
+            contract_name: orders-rpc
+            expose: [orders.QRY002]
+            link_provenance:
+              expose:
+                orders.QRY002:
+                  certainty: probable
+          protobuf:
+            file: proto/orders.proto
+            contract_name: orders-proto
+            expose: [orders.CMD003]
+            link_provenance:
+              expose:
+                orders.CMD003:
+                  certainty: confirmed
+            provenance:
+              certainty: confirmed
+          mcp:
+            contract_name: orders-tools
+            expose: [orders.CMD004]
+            link_provenance:
+              expose:
+                orders.CMD004:
+                  discovery_stage: hypothesis
+          cli:
+            contract_name: orders-cli
+            expose: [orders.CMD005]
+            link_provenance:
+              expose:
+                orders.CMD005:
+                  certainty: probable
+          arazzo:
+            contract_name: order-flows
+            workflows: [checkout]
+            provenance:
+              certainty: probable
+          cncfsw:
+            contract_name: order-runs
+            workflows: [refund]
+            provenance:
+              discovery_stage: exploring
+          inprocess:
+            provide: [orders.CMD006]
+            link_provenance:
+              provide:
+                orders.CMD006:
+                  certainty: confirmed
+            provenance:
+              certainty: confirmed
+          shareddata:
+            contract_name: order-ledger
+            write: [orders.DOC001]
+            link_provenance:
+              write:
+                orders.DOC001:
+                  certainty: confirmed
+            provenance:
+              certainty: confirmed
+          scheduledtransfer:
+            contract_name: order-export
+            write: [orders.DOC002]
+            link_provenance:
+              write:
+                orders.DOC002:
+                  certainty: probable
+            provenance:
+              certainty: probable
+      - id: SVC003
+        name: edge-gateway
+        kind: api
+        role: gateway
+        routes_to: [SVC001]
+        link_provenance:
+          routes_to:
+            SVC001:
+              certainty: confirmed
+              evidence:
+                - kind: codebase-analysis
+                  source: gateway/routes.yaml
+                  date: "2026-11-01"
+                  summary: The gateway forwards /orders to the order API.
+      - id: SVC005
+        name: order-worker
+        kind: worker
+        contracts:
+          inprocess:
+            consume: [orders.CMD006]
+            link_provenance:
+              consume:
+                orders.CMD006:
+                  certainty: probable
+      - id: SVC010
+        name: shared-kernel
+        kind: library
+  - id: BC002
+    name: Payments
+    kind: support
+    services:
+      - id: SVC002
+        name: payments-api
+        kind: api
+        contracts:
+          openapi:
+            contract_name: payments-api
+            expose: [payments.CMD001]
+  - id: BC003
+    name: Stock
+    kind: support
+    services:
+      - id: SVC004
+        name: stock-worker
+        kind: worker
+        contracts:
+          asyncapi:
+            contract_name: stock-events
+            broker_ref: IR001
+            receive: [orders.EVT001]
+            subscription:
+              channel_ref: MCH002
+              link_provenance:
+                channel_ref:
+                  MCH002:
+                    certainty: confirmed
+            link_provenance:
+              receive:
+                orders.EVT001:
+                  certainty: probable
+          openrpc:
+            contract_name: stock-rpc
+            expose: [stock.QRY001]
+            call: [orders.QRY002]
+            link_provenance:
+              expose:
+                stock.QRY001:
+                  certainty: confirmed
+              call:
+                orders.QRY002:
+                  discovery_stage: exploring
+          protobuf:
+            file: proto/orders.proto
+            contract_name: orders-proto
+            call: [orders.CMD003]
+            link_provenance:
+              call:
+                orders.CMD003:
+                  certainty: confirmed
+          mcp:
+            contract_name: orders-tools
+            call: [orders.CMD004]
+            link_provenance:
+              call:
+                orders.CMD004:
+                  certainty: speculative
+          cli:
+            contract_name: orders-cli
+            call: [orders.CMD005]
+            link_provenance:
+              call:
+                orders.CMD005:
+                  certainty: probable
+          shareddata:
+            contract_name: order-ledger
+            read: [orders.DOC001]
+            link_provenance:
+              read:
+                orders.DOC001:
+                  evidence:
+                    - kind: codebase-analysis
+                      source: stock/ledger-reader.sql
+                      date: "2026-10-30"
+                      summary: The stock job selects from the order ledger table.
+          scheduledtransfer:
+            contract_name: order-export
+            read: [orders.DOC002]
+            link_provenance:
+              read:
+                orders.DOC002:
+                  certainty: probable

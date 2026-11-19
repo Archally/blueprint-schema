@@ -3,61 +3,52 @@ import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 import { createPlaceholder } from './resolver.js';
 
-/**
- * Context → Context dependency relations from arch `dependencies[]`.
- *
- * Each context declares `dependencies: [{ name, type, relationship, direction, ... }]` naming another
- * bounded context or an external system. The name is resolved to a Context entity by displayId
- * (context names are unique across the arch); an unresolved name becomes a Missing placeholder
- * (e.g. an external system not modeled as a context). The DDD annotations (relationship / direction /
- * integration type) are carried on the relation `data` so renderers and dependency audits can read the
- * strategic intent. Without this, `dependencies[]` lived only inside Context.data and depended-upon
- * contexts showed up as false "orphan-entities".
- *
- * `coupling` and `type` are carried as two fields rather than merged, because they are two
- * statements and only one of them is comparable with anything. `coupling` takes the three values
- * the contract surface computes, so a declared one and a derived one can be compared; `type` is free
- * text and lands on `integration_type` as whatever the author wrote. Folding the second into the
- * first would invent a comparison the model never made.
- *
- * Ported from the public `tools/model-builder/src/extraction/relations/archDependencies.ts`; keep the
- * two in lockstep (both stacks run one shared semantic-rule pack).
- *
- * NOTE: this resolves by **context name**, which is the v2.7.x shape. v2.7.6 D10 prefers a typed
- * `bounded_context_ref: BC###` on the dependency; when that becomes the only form, resolve the typed
- * id first and fall back to the name — change it in both builders at once.
- */
+import { indexDeclarations, resolveReference } from './refResolution.js';
+import { declarationOrigin, declarationRelationId, localEvidence } from './linkEvidence.js';
+
+/** Typed references are authoritative; name fallback is for declarations without a typed ref. */
 export function extractArchDependencyRelations(
   entities: Entity[],
   placeholders: Map<string, Entity>,
 ): Relation[] {
   const relations: Relation[] = [];
 
-  const contextByName = new Map<string, string>();
-  for (const entity of entities) {
-    if (entity.type === ENTITY_TYPE.Context) contextByName.set(entity.displayId, entity.id);
-  }
+  const contexts = entities.filter(entity => entity.type === ENTITY_TYPE.Context);
+  const typed = indexDeclarations(contexts.flatMap(entity =>
+    typeof entity.data?.id === 'string' ? [{ id: entity.data.id, handle: entity.id }] : []));
+  const named = indexDeclarations(contexts.map(entity => ({ id: entity.displayId, handle: entity.id })));
 
   for (const entity of entities) {
     if (entity.type !== ENTITY_TYPE.Context) continue;
     const dependencies = entity.data?.dependencies as Array<Record<string, unknown>> | undefined;
     if (!Array.isArray(dependencies)) continue;
+    const occurrences = new Map<string, number>();
     for (const dependency of dependencies) {
       const name = dependency?.name;
       if (typeof name !== 'string' || !name) continue;
-      let targetId = contextByName.get(name);
-      if (!targetId) {
-        const placeholder = createPlaceholder(name);
+      const reference = typeof dependency.bounded_context_ref === 'string' ? dependency.bounded_context_ref : name;
+      const resolution = resolveReference(typeof dependency.bounded_context_ref === 'string' ? typed : named, reference);
+      let targetId: string;
+      if (resolution.status === 'resolved') {
+        targetId = resolution.handle;
+      } else {
+        const placeholder = createPlaceholder(reference, resolution.status === 'ambiguous' ? resolution.handles : undefined);
         if (!placeholders.has(placeholder.id)) placeholders.set(placeholder.id, placeholder);
         targetId = placeholder.id;
       }
+      const key = JSON.stringify([name, reference]);
+      const occurrence = occurrences.get(key) ?? 0;
+      occurrences.set(key, occurrence + 1);
+      const selector = `dependencies[key=${encodeURIComponent(key)}][occurrence=${occurrence}]`;
       if (targetId === entity.id) continue; // ignore self-dependency
       relations.push({
-        id: `${entity.id}--${RELATION_TYPE.ContextDependsOn}--${targetId}`,
+        id: declarationRelationId(entity, selector, RELATION_TYPE.ContextDependsOn),
+        origin_ref: declarationOrigin(entity, selector),
         source_entity_id: entity.id,
         target_entity_id: targetId,
         type: RELATION_TYPE.ContextDependsOn,
         data: {
+          ...localEvidence(dependency),
           ...(dependency.relationship != null ? { relationship: dependency.relationship } : {}),
           ...(dependency.direction != null ? { direction: dependency.direction } : {}),
           ...(dependency.coupling != null ? { coupling: dependency.coupling } : {}),

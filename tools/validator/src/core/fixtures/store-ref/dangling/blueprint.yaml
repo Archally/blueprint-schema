@@ -1,0 +1,6 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Order Ledger
+description: >-
+  A shop whose order service writes an order ledger into a database that the reporting service
+  reads directly, without calling the order service.

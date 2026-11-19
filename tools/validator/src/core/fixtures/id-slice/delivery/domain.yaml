@@ -1,0 +1,4 @@
+scope: delivery
+concepts:
+  - id: delivery.CN001
+    name: Parcel

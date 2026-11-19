@@ -32,6 +32,7 @@ properties:
         description: "Lifecycle state: draft=authoring, pending=ready for review/application, applied=committed to model, rolled-back=reverted."
       description:
         type: string
+        pattern: "\\S"
         description: "What this migration does and why, in plain language."
       author:
         type: string
@@ -48,14 +49,42 @@ properties:
         items:
           $ref: "metamodel.schema.yaml#/$defs/migration_ref"
         description: "Migrations that must be applied before this one. Loader validates dependency order."
+      depends_on_reasons:
+        type: array
+        description: "Why this migration waits for a migration in `depends_on`: one entry per dependency with a stated reason. A dependency without an entry states no reason."
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/migration_dependency_reason"
+        examples:
+          - [{ migration: MIG002, reason: "Both migrations change the order table, and the column split must land first." }]
       related_decisions:
         type: array
         items:
           $ref: "metamodel.schema.yaml#/$defs/decision_ref"
         description: "Architectural decisions that motivated this migration."
+      owned_by:
+        $ref: "metamodel.schema.yaml#/$defs/owned_by"
+        description: "The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct from `author`, who wrote the record."
+        examples:
+          - { team: TM001 }
+      change_stream_ref:
+        $ref: "metamodel.schema.yaml#/$defs/change_stream_ref"
+        description: "The change stream this migration belongs to. At most one; absent means none. An id that `change_streams` in blueprint.yaml does not declare is a cross-reference error."
+        examples: [CS001]
+      reach:
+        $ref: "metamodel.schema.yaml#/$defs/migration_reach"
+        description: "The bounded contexts and domains this migration changes, stated by hand only where its changes cannot show them. Otherwise they are derived from the changes, and a statement that disagrees with them is reported by semantic validation."
+        examples:
+          - { bounded_context_refs: [BC001], domain_refs: [DMN001] }
+      tracker_ref:
+        $ref: "metamodel.schema.yaml#/$defs/tracker_ref"
+        description: "The item that stands for this migration in an external issue tracker, resolved to a link like every other `tracker_ref`."
+        examples: [ABC-1234]
       rationale:
         type: string
         description: "Detailed reasoning for why this migration is needed."
+      business_case:
+        $ref: "metamodel.schema.yaml#/$defs/migration_business_case"
+        description: "The forecast cost and benefit of carrying out this migration over a stated horizon. Optional: a migration without it states no estimate. A model declares each migration id once, in a migration document or in a register entry, so one migration carries at most one business case."
       tags:
         type: array
         items:
@@ -71,7 +100,7 @@ properties:
     properties:
       entities:
         type: array
-        description: "Entity-level changes: add, remove, deprecate, split, or merge entire blueprint entities."
+        description: "Entity-level changes: add, modify, deprecate, remove, rename, split, merge or move entire blueprint entities."
         items:
           $ref: "#/$defs/entity_change"
       properties:
@@ -116,20 +145,54 @@ properties:
 $defs:
   entity_change_kind:
     type: string
-    enum: [add, modify, deprecate, remove, rename, split, merge]
+    enum: [add, modify, deprecate, remove, rename, split, merge, move]
     x-vocabulary-distinct: "Names the OPERATION a migration performs on an entity, alongside a target and an ordering. Not the narrative impact classification a decision records."
     description: >
       What this migration does to one entity.
       add: a new entity. modify: replace it. deprecate: mark it for removal. remove: delete it.
       rename: it keeps its identity under a new id. split: one becomes many. merge: many become one.
+      move: it keeps its id and content and is declared in another file or slice, named by `placement`.
       Deliberately NOT a reference to the metamodel's `change_kind`, which carries the same words to
       classify a decision's impact rather than to be executed.
+
+  entity_placement:
+    type: object
+    additionalProperties: false
+    minProperties: 1
+    description: >
+      Where an entity is declared once a change applies: a slice folder, a file of the model, or both.
+      With a slice alone, the entity is read from the one file of that slice that holds its layer, or
+      from the layer's plain file name in that slice (`billing/infrastructure.yaml`) when the slice
+      holds none; a slice with several such files needs `file`. With both, the file sits in the slice.
+      Without a placement, an added entity is placed beside entities of the same type that share its
+      id's slice prefix, and one with no such siblings is read from the migration document.
+    examples:
+      - { slice: billing }
+      - { file: "billing/infrastructure.yaml" }
+    properties:
+      slice:
+        type: string
+        pattern: "^[a-z][a-z0-9-]*$"
+        description: "The slice the entity is declared in, by its folder name under the model root."
+        examples: [billing]
+      file:
+        type: string
+        pattern: "^(?![/\\\\])[^\\\\\\r\\n]*\\.ya?ml$"
+        description: "The file the entity is declared in, relative to the model directory, with forward slashes. Its name routes to the layer that holds the entity. It need not exist before the migration."
+        examples: ["billing/infrastructure.yaml"]
 
   entity_change:
     type: object
     description: "A change to a whole entity (node in the graph)."
     additionalProperties: false
     required: [kind, entity_type, target]
+    allOf:
+      - if: { properties: { kind: { const: move } }, required: [kind] }
+        then: { required: [placement] }
+      - if: { properties: { kind: { enum: [modify, deprecate, remove, rename] } }, required: [kind] }
+        then: { not: { required: [placement] } }
+      - if: { properties: { kind: { not: { const: move } } }, required: [kind] }
+        then: { not: { required: [placement_before] } }
     properties:
       kind:
         $ref: "#/$defs/entity_change_kind"
@@ -186,7 +249,8 @@ $defs:
         description: "Blueprint entity type. Routes validation to the appropriate schema."
       target:
         type: string
-        description: "Entity identifier (typed ref, e.g., CN005, CMD012) or SpecPath. For add: new entity ID. For merge: comma-separated source IDs."
+        pattern: "^\\S(?:.*\\S)?$"
+        description: "Entity identifier (typed ref, e.g., CN005, CMD012) or SpecPath. For add: new entity ID. For merge: comma-separated source IDs. For move: the entity that moves."
       description:
         type: string
         description: "Human-readable description of this change."
@@ -204,6 +268,16 @@ $defs:
       order:
         type: integer
         description: "Explicit ordering within this migration. Lower numbers apply first."
+      placement:
+        $ref: "#/$defs/entity_placement"
+        description: "Where the entity lands. Allowed on add, on split (every new piece lands there) and on merge (the result); required on move; not allowed on modify, deprecate, remove and rename."
+        examples:
+          - { slice: billing }
+      placement_before:
+        $ref: "#/$defs/entity_placement"
+        description: "Move only: where the entity is declared before this change. Applying the move fails when the entity is declared elsewhere. Absent: the move applies wherever the entity is."
+        examples:
+          - { file: "orders/infrastructure.yaml" }
 
   property_change:
     type: object
@@ -217,12 +291,14 @@ $defs:
         description: "Property operation: set=assign, unset=remove, rename=change name, append=add to array, remove-item=remove from array."
       target:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Entity identifier (typed ref, e.g., CN005, CMD012)."
       entity_type:
         type: string
         description: "Entity type for validation routing. Same enum as entity_change.entity_type."
       property:
         type: string
+        pattern: "^\\S+$"
         description: "Property name or dot-path for nested properties (e.g., description, payload.model)."
       value:
         description: "New value for set/append operations. Type depends on the property."
@@ -256,6 +332,7 @@ $defs:
         description: "Edge operation: add=create, remove=delete, redirect=change target, modify=change edge properties."
       subject:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Source entity typed ref (e.g., CMD005). The entity this relationship originates from."
       predicate:
         type: string
@@ -353,6 +430,7 @@ $defs:
         description: "Relationship type. Maps to graph edge label."
       object:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Target entity typed ref (e.g., EVT006). For redirect: current target."
       new_object:
         type: string
@@ -418,9 +496,10 @@ $defs:
           - document-split
           - document-merge
           - note
-        description: "Meta operation: tag-add/remove/rename, bulk-tag, reclassify, move-to-slice, constitution-amend, declare-shared-layer, document-add/move/split/merge, or note (informational)."
+        description: "Meta operation: tag-add/remove/rename, bulk-tag, reclassify, move-to-slice, constitution-amend, declare-shared-layer, document-add/move/split/merge, or note (informational). Applying a migration changes no entity for any meta operation: move-to-slice and document-move record the intent in prose, and an entity is relocated by an entity change of kind `move`."
       target:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Entity ref, tag name, slice name, or constitution section depending on kind."
       value:
         description: "New value (tag name, new slice, amended text, etc.)."
@@ -456,3 +535,35 @@ $defs:
       order:
         type: integer
         description: "Explicit ordering within this migration."
+
+x-gdsm:
+  version: "1.0.0"
+  methodology: "GDSM v1.0 (Goal-Driven Schema Modeling)"
+  status: draft
+  plane: null
+  purpose: >
+    One migration of a blueprint model: what it changes, in what order, how it is undone, and who
+    carries it out. The same identity, ownership and grouping fields appear on an entry of the
+    migration register and of the tracked register, so a reader of any of the three finds a
+    migration's team, change stream and reasons for waiting in the same place.
+  designed_for:
+    - { id: T1, name: "A migration map grouped by change stream", mfs_target: 80 }
+  competency_questions:
+    - "Which team carries out migration M, and which change stream does it belong to?"
+    - "Which migrations wait for a migration carried out by another team or in another change stream, and why?"
+    - "Which bounded contexts and domains does migration M reach, and is that derived from its changes or stated by hand?"
+    - "Into which slice and file does migration M add entity E?"
+    - "Which entities does migration M move, and from where to where?"
+    - "At a point in time after migration M, which file is entity E read from?"
+  non_goals:
+    - "Placing migrations in time: dates, durations and sprints belong to a roadmap, and a migration states only what it waits for."
+    - "Naming a lead team for a change stream: a stream's teams are the owners of its migrations."
+  modeling_guidance:
+    - lesson: >
+        State `placement` on every addition whose id carries no slice prefix: without it the entity has
+        no siblings to be placed beside and is read from the migration document, so a slice selection
+        leaves it out. Relocate an entity with an entity change of kind `move`, never with the meta
+        operations `move-to-slice` or `document-move`, which change no entity when the migration applies.
+      category: semantics
+      date: "2026-11-18"
+      schema_version: "2.8.105"

@@ -16,6 +16,7 @@ properties:
     description: "Blueprint schema version. Omit to assume latest."
   name:
     type: string
+    pattern: "^\\S(?:.*\\S)?$"
     description: "Name of the system being modeled."
   description:
     type: string
@@ -134,6 +135,27 @@ properties:
     items:
       $ref: "#/$defs/domain"
 
+  # === Products ===
+  products:
+    type: array
+    description: >
+      The products the system's capabilities are built into, each declared once here and named by
+      id everywhere else. A capability states the products it is available in with its own
+      `products` list, so one capability can be available in several products and per-product
+      counts can overlap. A product contains no other product.
+    items:
+      $ref: "#/$defs/product"
+
+  # === Change streams ===
+  change_streams:
+    type: array
+    description: >
+      The model's change streams, each declared once here and named by id from the migrations
+      that belong to it. A migration names at most one stream with `change_stream_ref`; a stream
+      states no team and no scope of its own, because both are read from its migrations.
+    items:
+      $ref: "#/$defs/change_stream"
+
   # === Constitution ===
   constitution:
     type: object
@@ -150,9 +172,11 @@ properties:
           properties:
             name:
               type: string
+              pattern: "^\\S(?:.*\\S)?$"
               description: "Principle name (e.g., 'Single Source of Truth')."
             statement:
               type: string
+              pattern: "\\S"
               description: "Principle statement - what it means and why."
             applies_to:
               type: string
@@ -181,9 +205,11 @@ properties:
           properties:
             name:
               type: string
+              pattern: "^\\S(?:.*\\S)?$"
               description: "Convention name."
             rule:
               type: string
+              pattern: "\\S"
               description: "The convention rule."
             severity:
               type: string
@@ -204,6 +230,7 @@ properties:
           properties:
             file:
               type: string
+              pattern: "^(?![/\\\\])(?:.*[./])?migration\\.ya?ml$"
               description: "Relative path to a migration YAML file (e.g., '.migrations/001-add-payment-retry.migration.yaml'). Dot-prefix distinguishes from domain-slice folder names."
 
   # === Design Plane ===
@@ -291,6 +318,7 @@ $defs:
     properties:
       url:
         type: string
+        format: uri
         description: "Repository URL (e.g., https://github.com/acme/ecommerce)."
       branch:
         type: string
@@ -317,6 +345,7 @@ $defs:
     properties:
       url:
         type: string
+        pattern: "^[A-Za-z][A-Za-z0-9+.-]*://\\S+$"
         description: >
           URL template. '{key}' is substituted with the ref key; if the template contains no '{key}',
           the key is appended. E.g. 'https://acme.atlassian.net/browse/{key}' or
@@ -343,6 +372,7 @@ $defs:
         description: "Domain id. Model-wide, so it carries no context prefix (DMN001)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Domain name as the business says it (e.g. Ordering, Catalog)."
       description:
         type: string
@@ -393,6 +423,7 @@ $defs:
           Subdomain id. Model-wide, no context prefix (SDM001). SOFT-DEPRECATED (v2.8.17). A subdomain is a partition of one domain and is always reached through it, so it takes no identity of its own on the next major line: it is named by its own `name` inside the domain that contains it, and the containing domain is what another entity points at. Still accepted here, and `id` stays required while it exists.
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Subdomain name (e.g. cart, checkout, fulfillment)."
       description:
         type: string
@@ -411,6 +442,53 @@ $defs:
       owner:
         $ref: "metamodel.schema.yaml#/$defs/owned_by"
         description: "The accountable unit when it differs from the domain's: a team, department or party by reference, a name for a unit the model does not declare yet, or both."
+  product:
+    type: object
+    description: >
+      A product: an offering the system's capabilities are built into, such as an edition, an
+      application or a separately sold tool. Declared once in `products` and named by capabilities
+      through their `products` list.
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        $ref: "metamodel.schema.yaml#/$defs/product_ref"
+        description: "Product id. Model-wide, so it carries no context prefix (PDT001)."
+      name:
+        type: string
+        pattern: "^\\S(?:.*\\S)?$"
+        description: "Product name as its users know it, on one line."
+      description:
+        type: string
+        pattern: "\\S"
+        description: "What the product is and whom it serves."
+  change_stream:
+    type: object
+    x-vocabulary-distinct: "Not a variant group, whose members are mutually exclusive alternatives, not a value stream, which is a flow of value to a customer, not a message stream or topic on a broker, and not an issue type in an external tracker."
+    description: >
+      A named line of planned change that groups migrations for a reader, such as a module being
+      separated or a platform effort. It states no team and no scope: its teams are the owners of
+      its migrations, and the contexts and domains it reaches are those its migrations change.
+    additionalProperties: false
+    required:
+      - id
+      - name
+    properties:
+      id:
+        $ref: "metamodel.schema.yaml#/$defs/change_stream_ref"
+        description: "Change stream id. Model-wide, so it carries no context prefix (CS001)."
+      name:
+        type: string
+        pattern: "^\\S(?:.*\\S)?$"
+        description: "Change stream name as its readers know it, on one line."
+        examples: ["Orders modularization"]
+      description:
+        type: string
+        pattern: "\\S"
+        description: "What this line of change achieves and why it is grouped."
+        examples: ["Separates order handling into its own module behind a published API."]
   slice:
     type: object
     description: >
@@ -521,6 +599,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Profile name (e.g. 'healthcare', 'fintech', 'e-commerce')."
       description:
         type: string
@@ -541,6 +620,7 @@ $defs:
           properties:
             file:
               type: string
+              pattern: "^\\S(?:.*\\S)?$"
               description: "Schema file path."
             description:
               type: string

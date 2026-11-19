@@ -1,5 +1,6 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { indexDeclarations, resolveReference, type RefDeclaration, type RefIndex } from './refResolution.js';
+import { companionEvidence, declarationOrigin, declarationRelationId, linkWitness, localEvidence } from './linkEvidence.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
 
@@ -14,6 +15,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *                                                          (resource.relations[], TOSCA; target
  *                                                           may be in another environment/substrate
  *                                                           for a hybrid network-link)
+ *   InfraResource --routes_to-->           Service       (exact declared service id)
  *   InfraResource --realizes_type-->        ResourceType  (resource.type_ref)
  *   Binding       --binds-->                Environment   (binding.environment_ref)
  *   Binding       --binds-->                InfraResource (binding.resource_ref)
@@ -21,6 +23,7 @@ import { RELATION_TYPE } from '../../model/relationTypes.js';
  *   Service       --needs-->                ResourceType  (service.needs[].type_ref, abstract intent)
  *   Service       --uses_resource-->        InfraResource (service.resource_refs[], concrete intent)
  *   Contract      --contract_broker-->      InfraResource (a messaging contract's broker_ref)
+ *   Contract      --contract_store-->       InfraResource (a shared-data contract's store_ref)
  *   Service       --deployed_in_environment-> Environment (service.servers[].environment, where the
  *                                                          server names one by id; a NAME builds no
  *                                                          edge - see the note below)
@@ -71,8 +74,8 @@ class EntitiesById {
   private readonly byHandle = new Map<string, Entity>();
   private index: RefIndex | null = null;
 
-  add(entity: Entity): void {
-    this.declarations.push({ id: entity.displayId, handle: entity.id });
+  add(entity: Entity, declaredId = entity.displayId): void {
+    this.declarations.push({ id: declaredId, handle: entity.id });
     this.byHandle.set(entity.id, entity);
     this.index = null;
   }
@@ -99,6 +102,7 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
   const teamByDisplayId = new EntitiesById();
   const serviceByDisplayId = new EntitiesById();
   const infraByDisplayId = new EntitiesById();
+  const routingTargets = new EntitiesById();
   const envByDisplayId = new EntitiesById();
   const resourceTypeByDisplayId = new EntitiesById();
   const scopeByDisplayId = new EntitiesById();
@@ -111,6 +115,9 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
         break;
       case ENTITY_TYPE.Service:
         serviceByDisplayId.add(e);
+        if (typeof e.data?.id === 'string') {
+          routingTargets.add(e, e.data.id);
+        }
         break;
       case ENTITY_TYPE.Environment:
         envByDisplayId.add(e);
@@ -123,6 +130,7 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
         break;
       case ENTITY_TYPE.InfraResource: {
         infraByDisplayId.add(e);
+        routingTargets.add(e);
         const file = e.fileOrigin ?? '';
         if (!infraByFileAndDisplayId.has(file)) infraByFileAndDisplayId.set(file, new Map());
         infraByFileAndDisplayId.get(file)!.set(e.displayId, e);
@@ -131,13 +139,18 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
     }
   }
 
-  const push = (source: Entity, type: string, target: Entity, data?: Record<string, unknown>) => {
+  const emitted = new Set<string>();
+  const push = (source: Entity, type: string, target: Entity, data?: Record<string, unknown>, selector?: string) => {
+    const id = selector ? declarationRelationId(source, selector, type) : `${source.id}--${type}--${target.id}`;
+    if (emitted.has(id)) return;
+    emitted.add(id);
     relations.push({
-      id: `${source.id}--${type}--${target.id}`,
+      id,
       source_entity_id: source.id,
       target_entity_id: target.id,
       type,
       ...(data ? { data } : {}),
+      ...(selector ? { origin_ref: declarationOrigin(source, selector) } : {}),
     });
   };
 
@@ -153,17 +166,18 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
         if (team) push(e, RELATION_TYPE.ResourceOwnerTeam, team);
       }
 
-      // relations[] → TOSCA edges (target may cross environments/substrates)
+      // Only routes_to admits a service endpoint; other verbs retain resource-only resolution.
       const rels = data.relations as Array<Record<string, unknown>> | undefined;
       if (Array.isArray(rels)) {
-        for (const rel of rels) {
+        for (const [occurrence, rel] of rels.entries()) {
           const relType = TOSCA_RELATION[rel.type as string];
           const targetRef = rel.target as string | undefined;
           if (!relType || !targetRef) continue;
-          const target = resolveByRef(infraByDisplayId, targetRef);
+          const targetIndex = relType === RELATION_TYPE.RoutesTo ? routingTargets : infraByDisplayId;
+          const target = resolveByRef(targetIndex, targetRef);
           if (target) {
-            const outputs = rel.outputs;
-            push(e, relType, target, Array.isArray(outputs) ? { outputs } : undefined);
+            const outputs = target.type === ENTITY_TYPE.InfraResource ? rel.outputs : undefined;
+            push(e, relType, target, { ...localEvidence(rel), ...(Array.isArray(outputs) ? { outputs } : {}) }, `relations[occurrence=${occurrence}]`);
           }
         }
       }
@@ -206,17 +220,17 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
       const envRef = data.environment_ref as string | undefined;
       if (envRef) {
         const env = resolveByRef(envByDisplayId, envRef);
-        if (env) push(e, RELATION_TYPE.Binds, env);
+        if (env) push(e, RELATION_TYPE.Binds, env, localEvidence(data), 'environment_ref');
       }
       const resourceRef = data.resource_ref as string | undefined;
       if (resourceRef) {
         const resource = resolveByRef(infraByDisplayId, resourceRef);
-        if (resource) push(e, RELATION_TYPE.Binds, resource);
+        if (resource) push(e, RELATION_TYPE.Binds, resource, localEvidence(data), 'resource_ref');
       }
       const typeRef = data.type_ref as string | undefined;
       if (typeRef) {
         const rt = resolveByRef(resourceTypeByDisplayId, typeRef);
-        if (rt) push(e, RELATION_TYPE.RealizesType, rt);
+        if (rt) push(e, RELATION_TYPE.RealizesType, rt, localEvidence(data), 'type_ref');
       }
     }
 
@@ -224,11 +238,15 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
       // needs[].type_ref → ResourceType (abstract intent)
       const needs = data.needs as Array<Record<string, unknown>> | undefined;
       if (Array.isArray(needs)) {
+        const occurrences = new Map<string, number>();
         for (const need of needs) {
           const typeRef = need.type_ref as string | undefined;
           if (!typeRef) continue;
+          const key = String(need.id ?? typeRef);
+          const occurrence = occurrences.get(key) ?? 0;
+          occurrences.set(key, occurrence + 1);
           const rt = resolveByRef(resourceTypeByDisplayId, typeRef);
-          if (rt) push(e, RELATION_TYPE.Needs, rt);
+          if (rt) push(e, RELATION_TYPE.Needs, rt, localEvidence(need), `needs[id=${encodeURIComponent(key)}][occurrence=${occurrence}]`);
         }
       }
       // resource_refs[] → InfraResource (concrete intent)
@@ -236,31 +254,45 @@ export function extractInfrastructureRelations(entities: Entity[]): Relation[] {
       if (Array.isArray(resourceRefs)) {
         for (const ref of resourceRefs) {
           const resource = resolveByRef(infraByDisplayId, ref);
-          if (resource) push(e, RELATION_TYPE.UsesResource, resource);
+          if (resource) {
+            const selector = `resource_refs[target=${encodeURIComponent(ref)}]`;
+            push(e, RELATION_TYPE.UsesResource, resource, {
+              ...companionEvidence(data, 'resource_refs', ref),
+              declaration_sources: resourceRefs.flatMap((target, occurrence) => target === ref
+                ? [linkWitness(e, `${selector}[occurrence=${occurrence}]`, companionEvidence(data, 'resource_refs', ref))]
+                : []),
+            }, selector);
+          }
         }
       }
-      // servers[].environment → Environment, for the typed form only. Two servers of one service in
-      // the same environment are one edge: the pair is the fact, and a relation id is built from it.
+      // Each typed server declaration retains its own evidence, even in the same environment.
       const servers = data.servers as Array<Record<string, unknown>> | undefined;
       if (Array.isArray(servers)) {
-        const emitted = new Set<string>();
-        for (const server of servers) {
+        for (const [occurrence, server] of servers.entries()) {
           const value = server?.environment;
           if (typeof value !== 'string' || !ENVIRONMENT_ID.test(value)) continue;
           const env = resolveByRef(envByDisplayId, value);
-          if (!env || emitted.has(env.id)) continue;
-          emitted.add(env.id);
-          push(e, RELATION_TYPE.DeployedInEnvironment, env);
+          if (!env) continue;
+          push(e, RELATION_TYPE.DeployedInEnvironment, env, localEvidence(server), `servers[occurrence=${occurrence}]`);
         }
       }
     }
 
     if (e.type === ENTITY_TYPE.Contract) {
+      const storeRef = data.store_ref;
+      if (data._contractType === 'shareddata') {
+        if (typeof storeRef === 'string') {
+          const store = resolveByRef(infraByDisplayId, storeRef);
+          if (store) {
+            push(e, RELATION_TYPE.ContractStore, store, companionEvidence(data, 'store_ref', storeRef), 'store_ref');
+          }
+        }
+      }
       // broker_ref → InfraResource: the broker a messaging contract publishes to and receives from.
       const brokerRef = data.broker_ref;
       if (typeof brokerRef === 'string') {
         const broker = resolveByRef(infraByDisplayId, brokerRef);
-        if (broker) push(e, RELATION_TYPE.ContractBroker, broker);
+        if (broker) push(e, RELATION_TYPE.ContractBroker, broker, companionEvidence(data, 'broker_ref', brokerRef), 'broker_ref');
       }
     }
 

@@ -1,0 +1,5 @@
+version: "1.0.0"
+capabilities:
+  - id: CAP001
+    name: Parcel tracking
+    level: 1

@@ -1,0 +1,47 @@
+version: "1.0.0"
+name: Delivery processes
+scope: delivery
+processes:
+  - id: delivery.PRC001
+    title: Refine and specify an item
+    describes: organization
+    lanes:
+      - team: TM001
+        activities: [delivery.PA001, delivery.PA003]
+      - team: TM002
+        actor: delivery.ACT001
+        activities: [delivery.PA002]
+    activities:
+      - id: delivery.PA001
+        name: Refine the item
+        questions:
+          - key: audience
+            statement: Who reads the specification?
+          - key: scope
+            statement: What does the item leave out?
+            asked_by: delivery.ACT001
+            asked_of: TM001
+            answer:
+              name: Specification draft
+              concept: delivery.CN001
+        next:
+          - to: delivery.PA002
+      - id: delivery.PA002
+        name: Review the specification
+        gateway: xor
+        next:
+          - to: delivery.PA003
+            condition: the specification is accepted
+          - to: delivery.PA001
+            condition: the specification is not accepted
+        gates:
+          - key: accepted
+            criterion: The product team accepts the specification
+            evaluated_by: TM001
+            rule: delivery.VR001
+            evidence:
+              name: Review record
+            on_fail: delivery.PA001
+          - key: readable
+      - id: delivery.PA003
+        name: Hand over to development

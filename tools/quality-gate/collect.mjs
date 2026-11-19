@@ -144,6 +144,31 @@ function proseOf(entity) {
   return entity.description ?? entity.statement ?? entity.summary;
 }
 
+/**
+ * Select one stated outcome and retain its authored field for entity reports.
+ * Produces accepts legacy scalar/list references as well as the operations container.
+ * Empty containers and mode-only metadata do not state an outcome.
+ * @param {Record<string, any>} operation
+ * @returns {{field: string, value: unknown}}
+ */
+function commandOutcome(operation) {
+  const nonblank = (value) => typeof value === 'string' && value.trim().length > 0;
+  const produces = operation.produces;
+  const references = Array.isArray(produces) ? produces : produces?.operations;
+  if (nonblank(produces) || (Array.isArray(references) && references.some(nonblank))) {
+    return { field: 'produces', value: produces };
+  }
+  const materializes = operation.materializes;
+  if (Array.isArray(materializes) && materializes.some(entry => nonblank(entry?.concept) && nonblank(entry?.action))) {
+    return { field: 'materializes', value: materializes };
+  }
+  const writes = operation.side_effects?.writes;
+  if (Array.isArray(writes) && writes.some(entry => nonblank(entry?.target))) {
+    return { field: 'side_effects.writes', value: writes };
+  }
+  return { field: 'produces', value: undefined };
+}
+
 class ObservationCollector {
   constructor() {
     /** @type {Observation[]} */
@@ -164,7 +189,7 @@ class ObservationCollector {
    * @param {string} file
    * @param {string} subject
    * @param {unknown} value
-   * @param {{entityId?: string, entityName: string, entityKind: string, ownedId?: string, context?: Record<string,string>}} extra
+   * @param {{entityId?: string, entityName: string, entityKind: string, ownedId?: string, field?: string, context?: Record<string,string>}} extra
    */
   add(metric, file, subject, value, extra) {
     this.observations.push({ metric, file, subject, field: fieldOf(metric), value, ...extra });
@@ -275,7 +300,8 @@ class ObservationCollector {
       this.add('domain.operation.description', file, name, proseOf(operation), { ...entity, context });
 
       if (kind === 'command') {
-        this.add('domain.command.produces', file, name, operation.produces, { ...entity, context });
+        const outcome = commandOutcome(operation);
+        this.add('domain.command.produces', file, name, outcome.value, { ...entity, context, field: outcome.field });
         this.add('domain.command.exchange', file, name, operation.exchange ?? operation.dispatch, { ...entity, context });
       } else if (kind === 'event') {
         // The observed failure shape: `one_of` pairs where only the happy-path half was

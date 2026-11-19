@@ -12,7 +12,7 @@ export function renderCoverageGaps(entities: Entity[], relations: Relation[]): s
     lines.push(`### Orphan Entities (${orphans.length})`, '');
     lines.push('Entities with no incoming or outgoing relations:', '');
     for (const entity of orphans) {
-      lines.push(`- **${entity.displayId}** (${entity.type}) — ${entity.summary ?? entity.term ?? 'no description'}`);
+      lines.push(`- **${entity.displayId}** (${entity.type}) - ${entity.summary ?? entity.term ?? 'no description'}`);
     }
     lines.push('');
   }
@@ -29,7 +29,7 @@ export function renderCoverageGaps(entities: Entity[], relations: Relation[]): s
   if (commandsWithoutEvents.length > 0) {
     lines.push(`### Commands Without Events (${commandsWithoutEvents.length})`, '');
     for (const command of commandsWithoutEvents) {
-      lines.push(`- **${command.displayId}** — ${command.summary ?? 'no description'}`);
+      lines.push(`- **${command.displayId}** - ${command.summary ?? 'no description'}`);
     }
     lines.push('');
   }
@@ -37,7 +37,7 @@ export function renderCoverageGaps(entities: Entity[], relations: Relation[]): s
   if (eventsWithoutSource.length > 0) {
     lines.push(`### Events Without Source Command (${eventsWithoutSource.length})`, '');
     for (const event of eventsWithoutSource) {
-      lines.push(`- **${event.displayId}** — ${event.summary ?? 'no description'}`);
+      lines.push(`- **${event.displayId}** - ${event.summary ?? 'no description'}`);
     }
     lines.push('');
   }
@@ -50,7 +50,7 @@ export function renderCoverageGaps(entities: Entity[], relations: Relation[]): s
   if (untestedRules.length > 0) {
     lines.push(`### Untested Rules (${untestedRules.length})`, '');
     for (const rule of untestedRules) {
-      lines.push(`- **${rule.displayId}** — ${rule.summary ?? 'no description'}`);
+      lines.push(`- **${rule.displayId}** - ${rule.summary ?? 'no description'}`);
     }
     lines.push('');
   }

@@ -1,0 +1,13 @@
+engineVersion: "0.1"
+rules:
+  - id: gate-on-fail-not-a-successor
+    severity: warn
+    description: >-
+      A gate's on_fail names an activity its own activity does not lead to, so the process order has no path for the failure it states.
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./work-process.mjs
+        export: gateOnFailNotASuccessor
+    message: 'Gates fail to activities their activity does not lead to in process "{displayId}": {problems}.'

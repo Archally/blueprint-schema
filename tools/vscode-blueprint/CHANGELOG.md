@@ -3,6 +3,25 @@
 All notable changes to this extension. Format loosely follows [Keep a Changelog](https://keepachangelog.com/);
 this extension versions independently of `@archally/blueprint-schema`.
 
+## 0.6.3
+
+- Opening a folder inside `.blueprint/` indexes its YAML files, including closed declarations,
+  for ID highlighting, hover and go-to-definition. Other workspace roots keep the configured
+  discovery glob; overlapping roots index each file once.
+
+## 0.6.2
+
+- Known IDs are highlighted as soon as the extension starts: open editors are indexed and painted
+  first, and every visible editor is repainted when the workspace-wide index completes. Navigation
+  and hovers serve open buffers during that time.
+
+## 0.6.1
+
+- ID navigation, hovers and completion prefer layer declarations within each model.
+  Migration-only entities navigate to their introducing payloads; migration identities
+  remain navigable. Navigation follows unsaved edits and layer creation or deletion.
+- Confluence page-map decision keys use the same declaration precedence.
+
 ## 0.6.0
 
 - Decision keys in Confluence page-map YAML navigate to entity declarations in the sibling

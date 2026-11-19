@@ -1,0 +1,13 @@
+version: "1.0.0"
+name: Payments domain
+scope: payments
+operations:
+  chargeCard:
+    id: payments.CMD001
+    kind: command
+    name: Charge Card
+    exchange:
+      protocol: http
+      endpoint:
+        path: /charges
+        method: POST

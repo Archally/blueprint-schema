@@ -1,6 +1,6 @@
 # PrestaShop-v9
 
-> Generated from blueprint model. 3886 entities, 9396 relations.
+> Generated from blueprint model. 3888 entities, 9452 relations.
 
 ## Context Map
 
@@ -48,7 +48,7 @@ graph LR
     PlatformKernel -->|"contract traffic"| Orders
 ```
 
-> *[Archally Pro](https://archally.pro)* — Interactive Context Map with drag-and-drop, filtering, and detail panels.
+> *[Archally Pro](https://archally.pro)* - Interactive Context Map with drag-and-drop, filtering, and detail panels.
 
 ## Causal Chains
 
@@ -1298,7 +1298,7 @@ graph LR
     shop_CMD018 -->|"produces"| shop_EVT014
 ```
 
-> *[Archally Pro](https://archally.pro)* — Interactive Causal Chain Explorer with animated event flow, timeline playback, and impact highlighting.
+> *[Archally Pro](https://archally.pro)* - Interactive Causal Chain Explorer with animated event flow, timeline playback, and impact highlighting.
 
 ## Entity Graph
 
@@ -3548,6 +3548,8 @@ graph TD
 "]
         LP005["LP005: Nothing in CI checks that a payment module still satisfies the core's expectations. The contract is a base class plus a hook, so a change to either breaks providers silently.
 "]
+        WCH001["WCH001: Retire compatibility-only legacy admin controllers"]
+        WCH002["WCH002: Third-party module coupling growth"]
     end
     subgraph governance_org["governance.org"]
         PRT001["PRT001: PrestaShop SA"]
@@ -7471,32 +7473,50 @@ graph TD
     Shop -.->|"spans"| PRT002
     admin_PRC001 -.->|"process_orders_operation"| admin_CMD001
     admin_PRC001 -.->|"process_orders_operation"| admin_CMD013
+    admin_PRC001 -.->|"process_lane_actor"| admin_ACT001
+    admin_PRC001 -.->|"activity_triggered_by_actor"| admin_ACT001
     admin_PRC002 -.->|"process_orders_operation"| admin_CMD021
     admin_PRC002 -.->|"process_orders_operation"| admin_CMD024
+    admin_PRC002 -.->|"process_lane_actor"| admin_ACT003
+    admin_PRC002 -.->|"activity_triggered_by_actor"| admin_ACT003
     admin_PRC003 -.->|"process_orders_operation"| admin_CMD019
+    admin_PRC003 -.->|"process_lane_actor"| admin_ACT001
+    admin_PRC003 -.->|"activity_triggered_by_actor"| admin_ACT001
     catalog_PRC001 -.->|"process_orders_operation"| catalog_CMD001
     catalog_PRC001 -.->|"process_orders_operation"| catalog_EVT001
+    catalog_PRC001 -.->|"process_lane_actor"| catalog_ACT001
     catalog_PRC002 -.->|"process_orders_operation"| catalog_CMD011
     catalog_PRC002 -.->|"process_orders_operation"| catalog_EVT004
+    catalog_PRC002 -.->|"process_lane_actor"| catalog_ACT001
     catalog_PRC003 -.->|"process_orders_operation"| catalog_CMD025
     catalog_PRC003 -.->|"process_orders_operation"| catalog_EVT009
+    catalog_PRC003 -.->|"process_lane_actor"| catalog_ACT001
     checkout_PRC001 -.->|"process_orders_operation"| checkout_CMD009
     checkout_PRC001 -.->|"process_orders_operation"| checkout_CMD014
     checkout_PRC001 -.->|"process_orders_operation"| checkout_CMD002
+    checkout_PRC001 -.->|"process_lane_actor"| orders_ACT001
     checkout_PRC002 -.->|"process_orders_operation"| checkout_CMD016
     checkout_PRC002 -.->|"process_orders_operation"| checkout_CMD019
+    checkout_PRC002 -.->|"process_lane_actor"| checkout_ACT001
     content_PRC001 -.->|"process_orders_operation"| content_CMD001
     content_PRC001 -.->|"process_orders_operation"| content_CMD019
     content_PRC001 -.->|"process_orders_operation"| content_QRY001
+    content_PRC001 -.->|"process_lane_actor"| content_ACT001
+    content_PRC001 -.->|"activity_triggered_by_actor"| content_ACT001
     content_PRC002 -.->|"process_orders_operation"| content_CMD013
     content_PRC002 -.->|"process_orders_operation"| content_CMD014
     content_PRC002 -.->|"process_orders_operation"| content_CMD017
+    content_PRC002 -.->|"process_lane_actor"| content_ACT002
+    content_PRC002 -.->|"activity_triggered_by_actor"| content_ACT002
     customers_PRC001 -.->|"process_orders_operation"| customers_CMD001
     customers_PRC001 -.->|"process_orders_operation"| customers_CMD012
     customers_PRC001 -.->|"process_orders_operation"| customers_CMD003
+    customers_PRC001 -.->|"process_lane_actor"| customers_ACT001
     customers_PRC002 -.->|"process_orders_operation"| customers_QRY011
     customers_PRC002 -.->|"process_orders_operation"| customers_CMD017
     customers_PRC002 -.->|"process_orders_operation"| customers_CMD016
+    customers_PRC002 -.->|"process_lane_actor"| customers_ACT002
+    customers_PRC002 -.->|"activity_triggered_by_actor"| customers_ACT002
     delivery_process_PRC001 -.->|"process_lane_team"| TM007
     delivery_process_PRC001 -.->|"process_lane_team"| TM010
     delivery_process_PRC001 -.->|"activity_uses_tool"| PRT102
@@ -7504,14 +7524,25 @@ graph TD
     international_PRC001 -.->|"process_orders_operation"| international_CMD001
     international_PRC001 -.->|"process_orders_operation"| international_CMD005
     international_PRC001 -.->|"process_orders_operation"| international_CMD006
+    international_PRC001 -.->|"process_lane_actor"| international_ACT001
+    international_PRC001 -.->|"activity_triggered_by_actor"| international_ACT001
+    international_PRC001 -.->|"activity_triggered_by_actor"| international_ACT001
     international_PRC002 -.->|"process_orders_operation"| international_CMD023
     international_PRC002 -.->|"process_orders_operation"| international_CMD027
     international_PRC002 -.->|"process_orders_operation"| international_CMD028
+    international_PRC002 -.->|"process_lane_actor"| international_ACT002
+    international_PRC002 -.->|"activity_triggered_by_actor"| international_ACT002
     modules_PRC001 -.->|"process_orders_operation"| modules_CMD008
     modules_PRC001 -.->|"process_orders_operation"| modules_CMD001
     modules_PRC001 -.->|"process_orders_operation"| modules_QRY001
+    modules_PRC001 -.->|"process_lane_actor"| modules_ACT002
+    modules_PRC001 -.->|"process_lane_actor"| modules_ACT001
+    modules_PRC001 -.->|"activity_triggered_by_actor"| modules_ACT002
     modules_PRC002 -.->|"process_orders_operation"| modules_CMD003
     modules_PRC002 -.->|"process_orders_operation"| modules_CMD006
+    modules_PRC002 -.->|"process_lane_actor"| modules_ACT001
+    modules_PRC002 -.->|"activity_triggered_by_actor"| modules_ACT001
+    modules_PRC002 -.->|"activity_triggered_by_actor"| modules_ACT001
     orders_PRC001 -.->|"process_orders_operation"| orders_QRY010
     orders_PRC001 -.->|"process_orders_operation"| orders_QRY011
     orders_PRC001 -.->|"process_orders_operation"| checkout_QRY002
@@ -7519,6 +7550,10 @@ graph TD
     orders_PRC001 -.->|"process_orders_operation"| orders_EVT001
     orders_PRC001 -.->|"process_orders_operation"| orders_CMD004
     orders_PRC001 -.->|"process_orders_operation"| orders_EVT005
+    orders_PRC001 -.->|"process_lane_actor"| orders_ACT005
+    orders_PRC001 -.->|"process_lane_actor"| orders_ACT001
+    orders_PRC001 -.->|"process_lane_actor"| admin_ACT002
+    orders_PRC001 -.->|"process_lane_actor"| orders_ACT006
     orders_PRC002 -.->|"process_orders_operation"| orders_CMD002
     orders_PRC002 -.->|"process_orders_operation"| orders_EVT002
     orders_PRC002 -.->|"process_orders_operation"| orders_CMD003
@@ -7527,28 +7562,46 @@ graph TD
     orders_PRC002 -.->|"process_orders_operation"| orders_CMD015
     orders_PRC002 -.->|"process_orders_operation"| orders_EVT003
     orders_PRC002 -.->|"process_orders_operation"| orders_EVT006
+    orders_PRC002 -.->|"process_lane_actor"| orders_ACT003
+    orders_PRC002 -.->|"process_lane_actor"| orders_ACT004
     orders_PRC003 -.->|"process_orders_operation"| orders_CMD020
     orders_PRC003 -.->|"process_orders_operation"| orders_EVT009
+    orders_PRC003 -.->|"process_lane_actor"| orders_ACT003
     orders_PRC004 -.->|"process_orders_operation"| orders_CMD017
     orders_PRC004 -.->|"process_orders_operation"| orders_EVT007
     orders_PRC004 -.->|"process_orders_operation"| orders_CMD019
     orders_PRC004 -.->|"process_orders_operation"| orders_EVT008
+    orders_PRC004 -.->|"process_lane_actor"| orders_ACT003
     orders_PRC005 -.->|"process_orders_operation"| orders_CMD023
     orders_PRC005 -.->|"process_orders_operation"| orders_EVT010
     orders_PRC005 -.->|"process_orders_operation"| orders_CMD016
     orders_PRC005 -.->|"process_orders_operation"| orders_EVT003
     orders_PRC005 -.->|"process_orders_operation"| orders_EVT006
+    orders_PRC005 -.->|"process_lane_actor"| orders_ACT004
     orders_PRC006 -.->|"process_orders_operation"| orders_CMD023
     orders_PRC006 -.->|"process_orders_operation"| orders_EVT010
     orders_PRC006 -.->|"process_calls_subprocess"| orders_PRC005
+    orders_PRC006 -.->|"process_lane_actor"| orders_ACT001
+    orders_PRC006 -.->|"process_lane_actor"| orders_ACT004
+    orders_PRC006 -.->|"activity_triggered_by_actor"| orders_ACT001
+    orders_PRC006 -.->|"activity_triggered_by_actor"| orders_ACT004
     shipping_PRC001 -.->|"process_orders_operation"| shipping_CMD001
     shipping_PRC001 -.->|"process_orders_operation"| shipping_CMD008
     shipping_PRC001 -.->|"process_orders_operation"| shipping_CMD010
+    shipping_PRC001 -.->|"process_lane_actor"| shipping_ACT001
+    shipping_PRC001 -.->|"activity_triggered_by_actor"| shipping_ACT001
     shipping_PRC002 -.->|"process_orders_operation"| shipping_CMD011
     shipping_PRC002 -.->|"process_orders_operation"| shipping_CMD013
     shipping_PRC002 -.->|"process_orders_operation"| shipping_CMD015
+    shipping_PRC002 -.->|"process_lane_actor"| shipping_ACT001
+    shipping_PRC002 -.->|"activity_triggered_by_actor"| shipping_ACT001
+    shipping_PRC002 -.->|"activity_triggered_by_actor"| shipping_ACT001
     shop_PRC001 -.->|"process_orders_operation"| shop_CMD001
+    shop_PRC001 -.->|"process_lane_actor"| shop_ACT001
+    shop_PRC001 -.->|"activity_triggered_by_actor"| shop_ACT001
     shop_PRC002 -.->|"process_orders_operation"| shop_CMD010
+    shop_PRC002 -.->|"process_lane_actor"| shop_ACT002
+    shop_PRC002 -.->|"activity_triggered_by_actor"| shop_ACT002
     shop_PRC003 -.->|"process_orders_operation"| catalog_QRY006
     shop_PRC003 -.->|"process_orders_operation"| checkout_CMD009
     shop_PRC003 -.->|"process_orders_operation"| checkout_EVT004
@@ -7557,6 +7610,8 @@ graph TD
     shop_PRC003 -.->|"process_orders_operation"| checkout_CMD004
     shop_PRC003 -.->|"process_orders_operation"| checkout_EVT002
     shop_PRC003 -.->|"process_orders_operation"| orders_EVT001
+    shop_PRC003 -.->|"process_lane_actor"| orders_ACT001
+    shop_PRC003 -.->|"activity_triggered_by_actor"| orders_ACT001
     PRT001 -.->|"org_contains_dept"| DPT001
     PRT100 -.->|"org_contains_dept"| DPT100
     PRT100 -.->|"org_contains_dept"| DPT101
@@ -9300,6 +9355,7 @@ graph TD
     LP005 -.->|"leverage_capability"| CAP003
     LP005 -.->|"leverage_capability"| CAP014
     LP005 -.->|"leverage_depends_on"| LP002
+    WCH001 -.->|"watch_item_decision"| DC006
     AdminService -.->|"deployed_in_environment"| prestashop_ENV001
     CatalogService -.->|"uses_resource"| prestashop_IR004
     CatalogService -.->|"uses_resource"| prestashop_IR003
@@ -14645,13 +14701,15 @@ graph TD
     shop_PRC003 -.->|"process_supports_capability"| CAP003
     shop_PRC003 -.->|"process_supports_capability"| CAP018
     shop_UC001 -.->|"use_case_supports_capability"| CAP017
+    MIG006 -.->|"migration_reach"| Orders
+    MIG006 -.->|"migration_reach"| DMN008
 ```
 
-> *[Archally Pro](https://archally.pro)* — Interactive Entity Graph with force-directed layout, layer filtering, node search, and relation inspector.
+> *[Archally Pro](https://archally.pro)* - Interactive Entity Graph with force-directed layout, layer filtering, node search, and relation inspector.
 
 ## Entity Catalog
 
-**3886 entities** across 57 types.
+**3888 entities** across 58 types.
 
 | ID | Type | Name | Layer | Source |
 |----|------|------|-------|--------|
@@ -18543,6 +18601,8 @@ graph TD
 | VS001 | ValueStream | Shop & Buy | governance.value-stream | value-stream.yaml |
 | VS002 | ValueStream | Sell & Fulfill | governance.value-stream | value-stream.yaml |
 | VS003 | ValueStream | Configure & Scale | governance.value-stream | value-stream.yaml |
+| WCH001 | WatchItem | Retire compatibility-only legacy admin controllers | governance.leverage | leverage.yaml |
+| WCH002 | WatchItem | Third-party module coupling growth | governance.leverage | leverage.yaml |
 | WI001 | WorkItem | Asynchronous order side effects | governance.roadmap | roadmap.yaml |
 | WI002 | WorkItem | Explicit module and payment-provider seam | governance.roadmap | roadmap.yaml |
 | WI003 | WorkItem | Order-history read model | governance.roadmap | roadmap.yaml |
@@ -18618,12 +18678,13 @@ graph TD
 | ValueStream | 3 |
 | DerivationRule | 2 |
 | DeploymentTier | 2 |
+| WatchItem | 2 |
 | Resilience | 1 |
 | EquivalenceRule | 1 |
 
 ## Relations
 
-**9396 relations** discovered.
+**9452 relations** discovered.
 
 | Source | Type | Target |
 |--------|------|--------|
@@ -18767,6 +18828,26 @@ graph TD
 | shop.UAC002 (UIAction) | action_triggers_operation | shop.CMD003 (Operation) |
 | shop.UAC003 (UIAction) | action_triggers_operation | shop.CMD010 (Operation) |
 | delivery-process.PRC001 (Process) | activity_hands_over_to | content.PRC001 (Process) |
+| admin.PRC001 (Process) | activity_triggered_by_actor | admin.ACT001 (Actor) |
+| admin.PRC002 (Process) | activity_triggered_by_actor | admin.ACT003 (Actor) |
+| admin.PRC003 (Process) | activity_triggered_by_actor | admin.ACT001 (Actor) |
+| content.PRC001 (Process) | activity_triggered_by_actor | content.ACT001 (Actor) |
+| content.PRC002 (Process) | activity_triggered_by_actor | content.ACT002 (Actor) |
+| customers.PRC002 (Process) | activity_triggered_by_actor | customers.ACT002 (Actor) |
+| international.PRC001 (Process) | activity_triggered_by_actor | international.ACT001 (Actor) |
+| international.PRC001 (Process) | activity_triggered_by_actor | international.ACT001 (Actor) |
+| international.PRC002 (Process) | activity_triggered_by_actor | international.ACT002 (Actor) |
+| modules.PRC001 (Process) | activity_triggered_by_actor | modules.ACT002 (Actor) |
+| modules.PRC002 (Process) | activity_triggered_by_actor | modules.ACT001 (Actor) |
+| modules.PRC002 (Process) | activity_triggered_by_actor | modules.ACT001 (Actor) |
+| orders.PRC006 (Process) | activity_triggered_by_actor | orders.ACT001 (Actor) |
+| orders.PRC006 (Process) | activity_triggered_by_actor | orders.ACT004 (Actor) |
+| shipping.PRC001 (Process) | activity_triggered_by_actor | shipping.ACT001 (Actor) |
+| shipping.PRC002 (Process) | activity_triggered_by_actor | shipping.ACT001 (Actor) |
+| shipping.PRC002 (Process) | activity_triggered_by_actor | shipping.ACT001 (Actor) |
+| shop.PRC001 (Process) | activity_triggered_by_actor | shop.ACT001 (Actor) |
+| shop.PRC002 (Process) | activity_triggered_by_actor | shop.ACT002 (Actor) |
+| shop.PRC003 (Process) | activity_triggered_by_actor | orders.ACT001 (Actor) |
 | delivery-process.PRC001 (Process) | activity_uses_tool | PRT102 (Party) |
 | admin.CN001 (Concept) | association | admin.CN002 (Concept) |
 | admin.CN003 (Concept) | association | admin.CN002 (Concept) |
@@ -24646,6 +24727,8 @@ graph TD
 | shop.MT100 (Metric) | metric_measures | shop.CN005 (Concept) |
 | shop.MT101 (Metric) | metric_measures | shop.CMD014 (Operation) |
 | shop.MT101 (Metric) | metric_measures | shop.CN005 (Concept) |
+| MIG006 (Migration) | migration_reach | Orders (Context) |
+| MIG006 (Migration) | migration_reach | DMN008 (Domain) |
 | MIG006 (Migration) | migration_relates_to_decision | DC001 (Decision) |
 | MIG006 (Migration) | migration_relates_to_decision | DC010 (Decision) |
 | MS100 (Milestone) | milestone_deliverable | CAP016 (Capability) |
@@ -25722,6 +25805,39 @@ graph TD
 | shipping.PER001 (Persona) | persona_actor | shipping.ACT001 (Actor) |
 | shop.PER001 (Persona) | persona_actor | shop.ACT001 (Actor) |
 | orders.PRC006 (Process) | process_calls_subprocess | orders.PRC005 (Process) |
+| admin.PRC001 (Process) | process_lane_actor | admin.ACT001 (Actor) |
+| admin.PRC002 (Process) | process_lane_actor | admin.ACT003 (Actor) |
+| admin.PRC003 (Process) | process_lane_actor | admin.ACT001 (Actor) |
+| catalog.PRC001 (Process) | process_lane_actor | catalog.ACT001 (Actor) |
+| catalog.PRC002 (Process) | process_lane_actor | catalog.ACT001 (Actor) |
+| catalog.PRC003 (Process) | process_lane_actor | catalog.ACT001 (Actor) |
+| checkout.PRC001 (Process) | process_lane_actor | orders.ACT001 (Actor) |
+| checkout.PRC002 (Process) | process_lane_actor | checkout.ACT001 (Actor) |
+| content.PRC001 (Process) | process_lane_actor | content.ACT001 (Actor) |
+| content.PRC002 (Process) | process_lane_actor | content.ACT002 (Actor) |
+| customers.PRC001 (Process) | process_lane_actor | customers.ACT001 (Actor) |
+| customers.PRC002 (Process) | process_lane_actor | customers.ACT002 (Actor) |
+| international.PRC001 (Process) | process_lane_actor | international.ACT001 (Actor) |
+| international.PRC002 (Process) | process_lane_actor | international.ACT002 (Actor) |
+| modules.PRC001 (Process) | process_lane_actor | modules.ACT002 (Actor) |
+| modules.PRC001 (Process) | process_lane_actor | modules.ACT001 (Actor) |
+| modules.PRC002 (Process) | process_lane_actor | modules.ACT001 (Actor) |
+| orders.PRC001 (Process) | process_lane_actor | orders.ACT005 (Actor) |
+| orders.PRC001 (Process) | process_lane_actor | orders.ACT001 (Actor) |
+| orders.PRC001 (Process) | process_lane_actor | admin.ACT002 (Actor) |
+| orders.PRC001 (Process) | process_lane_actor | orders.ACT006 (Actor) |
+| orders.PRC002 (Process) | process_lane_actor | orders.ACT003 (Actor) |
+| orders.PRC002 (Process) | process_lane_actor | orders.ACT004 (Actor) |
+| orders.PRC003 (Process) | process_lane_actor | orders.ACT003 (Actor) |
+| orders.PRC004 (Process) | process_lane_actor | orders.ACT003 (Actor) |
+| orders.PRC005 (Process) | process_lane_actor | orders.ACT004 (Actor) |
+| orders.PRC006 (Process) | process_lane_actor | orders.ACT001 (Actor) |
+| orders.PRC006 (Process) | process_lane_actor | orders.ACT004 (Actor) |
+| shipping.PRC001 (Process) | process_lane_actor | shipping.ACT001 (Actor) |
+| shipping.PRC002 (Process) | process_lane_actor | shipping.ACT001 (Actor) |
+| shop.PRC001 (Process) | process_lane_actor | shop.ACT001 (Actor) |
+| shop.PRC002 (Process) | process_lane_actor | shop.ACT002 (Actor) |
+| shop.PRC003 (Process) | process_lane_actor | orders.ACT001 (Actor) |
 | delivery-process.PRC001 (Process) | process_lane_team | TM007 (Team) |
 | delivery-process.PRC001 (Process) | process_lane_team | TM010 (Team) |
 | admin.PRC001 (Process) | process_orders_operation | admin.CMD001 (Operation) |
@@ -28008,6 +28124,7 @@ graph TD
 | VS003 (ValueStream) | value_stream_kpi | admin.KPI001 (KPI) |
 | VS003 (ValueStream) | value_stream_kpi | modules.KPI001 (KPI) |
 | VS003 (ValueStream) | value_stream_kpi | shop.KPI001 (KPI) |
+| WCH001 (WatchItem) | watch_item_decision | DC006 (Decision) |
 | WI101 (WorkItem) | work_item_child | WI102 (WorkItem) |
 | WI101 (WorkItem) | work_item_child | WI103 (WorkItem) |
 | WI101 (WorkItem) | work_item_child | WI104 (WorkItem) |
@@ -28065,6 +28182,7 @@ graph TD
 | use_case_supports_capability | 35 |
 | nav_from | 34 |
 | nav_to | 34 |
+| process_lane_actor | 33 |
 | subdomain_of_domain | 33 |
 | contract_exposes | 32 |
 | value_stream_capability | 32 |
@@ -28080,6 +28198,7 @@ graph TD
 | screen_motivated_by | 22 |
 | provides | 21 |
 | nav_via_action | 21 |
+| activity_triggered_by_actor | 20 |
 | roadmap_value_stream | 19 |
 | milestone_deliverable | 19 |
 | contains | 18 |
@@ -28149,126 +28268,129 @@ graph TD
 | uses_resource | 2 |
 | attaches_to | 2 |
 | migration_relates_to_decision | 2 |
+| migration_reach | 2 |
 | transition_rules | 1 |
 | activity_uses_tool | 1 |
 | activity_hands_over_to | 1 |
 | process_calls_subprocess | 1 |
 | use_case_secondary_actor | 1 |
 | leverage_realized_by | 1 |
+| watch_item_decision | 1 |
 
 ## Coverage Gaps
 
-### Orphan Entities (102)
+### Orphan Entities (103)
 
 Entities with no incoming or outgoing relations:
 
-- **admin.EN001** (Enumeration) — PermissionLevel
-- **admin.ASC001** (Association) — no description
-- **admin.ASC002** (Association) — no description
-- **catalog.EN001** (Enumeration) — ProductStatus
-- **catalog.EN002** (Enumeration) — ProductType
-- **catalog.EN003** (Enumeration) — ReductionType
-- **catalog.ASC001** (Association) — no description
-- **catalog.ASC002** (Association) — no description
-- **catalog.ASC003** (Association) — no description
-- **checkout.ASC001** (Association) — no description
-- **checkout.ASC002** (Association) — no description
-- **checkout.ASC003** (Association) — no description
-- **content.EN001** (Enumeration) — CmsPageStatus
-- **content.ASC001** (Association) — no description
-- **content.ASC002** (Association) — no description
-- **customers.ASC002** (Association) — no description
-- **customers.ASC004** (Association) — no description
-- **customers.EN003** (Enumeration) — ThreadStatus
-- **customers.ASC003** (Association) — no description
-- **customers.EN001** (Enumeration) — Gender
-- **customers.EN002** (Enumeration) — PriceDisplayMethod
-- **customers.ASC001** (Association) — no description
-- **international.ASC002** (Association) — no description
-- **international.ASC003** (Association) — no description
-- **international.ASC004** (Association) — no description
-- **international.EN001** (Enumeration) — CurrencyType
-- **international.ASC001** (Association) — no description
-- **international.ASC005** (Association) — no description
-- **international.ASC006** (Association) — no description
-- **international.ASC007** (Association) — no description
-- **modules.EN002** (Enumeration) — HookKind
-- **modules.EN001** (Enumeration) — ModuleLifecycleState
-- **modules.ASC001** (Association) — no description
-- **orders.EN001** (Enumeration) — OrderStatus
-- **orders.EN002** (Enumeration) — PaymentMethod
-- **orders.ASC001** (Association) — no description
-- **orders.ASC002** (Association) — no description
-- **shipping.ASC001** (Association) — no description
-- **shipping.ASC002** (Association) — no description
-- **shipping.ASC003** (Association) — no description
-- **shop.ASC001** (Association) — no description
-- **checkout.ERR008** (Error) — CatalogPriceRuleNotFound
-- **international.ERR001** (Error) — CurrencyNotFound
-- **international.ERR002** (Error) — CurrencyConstraintViolation
-- **international.ERR005** (Error) — StateNotFound
-- **international.ERR006** (Error) — ZoneNotFound
-- **international.ERR003** (Error) — LanguageNotFound
-- **international.ERR007** (Error) — TaxNotFound
-- **orders.ERR002** (Error) — PaymentDeclined
-- **MDL014** (Models) — Recursive tree node for category hierarchy display.
-- **MDL016** (Models) — Full attribute group with its values for editing.
-- **MDL018** (Models) — Full feature with its values for product form display.
-- **MDL010** (Models) — Lightweight combination summary for paginated lists.
-- **MDL108** (Models) — Request body for issuing a partial refund on specific order lines.
-- **MDL106** (Models) — Order pricing summary - products total, shipping, discounts, tax, and grand total.
-- **admin.NG001** (NonGoal) — No LDAP/Active Directory integration for employee authentication
-- **admin.NG002** (NonGoal) — No second authentication factor for employee sign-in
-- **admin.ASM001** (Assumption) — PHP 8.1+ is the minimum supported runtime
-- **catalog.NG001** (NonGoal) — No built-in B2B tiered/volume pricing engine
-- **catalog.NG002** (NonGoal) — No AI-powered product recommendations in core
-- **checkout.NG001** (NonGoal) — No payment method of any kind is implemented in core
-- **checkout.TRO001** (TradeOff) — no description
-- **content.NG001** (NonGoal) — No visual page builder or WYSIWYG block editor in core
-- **content.NG002** (NonGoal) — No scheduled publication and no revision history for CMS pages
-- **content.ASM001** (Assumption) — A CMS page's body is trusted HTML, written by someone the shop trusts
-- **content.TRO001** (TradeOff) — no description
-- **customers.NG001** (NonGoal) — No built-in SSO/SAML/OIDC for customer authentication
-- **customers.TRO001** (TradeOff) — no description
-- **international.NG001** (NonGoal) — No automatic regulatory compliance monitoring
-- **international.TRO001** (TradeOff) — no description
-- **modules.NG001** (NonGoal) — No containerized or sandboxed module isolation
-- **orders.NG001** (NonGoal) — PrestaShop will not implement its own payment gateway
-- **orders.NG002** (NonGoal) — No real-time inventory sync with physical POS
-- **orders.ASM003** (Assumption) — EU VAT rates will not change more than twice per year
-- **orders.TRO001** (TradeOff) — no description
-- **orders.TRO002** (TradeOff) — no description
-- **shipping.NG001** (NonGoal) — No fleet management or driver dispatch
-- **shipping.TRO001** (TradeOff) — no description
-- **shop.NG001** (NonGoal) — No marketplace/multi-vendor capabilities
-- **shop.NG002** (NonGoal) — The software does not provision or operate the infrastructure it runs on
-- **shop.ASM001** (Assumption) — MySQL/MariaDB is the only supported RDBMS
-- **shop.TRO001** (TradeOff) — no description
-- **catalog.RES001** (Resilience) — Search Index Recovery
-- **checkout.CMP001** (Compliance) — Promotion Transparency
-- **customers.CMP001** (Compliance) — GDPR Data Subject Rights
-- **FF001** (FitnessFunction) — Every command produces events
-- **FF002** (FitnessFunction) — No orphan events
-- **FF003** (FitnessFunction) — All actors have personas
-- **FF004** (FitnessFunction) — Processes declare their trigger and their outcomes
-- **FF005** (FitnessFunction) — Capabilities linked to value streams
-- **FF006** (FitnessFunction) — Goals have KPI coverage
-- **FF007** (FitnessFunction) — Service dependency fan-out limit
-- **FF008** (FitnessFunction) — Test coverage per aggregate
-- **FF009** (FitnessFunction) — Arch expose refs valid
-- **FF010** (FitnessFunction) — Transition rules for state machines
-- **FF011** (FitnessFunction) — Owned_by coverage
-- **FF012** (FitnessFunction) — Process lanes cover the actors its activities name
-- **MIG001** (Migration) — Move to the v2.8 line
-- **MIG002** (Migration) — The anchor states its reactions and its risks
-- **MIG003** (Migration) — Each context and each party is declared once
-- **MIG004** (Migration) — A party stops declaring an environment
-- **MIG005** (Migration) — A server names the environment the model declares
+- **admin.EN001** (Enumeration) - PermissionLevel
+- **admin.ASC001** (Association) - no description
+- **admin.ASC002** (Association) - no description
+- **catalog.EN001** (Enumeration) - ProductStatus
+- **catalog.EN002** (Enumeration) - ProductType
+- **catalog.EN003** (Enumeration) - ReductionType
+- **catalog.ASC001** (Association) - no description
+- **catalog.ASC002** (Association) - no description
+- **catalog.ASC003** (Association) - no description
+- **checkout.ASC001** (Association) - no description
+- **checkout.ASC002** (Association) - no description
+- **checkout.ASC003** (Association) - no description
+- **content.EN001** (Enumeration) - CmsPageStatus
+- **content.ASC001** (Association) - no description
+- **content.ASC002** (Association) - no description
+- **customers.ASC002** (Association) - no description
+- **customers.ASC004** (Association) - no description
+- **customers.EN003** (Enumeration) - ThreadStatus
+- **customers.ASC003** (Association) - no description
+- **customers.EN001** (Enumeration) - Gender
+- **customers.EN002** (Enumeration) - PriceDisplayMethod
+- **customers.ASC001** (Association) - no description
+- **international.ASC002** (Association) - no description
+- **international.ASC003** (Association) - no description
+- **international.ASC004** (Association) - no description
+- **international.EN001** (Enumeration) - CurrencyType
+- **international.ASC001** (Association) - no description
+- **international.ASC005** (Association) - no description
+- **international.ASC006** (Association) - no description
+- **international.ASC007** (Association) - no description
+- **modules.EN002** (Enumeration) - HookKind
+- **modules.EN001** (Enumeration) - ModuleLifecycleState
+- **modules.ASC001** (Association) - no description
+- **orders.EN001** (Enumeration) - OrderStatus
+- **orders.EN002** (Enumeration) - PaymentMethod
+- **orders.ASC001** (Association) - no description
+- **orders.ASC002** (Association) - no description
+- **shipping.ASC001** (Association) - no description
+- **shipping.ASC002** (Association) - no description
+- **shipping.ASC003** (Association) - no description
+- **shop.ASC001** (Association) - no description
+- **checkout.ERR008** (Error) - CatalogPriceRuleNotFound
+- **international.ERR001** (Error) - CurrencyNotFound
+- **international.ERR002** (Error) - CurrencyConstraintViolation
+- **international.ERR005** (Error) - StateNotFound
+- **international.ERR006** (Error) - ZoneNotFound
+- **international.ERR003** (Error) - LanguageNotFound
+- **international.ERR007** (Error) - TaxNotFound
+- **orders.ERR002** (Error) - PaymentDeclined
+- **MDL014** (Models) - Recursive tree node for category hierarchy display.
+- **MDL016** (Models) - Full attribute group with its values for editing.
+- **MDL018** (Models) - Full feature with its values for product form display.
+- **MDL010** (Models) - Lightweight combination summary for paginated lists.
+- **MDL108** (Models) - Request body for issuing a partial refund on specific order lines.
+- **MDL106** (Models) - Order pricing summary - products total, shipping, discounts, tax, and grand total.
+- **admin.NG001** (NonGoal) - No LDAP/Active Directory integration for employee authentication
+- **admin.NG002** (NonGoal) - No second authentication factor for employee sign-in
+- **admin.ASM001** (Assumption) - PHP 8.1+ is the minimum supported runtime
+- **catalog.NG001** (NonGoal) - No built-in B2B tiered/volume pricing engine
+- **catalog.NG002** (NonGoal) - No AI-powered product recommendations in core
+- **checkout.NG001** (NonGoal) - No payment method of any kind is implemented in core
+- **checkout.TRO001** (TradeOff) - no description
+- **content.NG001** (NonGoal) - No visual page builder or WYSIWYG block editor in core
+- **content.NG002** (NonGoal) - No scheduled publication and no revision history for CMS pages
+- **content.ASM001** (Assumption) - A CMS page's body is trusted HTML, written by someone the shop trusts
+- **content.TRO001** (TradeOff) - no description
+- **customers.NG001** (NonGoal) - No built-in SSO/SAML/OIDC for customer authentication
+- **customers.TRO001** (TradeOff) - no description
+- **international.NG001** (NonGoal) - No automatic regulatory compliance monitoring
+- **international.TRO001** (TradeOff) - no description
+- **modules.NG001** (NonGoal) - No containerized or sandboxed module isolation
+- **orders.NG001** (NonGoal) - PrestaShop will not implement its own payment gateway
+- **orders.NG002** (NonGoal) - No real-time inventory sync with physical POS
+- **orders.ASM003** (Assumption) - EU VAT rates will not change more than twice per year
+- **orders.TRO001** (TradeOff) - no description
+- **orders.TRO002** (TradeOff) - no description
+- **shipping.NG001** (NonGoal) - No fleet management or driver dispatch
+- **shipping.TRO001** (TradeOff) - no description
+- **shop.NG001** (NonGoal) - No marketplace/multi-vendor capabilities
+- **shop.NG002** (NonGoal) - The software does not provision or operate the infrastructure it runs on
+- **shop.ASM001** (Assumption) - MySQL/MariaDB is the only supported RDBMS
+- **shop.TRO001** (TradeOff) - no description
+- **catalog.RES001** (Resilience) - Search Index Recovery
+- **checkout.CMP001** (Compliance) - Promotion Transparency
+- **customers.CMP001** (Compliance) - GDPR Data Subject Rights
+- **FF001** (FitnessFunction) - Every command produces events
+- **FF002** (FitnessFunction) - No orphan events
+- **FF003** (FitnessFunction) - All actors have personas
+- **FF004** (FitnessFunction) - Processes declare their trigger and their outcomes
+- **FF005** (FitnessFunction) - Capabilities linked to value streams
+- **FF006** (FitnessFunction) - Goals have KPI coverage
+- **FF007** (FitnessFunction) - Service dependency fan-out limit
+- **FF008** (FitnessFunction) - Test coverage per aggregate
+- **FF009** (FitnessFunction) - Arch expose refs valid
+- **FF010** (FitnessFunction) - Transition rules for state machines
+- **FF011** (FitnessFunction) - Owned_by coverage
+- **FF012** (FitnessFunction) - Process lanes cover the actors its activities name
+- **WCH002** (WatchItem) - Third-party module coupling growth
+- **MIG001** (Migration) - Move to the v2.8 line
+- **MIG002** (Migration) - The anchor states its reactions and its risks
+- **MIG003** (Migration) - Each context and each party is declared once
+- **MIG004** (Migration) - A party stops declaring an environment
+- **MIG005** (Migration) - A server names the environment the model declares
 
 ### Untested Rules (5)
 
-- **checkout.TR003** — An order on the cart makes it ordered.
-- **checkout.TR004** — No order 24 hours after creation makes a cart abandoned.
-- **customers.TR002** — Disabling makes a customer inactive.
-- **customers.TR003** — Enabling makes a customer active.
-- **orders.TR001** — Default flow: Payment accepted, then Processing in progress; permitted, not enforced.
+- **checkout.TR003** - An order on the cart makes it ordered.
+- **checkout.TR004** - No order 24 hours after creation makes a cart abandoned.
+- **customers.TR002** - Disabling makes a customer inactive.
+- **customers.TR003** - Enabling makes a customer active.
+- **orders.TR001** - Default flow: Payment accepted, then Processing in progress; permitted, not enforced.

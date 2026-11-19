@@ -11,6 +11,7 @@ required:
 properties:
   name:
     type: string
+    pattern: "^\\S(?:.*\\S)?$"
     description: "Domain or service name (e.g. orders, billing). Used for cross-file identification."
   description:
     type: string
@@ -109,7 +110,7 @@ $defs:
       kind:
         type: string
         enum: [event, command, query, document]
-        description: "Operation category: command=intent to change state, event=fact that happened, query=read-only, document=structured data transfer."
+        description: "Operation category: command=intent to change state, event=fact that happened, query=read-only, document=structured data transfer. An event states a business fact that something uses: an operation reacts to it, a contract or a messaging exchange publishes it, a translation names it, or a governed command decides it. How far an event reaches is derived, not declared: published (a contract, a messaging exchange or a reaction in another scope says it leaves its context), internal, or unstated, which means the model does not say rather than that the event stays inside. No field or kind marks an event as anemic. The semantic checker reports an event as an anemic-event review candidate (`anemic-event-candidate`, info) when it has at least one producer, every producer is a command with no rule governance, no operation reacts to it, it is not published and no `translates` names it or is written on it. One reaction is enough to make an event meaningful, whatever reacts. The candidate is a prompt to review the fact, never an instruction to delete it; an activity-log record is modeled as a `side_effects.writes` target rather than as an event."
       name:
         type: string
         description: "Human-readable operation name."
@@ -222,7 +223,7 @@ $defs:
       # --- Causal links (v2.1) ---
       produces:
         type: object
-        description: "Operations this operation emits upon execution. Commands typically produce events and/or documents. Events do not produce; they trigger reactions via reacts_to. Validator WARNS on non-conventional usage. This is the model's statement of CAUSALITY, true of the operation wherever it appears; the order in which operations run inside one process activity is stated by that activity's `steps`, not here."
+        description: "Operations this operation emits upon execution: the events and documents that carry its outcome. A command states its outcome through `produces`, `materializes` or `side_effects.writes`, and needs no event when `materializes` or `writes` already says what it changes. The semantic checker warns (`missing-causal-links`) only on a command that states none of the three; any nonempty `operations` list counts, a document included, while `mode` alone states nothing. A command governed by a rule (`governed_by`, `preconditions`, `postconditions` or a legacy rule clause) whose `produces` names no event is reported as an info hint (`governed-command-without-event`) to review whether its decision is stated; the hint does not require an event. Events do not produce; they trigger reactions via reacts_to. Validator WARNS on non-conventional usage. This is the model's statement of CAUSALITY, true of the operation wherever it appears; the order in which operations run inside one process activity is stated by that activity's `steps`, not here."
         additionalProperties: false
         properties:
           operations:
@@ -290,13 +291,14 @@ $defs:
               properties:
                 target:
                   type: string
+                  pattern: "^\\S(?:.*\\S)?$"
                   description: "Resource or concept being read."
                 pattern:
                   type: string
                   description: "Access pattern (e.g. file glob, query filter)."
           writes:
             type: array
-            description: "Data resources this operation creates or modifies."
+            description: "Data resources this operation creates or modifies. A write is an outcome of its own: an activity-log or audit record and a write to an external sink are stated here rather than as an event, and a command with at least one write states an outcome without producing an event."
             items:
               type: object
               additionalProperties: false
@@ -305,6 +307,7 @@ $defs:
               properties:
                 target:
                   type: string
+                  pattern: "^\\S(?:.*\\S)?$"
                   description: "Resource or concept being written."
                 when:
                   type: string
@@ -341,6 +344,7 @@ $defs:
           properties:
             name:
               type: string
+              pattern: "^\\S(?:.*\\S)?$"
               description: "Example name (e.g., valid-order, duplicate-order)."
             description:
               type: string
@@ -426,7 +430,9 @@ $defs:
           Entities created or modified as a consequence of this operation.
           Expresses entity lifecycle effects beyond operation-to-operation
           causal links (produces/reacts_to). E.g., a refund command
-          materializes a CreditSlip read model.
+          materializes a CreditSlip read model. Each entry is an outcome of
+          its own: creating, updating, deleting or archiving a concept states
+          what a command changes, and such a command needs no event to say so.
         items:
           type: object
           additionalProperties: false
@@ -511,6 +517,14 @@ $defs:
       graphql:
         $ref: "#/$defs/graphql_binding"
         description: "GraphQL operation binding (required for graphql protocol)."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          How sure the model is that the operation is bound as stated here - its protocol and its
+          endpoint, topic, queue, method or field - and on what evidence. It is about this binding:
+          the operation's own `provenance` is about the operation and is not evidence for it.
+          Evidence for the channel a topic or queue names is stated on that topic or queue, in
+          `link_provenance`.
     allOf:
       - if:
           properties:
@@ -555,12 +569,14 @@ $defs:
     properties:
       path:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "URL path template (e.g. /orders/{id})."
       description:
         type: string
         description: "Endpoint description."
       method:
         type: string
+        pattern: "^[A-Za-z]+$"
         description: "HTTP method (GET, POST, PUT, DELETE, PATCH)."
       parameters:
         type: array
@@ -590,6 +606,25 @@ $defs:
       description:
         type: string
         description: "What messages on this topic represent."
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >-
+          Evidence for the channel this topic names. `channel_ref` holds at most one entry, keyed by
+          the channel reference exactly as written in `channel_ref`, and its value is the shared
+          provenance of that link: how sure the model is that the message is published to that
+          channel, and on what evidence. An entry describes the link `channel_ref` states; it
+          neither adds nor redirects one. A link without an entry states no evidence of its own,
+          and the exchange's `provenance` is not evidence for it.
+        properties:
+          channel_ref:
+            type: object
+            maxProperties: 1
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/message_channel_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for the channel named in `channel_ref`, keyed by that reference."
       filters:
         type: array
         items:
@@ -612,6 +647,25 @@ $defs:
       description:
         type: string
         description: "What messages in this queue represent."
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >-
+          Evidence for the channel this queue names. `channel_ref` holds at most one entry, keyed by
+          the channel reference exactly as written in `channel_ref`, and its value is the shared
+          provenance of that link: how sure the model is that the message is sent to that channel,
+          and on what evidence. An entry describes the link `channel_ref` states; it neither adds
+          nor redirects one. A link without an entry states no evidence of its own, and the
+          exchange's `provenance` is not evidence for it.
+        properties:
+          channel_ref:
+            type: object
+            maxProperties: 1
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/message_channel_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for the channel named in `channel_ref`, keyed by that reference."
 
   filter:
     type: object
@@ -623,9 +677,11 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Filter name."
       ref:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Reference to the filter value or expression."
 
   graphql_binding:
@@ -640,6 +696,7 @@ $defs:
         description: "GraphQL operation type."
       field:
         type: string
+        pattern: "^[_A-Za-z][_0-9A-Za-z]*$"
         description: "Root field name in the schema (e.g., getOrders, createOrder)."
 
   method:
@@ -651,6 +708,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S+$"
         description: "RPC method name, as a client calls it. For gRPC, the fully qualified `package.Service/Method`."
       streaming:
         type: string
@@ -686,12 +744,13 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S+$"
         description: "Parameter name."
       schema:
         $ref: "../metamodel.schema.yaml#/$defs/model_ref"
         description: "Model schema reference for this parameter's type."
       type:
-        type: string
+        $ref: "../metamodel.schema.yaml#/$defs/parameter_location"
         description: "Parameter location (path, query, header, cookie)."
       required:
         type: boolean
@@ -707,6 +766,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S+$"
         description: "Parameter name."
       schema:
         $ref: "../metamodel.schema.yaml#/$defs/model_ref"
@@ -777,12 +837,14 @@ $defs:
     properties:
       code:
         type: string
+        pattern: "^\\S+$"
         description: "HTTP or application-level response code."
       type:
         $ref: "../metamodel.schema.yaml#/$defs/outcome"
         description: "Response category: success=expected outcome, failure=business rejection, error=unexpected fault."
       description:
         type: string
+        pattern: "\\S"
         description: "What this response means to the caller."
       schema:
         $ref: "../metamodel.schema.yaml#/$defs/model_ref"
@@ -810,6 +872,7 @@ $defs:
         description: "Unique error identifier (ERR001, ERR002, etc.)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Human-readable error name."
       description:
         type: string
@@ -853,6 +916,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^[!#$%&'*+.^_`|~0-9A-Za-z-]+$"
         description: "Header name (e.g. X-Request-Id)."
       schema:
         $ref: "../metamodel.schema.yaml#/$defs/model_ref"
@@ -868,9 +932,11 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S+$"
         description: "Reason identifier (e.g. duplicate-order, insufficient-funds)."
       description:
         type: string
+        pattern: "\\S"
         description: "Human-readable description of this reason."
       version:
         type: string
@@ -904,6 +970,7 @@ $defs:
         description: "Unique question identifier (e.g. QN001 or billing.QN001)."
       statement:
         type: string
+        pattern: "\\S"
         description: >
           The question as a natural-language interrogative sentence.
           Should be phrased from the stakeholder's perspective, not the system's.

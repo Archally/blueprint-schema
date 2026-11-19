@@ -1,0 +1,909 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Blueprint Process",
+  "description": "Design Plane - Layer 4: Business processes expressing logical operation sequences, actor interactions, and side effects. Ordering here is logical; runtime ordering is in dynamics.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "version",
+    "processes"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^\\S(?:.*\\S)?$",
+      "description": "Domain or service name these processes belong to."
+    },
+    "version": {
+      "$ref": "../metamodel.schema.yaml#/$defs/semver",
+      "description": "Content version of this process document."
+    },
+    "schemaVersion": {
+      "$ref": "../metamodel.schema.yaml#/$defs/schema_version",
+      "description": "Schema version this document conforms to. Omit to assume latest."
+    },
+    "scope": {
+      "$ref": "../metamodel.schema.yaml#/$defs/scope_prefix",
+      "description": "Bounded context this process file belongs to."
+    },
+    "stage": {
+      "type": "string",
+      "description": "Development stage (e.g. draft, review, approved)."
+    },
+    "domains": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "SOFT-DEPRECATED (v2.8.15). Free-string map naming the domains these processes touch (name to identifier or description). Nothing resolves it. A domain is declared in the root `domains[]` registry of `blueprint.yaml`, where it carries a `DMN###` id that a context names through `domain_ref`; the schema-update tool promotes each key into that registry, the name becoming the domain's name and the prose its description, and removes the key here. Accepted so that existing documents keep loading. Removal targeted for v2.9.\n"
+    },
+    "tags": {
+      "$ref": "../metamodel.schema.yaml#/$defs/tags"
+    },
+    "owned_by": {
+      "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+      "description": "File-level ownership default. Entities inherit unless overridden."
+    },
+    "processes": {
+      "type": "array",
+      "description": "Business processes describing how operations flow from trigger to outcome.",
+      "items": {
+        "$ref": "#/$defs/process"
+      }
+    },
+    "user_stories": {
+      "type": "array",
+      "description": "Agile user stories - user-level goals someone intends to deliver. Statements of intent, not descriptions of the modelled system.",
+      "items": {
+        "$ref": "#/$defs/user_story"
+      }
+    },
+    "use_cases": {
+      "type": "array",
+      "description": "Use cases - scenario-level requirements stating intended behaviour. Supports functional and journey modes, and needs no domain model to exist.",
+      "items": {
+        "$ref": "#/$defs/use_case"
+      }
+    }
+  },
+  "$defs": {
+    "process": {
+      "type": "object",
+      "description": "A business process: a named narrative of who does what, in which order. A process DESCRIBES something that exists, and `describes` says what. A process that describes the modelled system names, on each activity, the operation the domain already declares. A process that describes an organization states how its people work: lanes for its teams, what each activity takes and produces, the tools it uses and where the work is handed over; its activities need no operation. For behaviour someone intends but the model does not yet contain, use `use_case`.\n",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title"
+      ],
+      "dependentSchemas": {
+        "triggers": {
+          "properties": {
+            "trigger": false
+          }
+        }
+      },
+      "properties": {
+        "id": {
+          "$ref": "../metamodel.schema.yaml#/$defs/process_ref",
+          "description": "Typed process identifier (PRC### pattern)."
+        },
+        "title": {
+          "type": "string",
+          "pattern": "^\\S(?:.*\\S)?$",
+          "description": "Process title in imperative or actor-goal form."
+        },
+        "processUri": {
+          "type": "string",
+          "description": "Optional URI to the process source (e.g. Jira, Linear, GitHub issue)."
+        },
+        "status": {
+          "type": "string",
+          "description": "Process status (e.g. draft, approved, implemented)."
+        },
+        "describes": {
+          "$ref": "../metamodel.schema.yaml#/$defs/process_describes",
+          "description": "What this process is a model of: `system` or `organization`. Absent means the value its slice states in `layout.slices`, and `system` where the slice states none.\n"
+        },
+        "provenance": {
+          "$ref": "../metamodel.schema.yaml#/$defs/provenance",
+          "description": "How sure the model is that the process runs as written, and on what evidence. Absent states nothing: it is not a claim that the process is fact. An open question about the process is an inquiry whose `affects` names it.\n"
+        },
+        "description": {
+          "type": "string",
+          "description": "Narrative description of this process's context and goal."
+        },
+        "properties": {
+          "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+        },
+        "tracker_ref": {
+          "$ref": "../metamodel.schema.yaml#/$defs/tracker_ref"
+        },
+        "initiated_by": {
+          "type": "array",
+          "description": "Optional list of actor refs that can initiate this process (human, system, or time). Used for Event Storming lane-start actor stickies.",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/actor_ref"
+          }
+        },
+        "activities": {
+          "type": "array",
+          "description": "Process activities composing this process, listed in execution order. Each activity is an asynchronous phase containing synchronous steps. The main-path activities run in the order they are listed, unless a main-path activity states a main-path successor (`next` or `next_activities`): then the stated links are the whole order. An activity whose `path_type` is `error` or `compensation` is never placed in the listed order; it is reached only by a stated link.\n",
+          "items": {
+            "$ref": "#/$defs/process_activity"
+          }
+        },
+        "trigger": {
+          "$ref": "#/$defs/process_trigger",
+          "description": "Process start event, for a process with one start. The process starts at the activity whose `entry_operation` or `steps` hold `operation`, the first listed one where several do, else at the first listed main-path activity. In a process none of whose main-path activities states a main-path successor, it starts at the first listed main-path activity. A process with several alternative starts states `triggers` instead; a process states one of the two, never both.\n"
+        },
+        "triggers": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "Alternative start events of this process. Each start leads to the activity its `to` names, and any one of them starts the process. Several starts may lead to the same activity. Where starts lead to different activities, those activities state their own successors (`next`, with `join` where routes meet); starts are never chained to one another by list order. A process states `triggers` or `trigger`, never both.\n",
+          "items": {
+            "$ref": "#/$defs/process_start"
+          }
+        },
+        "end_states": {
+          "type": "array",
+          "description": "Process terminal states with their types. Where any end state of the process states `from`, the stated attachments are the whole end routing of the process: each end state is reached from the activities its own `from` names, and one that states none is attached to no activity. Where no end state states `from`, they are attached by convention: where exactly one end state has type `complete`, the last listed main-path activity with no successor leads to it, and every other activity with no successor ends its own branch. Where every main-path activity has a successor, the last listed main-path activity leads to it when all of its stated links go to `error` or `compensation` activities. Any other end state is attached to no activity, and is reported as reached by no stated link.\n",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "type"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^\\S(?:.*\\S)?$",
+                "description": "End state name."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "complete",
+                  "error",
+                  "cancel",
+                  "terminate"
+                ],
+                "description": "BPMN-compatible end event type."
+              },
+              "description": {
+                "type": "string",
+                "description": "End state description."
+              },
+              "from": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "description": "The activities that lead to this end state, each the `id` of an activity of this process, written as the activity writes it. An activity named here may also state `next`; the end state is then one of its outgoing branches. Stating `from` on any end state of a process makes the stated attachments its whole end routing.\n",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/process_activity_ref"
+                }
+              }
+            }
+          }
+        },
+        "lanes": {
+          "type": "array",
+          "description": "Swim lanes: who performs which part of this process. A lane names an actor (a role), a team, or both, the role and the team that staffs it, and lists the operations and the activities placed in it.\n",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "anyOf": [
+              {
+                "required": [
+                  "actor"
+                ]
+              },
+              {
+                "required": [
+                  "team"
+                ]
+              }
+            ],
+            "properties": {
+              "actor": {
+                "$ref": "../metamodel.schema.yaml#/$defs/actor_ref",
+                "description": "The actor (a role) who performs the work in this lane."
+              },
+              "team": {
+                "$ref": "../metamodel.schema.yaml#/$defs/team_ref",
+                "description": "The team that performs the work in this lane. Beside `actor`, the team that staffs that role.\n"
+              },
+              "operations": {
+                "type": "array",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+                },
+                "description": "Operations assigned to this lane."
+              },
+              "activities": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/process_activity_ref"
+                },
+                "description": "Activities of this process placed in this lane, each the `id` the activity declares. It places an activity that names no operation, which is how the work of an organization is usually written.\n"
+              }
+            }
+          }
+        },
+        "owned_by": {
+          "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+          "description": "Process-level ownership override."
+        },
+        "tags": {
+          "$ref": "../metamodel.schema.yaml#/$defs/tags"
+        },
+        "code_refs": {
+          "$ref": "../metamodel.schema.yaml#/$defs/code_refs"
+        },
+        "implementation": {
+          "$ref": "../metamodel.schema.yaml#/$defs/implementation",
+          "description": "Whether the process is practised yet: for a process that describes the system, whether the system runs it; for one that describes an organization, whether the organization works this way. Absent means unclear. Not on user_story or use_case, which state intent and carry their own delivery state.\n"
+        }
+      }
+    },
+    "process_trigger_type": {
+      "type": "string",
+      "enum": [
+        "message",
+        "timer",
+        "signal",
+        "manual",
+        "conditional"
+      ],
+      "description": "BPMN-compatible start event type."
+    },
+    "process_trigger": {
+      "type": "object",
+      "description": "The single start event of a process: how it is started, and by which operation or schedule. Its entry activity follows from `operation`, as the process's `trigger` describes.\n",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/process_trigger_type"
+        },
+        "operation": {
+          "$ref": "../metamodel.schema.yaml#/$defs/operation_ref",
+          "description": "Triggering operation. A message or signal start names the operation that carries it."
+        },
+        "schedule": {
+          "type": "string",
+          "description": "When a timer trigger fires (for timer type): an ISO 8601 date or date-time, an ISO 8601 duration, an ISO 8601 repeating interval, or a cron expression."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable trigger description."
+        }
+      }
+    },
+    "process_start": {
+      "type": "object",
+      "description": "One alternative start event of a process: how it is started and the activity it leads to. The start carries the same fields as a single `trigger` and also names its entry activity in `to`.\n",
+      "required": [
+        "type",
+        "to"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/process_trigger_type"
+        },
+        "operation": {
+          "$ref": "../metamodel.schema.yaml#/$defs/operation_ref",
+          "description": "Triggering operation. A message or signal start names the operation that carries it. The entry activity is `to`, whichever activity holds the operation."
+        },
+        "schedule": {
+          "type": "string",
+          "description": "When a timer trigger fires (for timer type): an ISO 8601 date or date-time, an ISO 8601 duration, an ISO 8601 repeating interval, or a cron expression."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable trigger description."
+        },
+        "to": {
+          "$ref": "../metamodel.schema.yaml#/$defs/process_activity_ref",
+          "description": "The activity this start leads to: the `id` of an activity of this process, written as the activity writes it. Several starts may name the same activity.\n"
+        }
+      }
+    },
+    "process_activity": {
+      "type": "object",
+      "description": "An activity within a process. In a process that describes the system, it is the entry point into the domain causal chain (produces/reacts_to): it names the operation it begins at once that operation is modelled, and that anchoring is what makes the process a description of the domain rather than a proposal about it. In a process that describes an organization, it is a piece of work people do: it states what it takes and produces, the tools it uses and where it hands the work over, and names an operation only where the system takes part.\n",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "../metamodel.schema.yaml#/$defs/process_activity_ref",
+          "description": "Unique activity identifier (PA001, PA002, etc.)."
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^\\S(?:.*\\S)?$",
+          "description": "Human-readable activity name describing this process phase."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of what this activity accomplishes."
+        },
+        "properties": {
+          "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+        },
+        "entry_operation": {
+          "$ref": "../metamodel.schema.yaml#/$defs/operation_ref",
+          "description": "Domain operation where this activity begins. Generator follows causal chain (produces/reacts_to) from here. Optional: an activity without an operation describes manual or human work, in either a system or an organization process. No placeholder operation is needed. A reference to an operation nothing declares is a cross-reference error.\n"
+        },
+        "triggered_by": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "../metamodel.schema.yaml#/$defs/actor_ref"
+              },
+              {
+                "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+              }
+            ]
+          },
+          "description": "What initiates this activity: an actor (for first activity) or an event operation (for reactive activities)."
+        },
+        "steps": {
+          "type": "array",
+          "description": "The operations this activity runs, in order, each with an optional note. This list is the model's statement of within-activity ORDER and INCLUSION: which operations run in this phase and in what sequence, including the queries and the commands a person issues next, which no causal link can carry. Domain causal links (`produces` / `reacts_to`) state CAUSALITY and are not repeated here; where a step follows a declared causal edge the two agree, and `activity-steps-reverse-causal-edge` reports a pair that reverses one. When present these are what the model reports as the activity's operation detail; when absent, `entry_operation` stands in as the single entry. Branching does not belong in this list: an activity that needs an alternative inside it is two activities linked through `next`.\n",
+          "items": {
+            "type": "object",
+            "required": [
+              "operation_ref"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "operation_ref": {
+                "$ref": "../metamodel.schema.yaml#/$defs/operation_ref",
+                "description": "Reference to a domain operation."
+              },
+              "note": {
+                "type": "string",
+                "description": "Implementation note, human context, or estimated duration for this step."
+              }
+            }
+          }
+        },
+        "next_activities": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/process_activity_ref"
+          },
+          "description": "SOFT-DEPRECATED (v2.8.23). Explicit links to subsequent activities. Use `next`, which names the same successors and can also state the condition under which each branch is taken, which this key has no room for; an activity declares one or the other, never both, and the schema-update tool rewrites one into the other. Still accepted and still read until the next major line. Where no main-path activity of the process states either, its activities run in the order they are listed (see `activities`).\n"
+        },
+        "gateway": {
+          "$ref": "../metamodel.schema.yaml#/$defs/gateway_kind",
+          "description": "How this activity's outgoing branches relate: `and` takes every branch, `xor` exactly one, `or` one or more. Declared once on the activity that forks, because the split is one fact about the whole set of branches rather than a property of any single one. An activity with one successor needs no gateway.\n"
+        },
+        "join": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode"
+          ],
+          "description": "How the branches arriving at this activity converge. Without it a convergence is only inferred from the number of incoming arrows, which cannot tell waiting for every branch apart from continuing on the first.\n",
+          "properties": {
+            "mode": {
+              "$ref": "../metamodel.schema.yaml#/$defs/gateway_kind",
+              "description": "`and` waits for every incoming branch, `xor` continues on exactly one, `or` on those that were taken."
+            }
+          }
+        },
+        "next": {
+          "type": "array",
+          "description": "Where this activity goes next, and why. Each entry names the following activity and may state the condition under which that branch is taken. A link between two main-path activities states the process's whole order: the listed order then no longer applies, so every main-path link the process has is written. A link to an `error` or `compensation` activity leaves the listed order of the main path standing. Use it in preference to `next_activities`, which names the following activities and can say nothing about what chooses between them; an activity declares one or the other, never both.\n",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "to"
+            ],
+            "properties": {
+              "to": {
+                "$ref": "../metamodel.schema.yaml#/$defs/process_activity_ref",
+                "description": "The activity this branch leads to."
+              },
+              "condition": {
+                "type": "string",
+                "description": "The business condition under which this branch is taken, in the model's own terms rather than in the terms of a transport. It reaches generated Arazzo as a step criterion, so it reads as a statement about the domain and not about a response.\n",
+                "examples": [
+                  "the order total is above the free-shipping threshold",
+                  "credit score >= 600"
+                ]
+              }
+            }
+          }
+        },
+        "calls_subprocess": {
+          "$ref": "../metamodel.schema.yaml#/$defs/process_ref",
+          "description": "Another process this activity runs as a subprocess. The called process keeps its own identity and its own activities; this activity is the point in the calling process where it runs. Use it to join processes that together describe one flow, rather than repeating the called process's activities here. The call is a property of the activity, beside its step sequence rather than inside it.\n"
+        },
+        "path_type": {
+          "type": "string",
+          "enum": [
+            "happy",
+            "error",
+            "compensation"
+          ],
+          "description": "Process path classification: happy=expected flow, error=exception handling, compensation=rollback/undo. An activity that states none is on the main path, as `happy`."
+        },
+        "inputs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/process_artifact"
+          },
+          "description": "What this activity takes to do its work: a request, a document, a draft."
+        },
+        "outputs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/process_artifact"
+          },
+          "description": "What this activity produces: a document, a decision record, a specification."
+        },
+        "tools": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/process_tool"
+          },
+          "description": "The tools people use to do this activity: an issue tracker, a design tool, a spreadsheet."
+        },
+        "hands_over_to": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/process_handover"
+          },
+          "description": "Where this activity hands its work over, one entry per receiver. Towards another activity of this process, the lanes and the order already state the handover, and an entry repeats one of them so the YAML shows it; where a gateway follows, an entry names the activity its branch leads to. Towards work outside the process, an entry names the receiving process, team or receiver.\n"
+        },
+        "provenance": {
+          "$ref": "../metamodel.schema.yaml#/$defs/provenance",
+          "description": "How sure the model is that this activity happens as written, and on what evidence. Absent states nothing: it is not a claim that the activity is fact. An open question about the activity is an inquiry whose `affects` names it.\n"
+        },
+        "tags": {
+          "$ref": "../metamodel.schema.yaml#/$defs/tags"
+        }
+      }
+    },
+    "stated_name": {
+      "type": "string",
+      "pattern": "\\S",
+      "not": {
+        "pattern": "^([a-z][a-z0-9-]*\\.)?[A-Z]{1,4}\\d{3,}$"
+      },
+      "description": "A name as the source states it, for something the model may not declare. It contains at least one non-space character and is never a typed id: write a declared element as its reference key instead.\n"
+    },
+    "process_artifact": {
+      "type": "object",
+      "description": "Something an activity takes or produces, named as the source states it. A name alone is a complete statement for an artifact the model does not declare; `concept` names the concept it is, where the model declares one.\n",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/stated_name",
+          "description": "The artifact as the source names it, for example \"Specification draft\"."
+        },
+        "concept": {
+          "$ref": "../metamodel.schema.yaml#/$defs/concept_ref",
+          "description": "The concept this artifact is, where the model declares one."
+        }
+      }
+    },
+    "process_tool": {
+      "type": "object",
+      "description": "A tool people use to do an activity, named as the source states it. A name alone is a complete statement for a tool the model does not declare; `party` names it where the model declares it as a system party.\n",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/stated_name",
+          "description": "The tool as the source names it, for example \"Jira\"."
+        },
+        "party": {
+          "$ref": "../metamodel.schema.yaml#/$defs/party_ref",
+          "description": "The party this tool is: a party of `kind: system`."
+        }
+      }
+    },
+    "process_handover": {
+      "type": "object",
+      "description": "One receiver of an activity's work. `activity` names an activity of the same process; `process` names another process the work goes on in; `team` names the team that receives it; `name` names a receiver as the source states it. An entry names at least one of them, and never an activity and another process together. Beside `activity`, `team` is the team of the receiving activity's lane.\n",
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "activity"
+          ]
+        },
+        {
+          "required": [
+            "process"
+          ]
+        },
+        {
+          "required": [
+            "team"
+          ]
+        },
+        {
+          "required": [
+            "name"
+          ]
+        }
+      ],
+      "not": {
+        "required": [
+          "activity",
+          "process"
+        ]
+      },
+      "properties": {
+        "activity": {
+          "$ref": "../metamodel.schema.yaml#/$defs/process_activity_ref",
+          "description": "The receiving activity of this process, by the `id` it declares."
+        },
+        "process": {
+          "$ref": "../metamodel.schema.yaml#/$defs/process_ref",
+          "description": "The process the work goes on in."
+        },
+        "team": {
+          "$ref": "../metamodel.schema.yaml#/$defs/team_ref",
+          "description": "The team that receives the work."
+        },
+        "name": {
+          "$ref": "#/$defs/stated_name",
+          "description": "The receiver as the source names it, for one the model does not declare."
+        }
+      }
+    },
+    "user_story": {
+      "type": "object",
+      "description": "Agile user story: a user-level goal someone INTENDS to deliver. Format: As a [actor], I want [goal], so that [benefit]. A user story states intent rather than describing the modelled system. It carries delivery state (`delivery_priority`, `release_target`, `status`), needs no operation to exist, and can be deferred or dropped without the model changing.\n",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "actor",
+        "goal"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "../metamodel.schema.yaml#/$defs/user_story_ref",
+          "description": "Unique user story identifier (US + 3+ digits)."
+        },
+        "actor": {
+          "$ref": "../metamodel.schema.yaml#/$defs/actor_ref",
+          "description": "The actor who wants this - the 'As a...' clause."
+        },
+        "goal": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "What the actor wants to do - the 'I want...' clause."
+        },
+        "benefit": {
+          "type": "string",
+          "description": "Why this matters - the 'So that...' clause."
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "One-line summary for listings and PRD tables."
+        },
+        "description": {
+          "type": "string",
+          "description": "Additional context or acceptance narrative."
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Gherkin-style or plain-language acceptance criteria."
+        },
+        "delivery_priority": {
+          "$ref": "../metamodel.schema.yaml#/$defs/delivery_priority"
+        },
+        "release_target": {
+          "$ref": "../metamodel.schema.yaml#/$defs/release_target"
+        },
+        "story_points": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Relative effort estimate for sprint planning."
+        },
+        "status": {
+          "$ref": "../metamodel.schema.yaml#/$defs/story_status",
+          "description": "User story lifecycle status."
+        },
+        "use_case": {
+          "$ref": "../metamodel.schema.yaml#/$defs/use_case_ref",
+          "description": "SOFT-DEPRECATED (v2.8.9). The use case this story belongs to, named from the story. The link is stated by the use case instead - `use_case.user_stories[]` - so that one place answers \"which stories realise this use case\" and a reader never has to reconcile two lists that can disagree. Still accepted and still read, and removal is on the next major line. `user-story-use-case-back-reference` reports each use, and says whether the use case already lists the story back: where it does not, add it there before removing this.\n"
+        },
+        "concern_ref": {
+          "$ref": "../metamodel.schema.yaml#/$defs/concern_ref",
+          "description": "The stakeholder concern this story addresses. `benefit` says why the story is worth doing; this says whose standing expectation it serves, and a concern may be served by several stories. The inverse is `concern.about_ref` naming this story.\n"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+          },
+          "description": "Domain operations this story exercises."
+        },
+        "test_cases": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/test_ref"
+          },
+          "description": "Test cases validating this story."
+        },
+        "version": {
+          "$ref": "../metamodel.schema.yaml#/$defs/entity_version"
+        },
+        "owned_by": {
+          "$ref": "../metamodel.schema.yaml#/$defs/owned_by"
+        },
+        "properties": {
+          "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+        },
+        "tracker_ref": {
+          "$ref": "../metamodel.schema.yaml#/$defs/tracker_ref"
+        },
+        "tags": {
+          "$ref": "../metamodel.schema.yaml#/$defs/tags"
+        },
+        "code_refs": {
+          "$ref": "../metamodel.schema.yaml#/$defs/code_refs"
+        }
+      }
+    },
+    "alternative_flow": {
+      "type": "object",
+      "description": "One conditional branch off a step of a use case's main scenario: when the condition holds, this happens instead of, or in addition to, the step it branches from.\n",
+      "additionalProperties": false,
+      "required": [
+        "step",
+        "condition",
+        "action"
+      ],
+      "properties": {
+        "step": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Step number of the main scenario where this branch leaves it."
+        },
+        "condition": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "Condition that triggers this branch."
+        },
+        "action": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "What happens on this branch."
+        },
+        "operation": {
+          "$ref": "../metamodel.schema.yaml#/$defs/operation_ref",
+          "description": "Domain operation performed on this branch. Its initiator is the performer."
+        },
+        "actor": {
+          "$ref": "../metamodel.schema.yaml#/$defs/actor_ref",
+          "description": "Actor who performs this branch, when it is not a modelled operation. Consulted only when `operation` is absent."
+        }
+      }
+    },
+    "use_case": {
+      "type": "object",
+      "description": "Use case - a scenario-level requirement describing actor interaction with the system. Serves as both functional specification (steps with operations) and user journey (steps with screens, emotions, pain points). Groups user stories and optionally references the processes that implement it (PRC###). Like `user_story` and unlike `process`, a use case states INTENDED behaviour: its steps may be written in plain language, so it can be authored before the domain model exists.\n",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "primary_actor"
+      ],
+      "dependentSchemas": {
+        "extensions": {
+          "properties": {
+            "alternative_flows": false
+          }
+        }
+      },
+      "properties": {
+        "id": {
+          "$ref": "../metamodel.schema.yaml#/$defs/use_case_ref",
+          "description": "Unique use case identifier (UC + 3+ digits)."
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^\\S(?:.*\\S)?$",
+          "description": "Use case name (e.g., 'Place Order')."
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "One-line summary for listings."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed use case narrative."
+        },
+        "primary_actor": {
+          "$ref": "../metamodel.schema.yaml#/$defs/actor_ref",
+          "description": "The actor who initiates this use case."
+        },
+        "secondary_actors": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/actor_ref"
+          },
+          "description": "Actors this use case involves without initiating it - a service it calls, a person it notifies, a system it reads from. A use case has one initiator and any number of participants; `primary_actor` states the initiator.\n"
+        },
+        "goal": {
+          "type": "string",
+          "description": "What the actor is trying to accomplish."
+        },
+        "preconditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Conditions that must be true before the use case starts."
+        },
+        "postconditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Conditions that are true after successful completion."
+        },
+        "main_scenario": {
+          "type": "array",
+          "description": "Main success scenario as ordered steps.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "step",
+              "action"
+            ],
+            "properties": {
+              "step": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Step number in the scenario."
+              },
+              "action": {
+                "type": "string",
+                "pattern": "\\S",
+                "description": "What happens at this step (plain language)."
+              },
+              "operation": {
+                "$ref": "../metamodel.schema.yaml#/$defs/operation_ref",
+                "description": "Domain operation at this step (functional mode). Its initiator is the performer of the step."
+              },
+              "actor": {
+                "$ref": "../metamodel.schema.yaml#/$defs/actor_ref",
+                "description": "Actor who performs this step, when the step is not a modelled operation. Consulted only when `operation` is absent, so a step that IS an operation keeps one source of truth for its performer. Use it for human acts a domain operation does not describe: a sign-off, a go/no-go call, a code freeze.\n"
+              },
+              "screen": {
+                "$ref": "../metamodel.schema.yaml#/$defs/screen_ref",
+                "description": "UI screen where this step occurs (journey mode)."
+              },
+              "ui_action": {
+                "$ref": "../metamodel.schema.yaml#/$defs/ui_action_ref",
+                "description": "The UI action this step performs, when the step is a user act on a screen."
+              },
+              "emotion": {
+                "type": "string",
+                "enum": [
+                  "frustrated",
+                  "confused",
+                  "neutral",
+                  "satisfied",
+                  "delighted"
+                ],
+                "description": "User emotion at this step (empathy mapping)."
+              },
+              "pain_point": {
+                "type": "string",
+                "description": "UX friction or difficulty at this step."
+              }
+            }
+          }
+        },
+        "alternative_flows": {
+          "type": "array",
+          "description": "Alternative flows and exception handling: what happens at a step of the main scenario when a condition holds. A branch WITHIN this use case; a use case that conditionally adds behaviour to another one is `extends`.\n",
+          "items": {
+            "$ref": "#/$defs/alternative_flow"
+          }
+        },
+        "extensions": {
+          "type": "array",
+          "description": "SOFT-DEPRECATED (v2.8.9). The same list, under its former name. Use `alternative_flows`, which is what a use case's conditional branches are called; `extensions` reads as the relationship to another use case, which is `extends`. Both spellings are accepted and read identically, and a use case may declare only one of them. Removal on the next major line.\n",
+          "items": {
+            "$ref": "#/$defs/alternative_flow"
+          }
+        },
+        "includes": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/use_case_ref"
+          },
+          "description": "Use cases this one always performs as part of itself. The included behaviour runs every time, which is what separates it from `extends`: behaviour that runs only under a condition is an extension, not an inclusion. The reference points from the including use case to the included one.\n"
+        },
+        "extends": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/use_case_ref"
+          },
+          "description": "Use cases this one conditionally adds behaviour to. The reference points from the extending use case to the one extended, so the base use case stays unaware of it and can be read on its own. For a branch WITHIN this use case, use `extensions` instead - that is a step-level alternative, not a use case of its own.\n"
+        },
+        "user_stories": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/user_story_ref"
+          },
+          "description": "The user stories that realise this use case. This is where the link between the two is stated: a use case names its stories, and a story does not name its use case back, so the question has one answer and one place to change it.\n"
+        },
+        "processes": {
+          "type": "array",
+          "items": {
+            "$ref": "../metamodel.schema.yaml#/$defs/process_ref"
+          },
+          "description": "Business processes (PRC###) implementing this use case."
+        },
+        "delivery_priority": {
+          "$ref": "../metamodel.schema.yaml#/$defs/delivery_priority"
+        },
+        "release_target": {
+          "$ref": "../metamodel.schema.yaml#/$defs/release_target"
+        },
+        "status": {
+          "$ref": "../metamodel.schema.yaml#/$defs/story_status",
+          "description": "Use case lifecycle status."
+        },
+        "version": {
+          "$ref": "../metamodel.schema.yaml#/$defs/entity_version"
+        },
+        "owned_by": {
+          "$ref": "../metamodel.schema.yaml#/$defs/owned_by"
+        },
+        "properties": {
+          "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+        },
+        "tracker_ref": {
+          "$ref": "../metamodel.schema.yaml#/$defs/tracker_ref"
+        },
+        "tags": {
+          "$ref": "../metamodel.schema.yaml#/$defs/tags"
+        },
+        "code_refs": {
+          "$ref": "../metamodel.schema.yaml#/$defs/code_refs"
+        }
+      }
+    }
+  }
+}

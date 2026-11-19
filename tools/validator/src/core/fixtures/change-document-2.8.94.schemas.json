@@ -1,0 +1,1411 @@
+{
+  "migration.schema.yaml": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Blueprint Migration Schema",
+    "description": "Versioned, ordered changes to a blueprint model instance. Enables AS-IS to TO-BE model transformation with traceability and rollback.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "migration",
+      "changes"
+    ],
+    "properties": {
+      "schemaVersion": {
+        "$ref": "metamodel.schema.yaml#/$defs/schema_version",
+        "description": "Schema version this migration conforms to. Omit to assume latest."
+      },
+      "migration": {
+        "type": "object",
+        "description": "Migration identity, lifecycle, and traceability metadata.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "date",
+          "status",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "metamodel.schema.yaml#/$defs/migration_ref",
+            "description": "Unique migration identifier (MIG001, MIG002, etc.)."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$",
+            "description": "Kebab-case migration name (e.g., 'add-payment-retry-logic')."
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Migration creation date (YYYY-MM-DD)."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "pending",
+              "applied",
+              "rolled-back"
+            ],
+            "description": "Lifecycle state: draft=authoring, pending=ready for review/application, applied=committed to model, rolled-back=reverted."
+          },
+          "description": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "What this migration does and why, in plain language."
+          },
+          "author": {
+            "type": "string",
+            "description": "Person or agent who created this migration."
+          },
+          "breaking": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this migration introduces breaking changes to generated artifacts."
+          },
+          "semver_impact": {
+            "$ref": "metamodel.schema.yaml#/$defs/semver_impact",
+            "description": "Semantic versioning impact on the blueprint model version."
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "$ref": "metamodel.schema.yaml#/$defs/migration_ref"
+            },
+            "description": "Migrations that must be applied before this one. Loader validates dependency order."
+          },
+          "related_decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "metamodel.schema.yaml#/$defs/decision_ref"
+            },
+            "description": "Architectural decisions that motivated this migration."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Detailed reasoning for why this migration is needed."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Free-form tags for grouping and filtering migrations."
+          },
+          "properties": {
+            "$ref": "metamodel.schema.yaml#/$defs/entity_properties",
+            "description": "Open metadata bag for migration-level custom attributes."
+          }
+        }
+      },
+      "changes": {
+        "type": "object",
+        "description": "Model changes organized by concern: entities (nodes), properties (attributes), relationships (edges), and meta (cross-cutting). At least one change must be present across all collections.",
+        "additionalProperties": false,
+        "properties": {
+          "entities": {
+            "type": "array",
+            "description": "Entity-level changes: add, remove, deprecate, split, or merge entire blueprint entities.",
+            "items": {
+              "$ref": "#/$defs/entity_change"
+            }
+          },
+          "properties": {
+            "type": "array",
+            "description": "Property-level changes: set, unset, or rename individual fields on existing entities.",
+            "items": {
+              "$ref": "#/$defs/property_change"
+            }
+          },
+          "relationships": {
+            "type": "array",
+            "description": "Relationship changes: add, remove, or redirect edges between entities.",
+            "items": {
+              "$ref": "#/$defs/relationship_change"
+            }
+          },
+          "meta": {
+            "type": "array",
+            "description": "Cross-cutting changes: tags, file restructuring, bulk operations, constitution amendments.",
+            "items": {
+              "$ref": "#/$defs/meta_change"
+            }
+          }
+        }
+      },
+      "rollback": {
+        "type": "object",
+        "description": "Rollback feasibility metadata. Automatic rollback derives inverse operations from before/old_value.",
+        "additionalProperties": false,
+        "properties": {
+          "automatic": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether rollback can be computed from before/old_value fields."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Warnings about rollback risks."
+          },
+          "data_loss": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether rollback would lose information not captured in before/old_value."
+          },
+          "external_actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Manual actions required outside the blueprint if rollback is performed."
+          }
+        }
+      }
+    },
+    "$defs": {
+      "entity_change_kind": {
+        "type": "string",
+        "enum": [
+          "add",
+          "modify",
+          "deprecate",
+          "remove",
+          "rename",
+          "split",
+          "merge"
+        ],
+        "x-vocabulary-distinct": "Names the OPERATION a migration performs on an entity, alongside a target and an ordering. Not the narrative impact classification a decision records.",
+        "description": "What this migration does to one entity. add: a new entity. modify: replace it. deprecate: mark it for removal. remove: delete it. rename: it keeps its identity under a new id. split: one becomes many. merge: many become one. Deliberately NOT a reference to the metamodel's `change_kind`, which carries the same words to classify a decision's impact rather than to be executed.\n"
+      },
+      "entity_change": {
+        "type": "object",
+        "description": "A change to a whole entity (node in the graph).",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "entity_type",
+          "target"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/$defs/entity_change_kind"
+          },
+          "entity_type": {
+            "type": "string",
+            "enum": [
+              "concept",
+              "actor",
+              "enumeration",
+              "association",
+              "operation",
+              "error",
+              "rule",
+              "transition",
+              "model",
+              "process",
+              "process-activity",
+              "user-story",
+              "use-case",
+              "question",
+              "party",
+              "department",
+              "team",
+              "context",
+              "service",
+              "contract",
+              "dependency",
+              "goal",
+              "non-goal",
+              "risk",
+              "assumption",
+              "trade-off",
+              "inquiry",
+              "decision",
+              "capability",
+              "test-case",
+              "fitness-function",
+              "metric",
+              "kpi",
+              "slo",
+              "sla",
+              "security",
+              "compliance",
+              "resilience",
+              "parallelism",
+              "ordering",
+              "race-condition",
+              "screen",
+              "ui-action",
+              "ui-navigation",
+              "resource",
+              "milestone",
+              "value-stream"
+            ],
+            "description": "Blueprint entity type. Routes validation to the appropriate schema."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Entity identifier (typed ref, e.g., CN005, CMD012) or SpecPath. For add: new entity ID. For merge: comma-separated source IDs."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this change."
+          },
+          "before": {
+            "type": "object",
+            "description": "Entity state before change. REQUIRED for modify, remove, merge. Enables rollback."
+          },
+          "after": {
+            "description": "Entity state after change. REQUIRED for add, modify, split. For split: array of entities."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this specific entity change is needed."
+          },
+          "group": {
+            "type": "string",
+            "description": "Atomic group name. All changes with the same group must apply together or not at all."
+          },
+          "order": {
+            "type": "integer",
+            "description": "Explicit ordering within this migration. Lower numbers apply first."
+          }
+        }
+      },
+      "property_change": {
+        "type": "object",
+        "description": "A change to individual properties on an existing entity.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "target",
+          "property"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "set",
+              "unset",
+              "rename",
+              "append",
+              "remove-item"
+            ],
+            "description": "Property operation: set=assign, unset=remove, rename=change name, append=add to array, remove-item=remove from array."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Entity identifier (typed ref, e.g., CN005, CMD012)."
+          },
+          "entity_type": {
+            "type": "string",
+            "description": "Entity type for validation routing. Same enum as entity_change.entity_type."
+          },
+          "property": {
+            "type": "string",
+            "pattern": "^\\S+$",
+            "description": "Property name or dot-path for nested properties (e.g., description, payload.model)."
+          },
+          "value": {
+            "description": "New value for set/append operations. Type depends on the property."
+          },
+          "old_value": {
+            "description": "Previous value for conflict detection and rollback."
+          },
+          "new_name": {
+            "type": "string",
+            "description": "New property name for rename operations."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this property change."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this property is being changed."
+          },
+          "group": {
+            "type": "string",
+            "description": "Atomic group name (same semantics as entity_change.group)."
+          },
+          "order": {
+            "type": "integer",
+            "description": "Explicit ordering within this migration."
+          }
+        }
+      },
+      "relationship_change": {
+        "type": "object",
+        "description": "A change to a relationship (edge) between two entities.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "subject",
+          "predicate",
+          "object"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "add",
+              "remove",
+              "redirect",
+              "modify"
+            ],
+            "description": "Edge operation: add=create, remove=delete, redirect=change target, modify=change edge properties."
+          },
+          "subject": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Source entity typed ref (e.g., CMD005). The entity this relationship originates from."
+          },
+          "predicate": {
+            "type": "string",
+            "enum": [
+              "relationship",
+              "transition_rules",
+              "interaction",
+              "association",
+              "produces",
+              "reacts_to",
+              "translates",
+              "concepts",
+              "concept",
+              "governed_by",
+              "precondition",
+              "preconditions",
+              "postcondition",
+              "postconditions",
+              "initiated_by",
+              "depends_on",
+              "context_depends_on",
+              "requires",
+              "has_state",
+              "transition",
+              "constrains",
+              "validates",
+              "motivation_refs",
+              "capability_refs",
+              "declared_impact",
+              "tracks",
+              "targets",
+              "measures",
+              "goal.kpi",
+              "references",
+              "contains",
+              "extends",
+              "typed_by",
+              "has_error",
+              "enters_at",
+              "has_step",
+              "next_activity",
+              "assigned_to_lane",
+              "exposes",
+              "consumes",
+              "related_to",
+              "provides",
+              "story_orders_operation",
+              "org_contains_dept",
+              "dept_has_team",
+              "org_contains_team",
+              "screen_uses_model",
+              "screen_motivated_by",
+              "screen_decision",
+              "screen_validated_by",
+              "screen_story",
+              "action_on_screen",
+              "action_triggers_operation",
+              "nav_from",
+              "nav_to",
+              "question_answered_by",
+              "question_about",
+              "question_motivated_by",
+              "question_stakeholder",
+              "test_validates_question",
+              "decision_motivated_by_question",
+              "example_validates",
+              "user_story_actor",
+              "user_story_operation",
+              "user_story_test_case",
+              "user_story_use_case",
+              "use_case_actor",
+              "use_case_user_story",
+              "use_case_story",
+              "use_case_screen",
+              "use_case_operation",
+              "milestone_dependency",
+              "milestone_deliverable",
+              "question_owner",
+              "risk_owner",
+              "inquiry_goal",
+              "inquiry_risk",
+              "inquiry_question",
+              "inquiry_finding",
+              "inquiry_owner",
+              "inquiry_stakeholder",
+              "risk_goal",
+              "capability_goal",
+              "assumption_risk",
+              "goal_assumption",
+              "value_stream_capability",
+              "value_stream_goal",
+              "value_stream_kpi",
+              "value_stream_actor",
+              "code_ref"
+            ],
+            "description": "Relationship type. Maps to graph edge label."
+          },
+          "object": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Target entity typed ref (e.g., EVT006). For redirect: current target."
+          },
+          "new_object": {
+            "type": "string",
+            "description": "For redirect: the new target entity ref."
+          },
+          "edge_properties": {
+            "type": "object",
+            "description": "Properties on the edge itself (policy, condition, mode for produces/reacts_to).",
+            "additionalProperties": true,
+            "properties": {
+              "policy": {
+                "type": "string",
+                "description": "Reactive policy name (for reacts_to edges)."
+              },
+              "condition": {
+                "type": "string",
+                "description": "Guard condition (for reacts_to edges)."
+              },
+              "mode": {
+                "$ref": "metamodel.schema.yaml#/$defs/production_mode",
+                "description": "Production mode (for produces edges)."
+              },
+              "rule": {
+                "type": "string",
+                "description": "Rule reference governing this relationship."
+              },
+              "relationship_type": {
+                "type": "string",
+                "description": "DDD relationship pattern (for depends_on edges between contexts)."
+              },
+              "relationship": {
+                "$ref": "metamodel.schema.yaml#/$defs/context_relationship",
+                "description": "DDD context-map pattern carried on a context_depends_on edge."
+              },
+              "direction": {
+                "$ref": "metamodel.schema.yaml#/$defs/context_direction",
+                "description": "This context's role on a context_depends_on edge."
+              }
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of this relationship change."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this relationship is being changed."
+          },
+          "group": {
+            "type": "string",
+            "description": "Atomic group name."
+          },
+          "order": {
+            "type": "integer",
+            "description": "Explicit ordering within this migration."
+          }
+        }
+      },
+      "meta_change": {
+        "type": "object",
+        "description": "Cross-cutting changes: tags, file restructuring, bulk operations, constitution amendments.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "target"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "tag-add",
+              "tag-remove",
+              "tag-rename",
+              "bulk-tag",
+              "reclassify",
+              "move-to-slice",
+              "constitution-amend",
+              "declare-shared-layer",
+              "document-add",
+              "document-move",
+              "document-split",
+              "document-merge",
+              "note"
+            ],
+            "description": "Meta operation: tag-add/remove/rename, bulk-tag, reclassify, move-to-slice, constitution-amend, declare-shared-layer, document-add/move/split/merge, or note (informational)."
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Entity ref, tag name, slice name, or constitution section depending on kind."
+          },
+          "value": {
+            "description": "New value (tag name, new slice, amended text, etc.)."
+          },
+          "old_value": {
+            "description": "Previous value for rollback."
+          },
+          "filter": {
+            "type": "object",
+            "description": "For bulk operations: filter criteria to select target entities.",
+            "properties": {
+              "entity_type": {
+                "type": "string",
+                "description": "Filter by entity type."
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Filter by existing tags (entities matching ANY)."
+              },
+              "slice": {
+                "type": "string",
+                "description": "Filter by domain slice name."
+              },
+              "layer": {
+                "type": "string",
+                "description": "Filter by canonical model layer (e.g. design.ui, governance.roadmap)."
+              }
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this meta change is needed."
+          },
+          "group": {
+            "type": "string",
+            "description": "Atomic group name."
+          },
+          "order": {
+            "type": "integer",
+            "description": "Explicit ordering within this migration."
+          }
+        }
+      }
+    }
+  },
+  "migrations.schema.yaml": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Blueprint Migration Register",
+    "description": "An ordered record of the changes a blueprint model has been through and the ones it is planned to go through, written for a reader. Each entry names one migration and describes its changes in prose. A single migration authored for execution, with typed targets and rollback data, is a `migration.yaml` document instead.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "migrations"
+    ],
+    "properties": {
+      "version": {
+        "type": "string",
+        "description": "Version of the model instance this register describes.",
+        "examples": [
+          "1.0.0"
+        ]
+      },
+      "schemaVersion": {
+        "$ref": "metamodel.schema.yaml#/$defs/schema_version",
+        "description": "Schema version this register conforms to. Omit to assume latest."
+      },
+      "tags": {
+        "$ref": "metamodel.schema.yaml#/$defs/tags",
+        "description": "Free-form tags for grouping and filtering the register."
+      },
+      "migrations": {
+        "type": "array",
+        "description": "The register, in the order the migrations apply. Completed and planned entries live in one list so a reader sees where the model has been and where it is going.",
+        "items": {
+          "$ref": "#/$defs/register_entry"
+        }
+      }
+    },
+    "$defs": {
+      "register_status": {
+        "type": "string",
+        "enum": [
+          "planned",
+          "in-progress",
+          "completed",
+          "cancelled"
+        ],
+        "x-vocabulary-distinct": "Says where a migration stands in the model's history, as a reader sees it. Not the authoring lifecycle of a single executable migration document, which runs draft to applied.",
+        "description": "Where this migration stands. planned: intended, not yet carried out. in-progress: partly carried out. completed: carried out. cancelled: planned and then dropped, kept because the reason it was dropped is part of the history.\n"
+      },
+      "register_change_kind": {
+        "type": "string",
+        "enum": [
+          "add",
+          "modify",
+          "deprecate",
+          "remove",
+          "rename",
+          "split",
+          "merge"
+        ],
+        "x-vocabulary-distinct": "Labels a change a reader is told about in prose, where naming an entity is optional. Not the operation an executable migration performs on a named target in a given order.",
+        "description": "What kind of change this entry describes. add: something new. modify: something changed. deprecate: something marked for removal. remove: something gone. rename: something kept its identity under a new name. split: one became many. merge: many became one.\n"
+      },
+      "register_entry": {
+        "type": "object",
+        "description": "One migration in the register.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "status",
+          "changes"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "metamodel.schema.yaml#/$defs/migration_ref",
+            "description": "Migration identifier (MIG001, MIG002, and so on)."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Short title, in the words a reader of the model would use.",
+            "examples": [
+              "Accounting Domain Bootstrap"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "What this migration does and why, in plain language."
+          },
+          "status": {
+            "$ref": "#/$defs/register_status"
+          },
+          "impact": {
+            "$ref": "metamodel.schema.yaml#/$defs/semver_impact",
+            "description": "Semantic versioning impact of this migration on the model version."
+          },
+          "reversible": {
+            "type": "boolean",
+            "description": "Whether this migration can be undone from what the entry records."
+          },
+          "inverse_summary": {
+            "type": "string",
+            "description": "How to undo this migration, in prose. Present when `reversible` is true and the steps are worth stating."
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "When this migration was carried out, or is planned for (YYYY-MM-DD)."
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "$ref": "metamodel.schema.yaml#/$defs/migration_ref"
+            },
+            "description": "Migrations that apply before this one."
+          },
+          "tags": {
+            "$ref": "metamodel.schema.yaml#/$defs/tags",
+            "description": "Free-form tags for this entry."
+          },
+          "changes": {
+            "type": "array",
+            "minItems": 1,
+            "description": "The changes this migration makes, each described for a reader. An entry with no changes says nothing, so at least one is required.",
+            "items": {
+              "$ref": "#/$defs/register_change"
+            }
+          }
+        }
+      },
+      "register_change": {
+        "type": "object",
+        "description": "One change a migration makes, described in prose. Naming the entity is optional: a change may describe a whole file, a slice or a convention, none of which carry an entity id.",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "description"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/$defs/register_change_kind"
+          },
+          "description": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "What changed, in the words a reader of the model would use."
+          },
+          "entity": {
+            "type": "string",
+            "description": "The entity this change is about, when it is about one. A typed id, scoped where the model scopes ids.",
+            "examples": [
+              "contracts.CN006",
+              "CN006"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this particular change is part of the migration."
+          }
+        }
+      }
+    }
+  },
+  "governance/decisions.schema.yaml": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Blueprint Decisions",
+    "description": "Governance Plane: Architecture Decision Log (ADR). Chronological, append-only record of design decisions with typed impact references, motivation traceability, and change-set analysis.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "version",
+      "decisions"
+    ],
+    "properties": {
+      "version": {
+        "$ref": "../metamodel.schema.yaml#/$defs/semver",
+        "description": "Content version. Bump minor for new decisions, patch for status updates."
+      },
+      "schemaVersion": {
+        "$ref": "../metamodel.schema.yaml#/$defs/schema_version",
+        "description": "Schema version this document conforms to. Omit to assume latest."
+      },
+      "scope": {
+        "$ref": "../metamodel.schema.yaml#/$defs/scope_prefix",
+        "description": "Bounded context this decisions file belongs to. Enables filtering in multi-context blueprints."
+      },
+      "tags": {
+        "$ref": "../metamodel.schema.yaml#/$defs/tags"
+      },
+      "owned_by": {
+        "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+        "description": "File-level ownership default. Entities inherit unless overridden."
+      },
+      "decisions": {
+        "type": "array",
+        "description": "Architecture Decision Log. Chronological, append-only. Each entry is immutable once landed - supersede rather than modify.",
+        "items": {
+          "$ref": "#/$defs/decision"
+        }
+      },
+      "business_decisions": {
+        "type": "array",
+        "description": "Bounded Context Canvas v5 business decisions (BD###). Distinct from `decisions[]` above: business_decisions are high-level policy statements governing a bounded context's behaviour, not ADRs. Optional; introduced in v2.6.3.\n",
+        "items": {
+          "$ref": "#/$defs/business_decision"
+        }
+      }
+    },
+    "$defs": {
+      "decision": {
+        "type": "object",
+        "description": "An Architecture Decision Record (ADR). Minimum: id, title, summary, date, status, rationale.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "summary",
+          "date",
+          "status",
+          "rationale"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/decision_ref",
+            "description": "Unique decision ID (e.g. DC001 or billing.DC001). Assigned chronologically; never reused."
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description."
+          },
+          "title": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Short descriptive title understandable without reading the full rationale."
+          },
+          "summary": {
+            "type": "string",
+            "pattern": "\\S",
+            "maxLength": 200,
+            "description": "One-line summary for listings and quick scanning (≤200 chars). Self-contained."
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}(-\\d{2})?$",
+            "description": "Date proposed or accepted. Format: YYYY-MM or YYYY-MM-DD."
+          },
+          "status": {
+            "$ref": "../metamodel.schema.yaml#/$defs/decision_status",
+            "description": "Lifecycle status: open -> proposed -> rfc -> accepted -> landed; rejected or deprecated at any stage."
+          },
+          "rationale": {
+            "$ref": "#/$defs/rationale",
+            "description": "The reasoning behind this decision. Answers 'why' for future readers."
+          },
+          "version": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_version",
+            "description": "Decision version for individual lifecycle tracking."
+          },
+          "decision_scope": {
+            "type": "string",
+            "description": "The named scope this decision applies to: a slice (e.g. billing), a cross-cutting area that spans slices (e.g. integrations), or the whole system, named by the project's name. Unlike a file's `scope:`, it need not name a slice, so a decision in a file at the model root states its subject here."
+          },
+          "motivation_refs": {
+            "$ref": "#/$defs/motivation_links",
+            "description": "Motivation entities driving this decision: goals served, risks mitigated, assumptions, trade-offs accepted."
+          },
+          "capability_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/capability_ref"
+            },
+            "description": "Business capabilities this decision supports or enables."
+          },
+          "change_set": {
+            "type": "array",
+            "description": "Machine-readable manifest of changes introduced. Each entry describes one blueprint element change.",
+            "items": {
+              "$ref": "#/$defs/change_item"
+            }
+          },
+          "declared_impact": {
+            "$ref": "#/$defs/impact_declaration",
+            "description": "Author's declaration of affected blueprint entities. Direct changes plus transitive ripple hints."
+          },
+          "consequences": {
+            "type": "object",
+            "description": "Known consequences of this decision: positive benefits and negative costs or technical debt.",
+            "additionalProperties": false,
+            "properties": {
+              "positive": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Benefits and improvements from this decision."
+              },
+              "negative": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Costs, limitations, or technical debt introduced."
+              }
+            }
+          },
+          "acceptance": {
+            "$ref": "#/$defs/acceptance_criteria",
+            "description": "Conditions that must be met for this decision to be considered fully implemented."
+          },
+          "links": {
+            "$ref": "#/$defs/decision_links",
+            "description": "External references: issue tracker, PRs, docs, and decision chain (supersedes/superseded_by)."
+          },
+          "owned_by": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+            "description": "Decision-level ownership override."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          },
+          "code_refs": {
+            "$ref": "../metamodel.schema.yaml#/$defs/code_refs"
+          },
+          "discovery_stage": {
+            "$ref": "../metamodel.schema.yaml#/$defs/discovery_stage",
+            "description": "Epistemic maturity of this decision. Proposed decisions are typically hypothesis or exploring."
+          },
+          "certainty": {
+            "$ref": "../metamodel.schema.yaml#/$defs/certainty",
+            "description": "Confidence level of this decision. Speculative for proposed, confirmed for landed."
+          },
+          "evidence": {
+            "$ref": "../metamodel.schema.yaml#/$defs/evidence",
+            "description": "Evidence chain justifying this decision - benchmarks, experiments, stakeholder feedback."
+          }
+        }
+      },
+      "rationale": {
+        "type": "object",
+        "description": "The reasoning behind a decision: problem context, options explored, chosen approach.",
+        "additionalProperties": false,
+        "required": [
+          "problem",
+          "chosen"
+        ],
+        "properties": {
+          "problem": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "The problem or question that prompted this decision. Describes context and constraints."
+          },
+          "options": {
+            "type": "array",
+            "description": "Alternative approaches considered before choosing. Items can be plain strings (backward compatible) or structured objects with pros/cons analysis for ADR generation.\n",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/$defs/option"
+                }
+              ]
+            }
+          },
+          "chosen": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "The option selected and why it was preferred over alternatives."
+          }
+        }
+      },
+      "motivation_links": {
+        "type": "object",
+        "description": "Traceability from decision to motivation layer: what goals, risks, assumptions, and trade-offs drove it.",
+        "additionalProperties": false,
+        "properties": {
+          "goals": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/goal_ref"
+            },
+            "description": "Goals this decision serves or advances."
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/risk_ref"
+            },
+            "description": "Risks this decision mitigates."
+          },
+          "assumptions": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/assumption_ref"
+            },
+            "description": "Assumptions this decision depends on being true."
+          },
+          "trade_offs": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/trade_off_ref"
+            },
+            "description": "Trade-offs this decision consciously accepts."
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/question_ref"
+            },
+            "description": "Domain competency questions (QN###) that drove this decision.\n"
+          },
+          "inquiries": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/inquiry_ref"
+            },
+            "description": "Governance inquiries (INQ###) that drove or are resolved by this decision. Distinct from questions - inquiries are temporary governance concerns, questions are permanent domain knowledge requirements.\n"
+          }
+        }
+      },
+      "change_item": {
+        "type": "object",
+        "description": "A single change introduced by a decision. Blueprint element change with versioning impact.",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "target"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "../metamodel.schema.yaml#/$defs/change_kind",
+            "description": "Change type: add→minor, modify→minor/major, deprecate→minor, remove/rename/split/merge→major."
+          },
+          "target": {
+            "$ref": "../metamodel.schema.yaml#/$defs/spec_path",
+            "description": "SpecPath to the affected blueprint element (e.g. rules.classification.CR003)."
+          },
+          "before": {
+            "type": "string",
+            "description": "State before the change (snapshot or description). Required for modify/remove."
+          },
+          "after": {
+            "type": "string",
+            "description": "State after the change (snapshot or description). Required for add/modify."
+          },
+          "semver": {
+            "$ref": "../metamodel.schema.yaml#/$defs/semver_impact",
+            "description": "Versioning impact of this specific change."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Explanation of why this change is needed."
+          }
+        }
+      },
+      "impact_declaration": {
+        "type": "object",
+        "description": "Author's declaration of affected entities: direct changes and transitive ripple hints.",
+        "additionalProperties": false,
+        "properties": {
+          "direct": {
+            "type": "object",
+            "description": "Entities directly changed by this decision.",
+            "additionalProperties": false,
+            "properties": {
+              "concepts": {
+                "type": "array",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/concept_ref"
+                },
+                "description": "Concepts directly affected."
+              },
+              "rules": {
+                "type": "array",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/rule_ref"
+                },
+                "description": "Rules directly affected."
+              },
+              "operations": {
+                "type": "array",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/operation_ref"
+                },
+                "description": "Operations directly affected."
+              },
+              "tests": {
+                "type": "array",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/test_ref"
+                },
+                "description": "Tests directly affected."
+              },
+              "models": {
+                "type": "array",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/model_ref"
+                },
+                "description": "Models directly affected."
+              },
+              "processes": {
+                "type": "array",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/process_ref"
+                },
+                "description": "Business processes directly affected."
+              },
+              "bounded_contexts": {
+                "type": "array",
+                "title": "Bounded contexts",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/bounded_context_ref"
+                },
+                "description": "Bounded contexts (BC###) this decision changes as a whole, by arch id - e.g. a decision that splits a context or moves its boundary. A typed reference: an id no arch file declares is a cross-reference error.\n",
+                "examples": [
+                  [
+                    "BC001"
+                  ]
+                ]
+              },
+              "services": {
+                "type": "array",
+                "title": "Services",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/service_ref"
+                },
+                "description": "Architecture services (SVC###) this decision changes directly, by arch id - e.g. a decision that replaces a service's runtime or retires it. A typed reference: an id no arch file declares is a cross-reference error.\n",
+                "examples": [
+                  [
+                    "SVC001",
+                    "shop.SVC002"
+                  ]
+                ]
+              },
+              "packages": {
+                "type": "array",
+                "title": "Packages",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/package_ref"
+                },
+                "description": "Third-party packages (PKG###) this decision changes directly, by the id their `packages:` declaration carries - e.g. a decision that adopts, replaces or upgrades a package, or renews its license. A typed reference: an id no arch file declares is a cross-reference error.\n",
+                "examples": [
+                  [
+                    "PKG001",
+                    "platform.PKG002"
+                  ]
+                ]
+              },
+              "ui": {
+                "type": "object",
+                "description": "UI elements directly affected by this decision.",
+                "additionalProperties": false,
+                "properties": {
+                  "screens": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "../metamodel.schema.yaml#/$defs/screen_ref"
+                    },
+                    "description": "Screens directly affected."
+                  },
+                  "actions": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "../metamodel.schema.yaml#/$defs/ui_action_ref"
+                    },
+                    "description": "UI actions directly affected."
+                  },
+                  "navigation": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "../metamodel.schema.yaml#/$defs/ui_nav_ref"
+                    },
+                    "description": "Navigation flows directly affected."
+                  }
+                }
+              },
+              "infrastructure": {
+                "type": "array",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+                },
+                "description": "Infrastructure resources (IR###) directly affected by this decision - e.g. a hosting-modernization ADR that re-platforms a store. Puts infra into decision impact analysis (v2.7.7, additive). Parallels the metamodel `impacts_links` shape.\n"
+              },
+              "environments": {
+                "type": "array",
+                "items": {
+                  "$ref": "../metamodel.schema.yaml#/$defs/environment_ref"
+                },
+                "description": "Deployment environments (ENV###) directly affected - e.g. a decision that adds a DR environment or changes a binding for staging. Additive (v2.7.7).\n"
+              }
+            }
+          },
+          "transitive_hints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Human hints about expected ripple effects beyond direct impacts."
+          }
+        }
+      },
+      "acceptance_criteria": {
+        "type": "object",
+        "description": "Conditions for this decision to be considered fully implemented. Free strings for low barrier.",
+        "additionalProperties": false,
+        "properties": {
+          "must_pass_tests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tests that must pass (names or free strings)."
+          },
+          "new_tests_to_add": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "New tests that need to be created."
+          },
+          "docs_to_update": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Documentation that needs updating."
+          },
+          "reviews_required": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Reviews or approvals needed before landing."
+          }
+        }
+      },
+      "decision_links": {
+        "type": "object",
+        "description": "External references and decision chain links.",
+        "additionalProperties": false,
+        "properties": {
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Issue tracker references (URLs or IDs)."
+          },
+          "prs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Pull request references."
+          },
+          "docs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Documentation references."
+          },
+          "related": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Related decisions or ADRs (URLs or IDs). Relevance without replacement - use supersedes/superseded_by when one decision actually replaces another."
+          },
+          "supersedes": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/decision_ref"
+            },
+            "description": "Decisions this one replaces. Array supports many-to-one merge (multiple old decisions consolidated)."
+          },
+          "superseded_by": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/decision_ref"
+            },
+            "description": "Decisions that replace this one. Array supports one-to-many split (one decision divided)."
+          }
+        }
+      },
+      "option": {
+        "type": "object",
+        "description": "A structured decision option with description, pros, cons, and open questions. Used for ADR generation with full analysis per alternative.\n",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Short name of the option (e.g. 'x-vector voice conversion', 'McAdams coefficient')."
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the option - technical approach, constraints, prerequisites."
+          },
+          "pros": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Advantages of this option. Each item is a self-contained benefit statement."
+          },
+          "cons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Disadvantages, risks, or costs of this option. Each item is a self-contained concern."
+          },
+          "open_questions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Unresolved questions that must be answered before this option can be chosen."
+          }
+        }
+      },
+      "business_decision": {
+        "type": "object",
+        "description": "BCC v5 Business Decision - a key rule or policy that governs the behaviour of one or more bounded contexts. NOT a data-level invariant (those live in rules.schema.yaml as Rule); NOT an ADR (DC### above). These are higher-level policy statements expressing \"what we will / will not do\" in the bounded context's domain.\n",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "description",
+          "domain_scope"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "../metamodel.schema.yaml#/$defs/business_decision_ref",
+            "description": "Unique business decision identifier (e.g. BD001 or orders.BD001)."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^\\S(?:.*\\S)?$",
+            "description": "Short human-readable name. Used in displayId fallback when no context prefix is set."
+          },
+          "description": {
+            "type": "string",
+            "pattern": "\\S",
+            "description": "Full statement of the decision. Free text; may be multi-paragraph."
+          },
+          "domain_scope": {
+            "$ref": "../metamodel.schema.yaml#/$defs/scope_prefix",
+            "description": "The problem-space scope that owns this decision, as a kebab-case scope slug (e.g. billing, order-mgmt). Matched by name, not resolved as a typed reference. A single decision may apply to several scopes through `linked_contexts[]`.\n"
+          },
+          "linked_contexts": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/scope_prefix"
+            },
+            "description": "Other contexts this decision affects (cross-context policy)."
+          },
+          "linked_user_stories": {
+            "type": "array",
+            "items": {
+              "$ref": "../metamodel.schema.yaml#/$defs/user_story_ref"
+            },
+            "description": "User stories that motivated this decision."
+          },
+          "version": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_version",
+            "description": "Decision version for individual lifecycle tracking."
+          },
+          "owned_by": {
+            "$ref": "../metamodel.schema.yaml#/$defs/owned_by",
+            "description": "Entity-level ownership override."
+          },
+          "properties": {
+            "$ref": "../metamodel.schema.yaml#/$defs/entity_properties"
+          },
+          "tags": {
+            "$ref": "../metamodel.schema.yaml#/$defs/tags"
+          },
+          "code_refs": {
+            "$ref": "../metamodel.schema.yaml#/$defs/code_refs"
+          }
+        }
+      }
+    },
+    "x-gdsm": {
+      "modeling_guidance": [
+        {
+          "lesson": "Use status open for a question with no proposed direction yet. Use proposed once a direction is put forward, and rfc while that direction circulates for comments before acceptance. Accepted records agreement; landed records implementation. Rejected or deprecated may end any stage. Status describes the decision lifecycle independently of discovery_stage, certainty and evidence. The required rationale.chosen remains a statement of the current position; for open, state that no direction is proposed yet.\n",
+          "category": "semantics",
+          "date": "2026-10-27",
+          "schema_version": "2.8.79"
+        }
+      ]
+    }
+  }
+}

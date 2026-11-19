@@ -1,0 +1,8 @@
+version: "1.0.0"
+schemaVersion: "2.8.0"
+name: Link Evidence Shop
+description: >-
+  A shop whose architectural links state the evidence behind them: context dependencies, service
+  links, contract operations, broker and channel placements, operation bindings, infrastructure
+  relations, needs, deployments and bindings. Some links state full evidence, some only a stage or
+  a certainty, and some none, beside entities that state evidence of their own.

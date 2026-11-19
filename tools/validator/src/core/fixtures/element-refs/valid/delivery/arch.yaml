@@ -1,0 +1,28 @@
+version: "1.0.0"
+name: Delivery architecture
+scope: delivery
+parties:
+  - id: delivery.PRT002
+    name: Delivery system
+    kind: system
+    contexts:
+      - id: delivery.BC001
+        name: Delivering
+        kind: core
+        services:
+          - id: delivery.SVC001
+            name: Parcel Service
+            kind: service
+packages:
+  - id: delivery.PKG001
+    name: Route solver
+    license:
+      expression: MIT
+channels:
+  - id: delivery.MCH001
+    name: parcel-events
+    kind: topic
+probes:
+  - id: delivery.PRB001
+    name: Export log reader
+    question: Does the nightly export finish before six?

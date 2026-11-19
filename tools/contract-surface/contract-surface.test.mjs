@@ -368,3 +368,14 @@ test('the array input shape carries mcp and cli too', () => {
   const { edges } = deriveServiceEdges(viaArray);
   assert.deepEqual(edges.map((e) => [e.consumer, e.protocol, e.provider]), [['Assistant', 'mcp', 'ModelServer']]);
 });
+
+test('an in-process consume with no provider in the surface is listed apart from the gaps, and a provided one is not', () => {
+  const partial = buildContractSurface([
+    { name: 'RecruitmentModule', contracts: { inprocess: { consume: ['documents:store', 'orders:placeOrder'] } } },
+    { name: 'OrderModule', contracts: { inprocess: { provide: ['orders:placeOrder'] } } },
+  ]);
+  const gaps = deriveSurfaceGaps(partial);
+  assert.deepEqual(gaps.consumedUnprovided, [{ ref: 'documents:store', kind: 'inprocess', services: ['RecruitmentModule'] }]);
+  // Not a gap: the three gap classes stay as they were.
+  assert.deepEqual([gaps.exposedUnconsumed, gaps.calledUnprovided, gaps.sentUnreceived], [[], [], []]);
+});

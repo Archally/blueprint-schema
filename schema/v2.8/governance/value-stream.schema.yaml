@@ -50,6 +50,7 @@ $defs:
         description: "Unique value stream identifier (VS001, VS002, etc.)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Value stream name in business language."
       description:
         type: string
@@ -109,6 +110,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Stage name (e.g., 'Discover', 'Select', 'Purchase', 'Fulfill')."
       description:
         type: string

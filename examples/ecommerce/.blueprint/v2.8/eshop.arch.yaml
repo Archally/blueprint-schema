@@ -56,6 +56,10 @@ contexts:
               - catalog.CMD002
               - catalog.CMD003
         resource_refs: [IR002]
+    code_refs:
+      - path: services/products-service/src
+        role: implementation
+        description: Product-service source containing the catalog product model and read routes already referenced by catalog entities.
 
   - id: BC002
     name: Orders
@@ -155,6 +159,10 @@ contexts:
               - PRC006
               - PRC007
         resource_refs: [IR003]
+    code_refs:
+      - path: services/orders-service/src
+        role: implementation
+        description: Order-service source containing the order models and route table already referenced by orders entities.
 
   - id: BC003
     name: Inventory
@@ -203,6 +211,10 @@ contexts:
             subscription:
               channel_ref: MCH006
         resource_refs: [IR004]
+    code_refs:
+      - path: services/inventory-service
+        role: implementation
+        description: Inventory-service source containing the stock and reservation models, controller and process entry file already referenced by inventory entities.
 
   - id: BC004
     name: Checkout
@@ -369,6 +381,10 @@ contexts:
             broker_ref: IR006
             subscription:
               channel_ref: MCH007
+    code_refs:
+      - path: apps/storefront/src
+        role: implementation
+        description: Storefront source containing the product, order-history and account pages already referenced by storefront entities.
 
   - id: BC006
     name: ShopAdmin
@@ -491,6 +507,10 @@ contexts:
               - customers.CMD006
               - customers.CMD007
               - customers.QRY005
+    code_refs:
+      - path: apps/shop-admin/src/app/features/products
+        role: implementation
+        description: Product-management feature containing the product-list and product-detail components already referenced by shop-admin entities.
 
   - id: BC007
     name: Customers
@@ -560,6 +580,10 @@ contexts:
               - customers.CMD007
               - customers.QRY005
         resource_refs: [IR014]
+    code_refs:
+      - path: services/customer-service
+        role: implementation
+        description: Customer-service source containing the account and discount models, controllers and session and credential services already referenced by customers entities.
 
   # Shipments (BC008, realizing DMN005) and its ShipmentService (SVC009) are not declared here.
   # Nothing in the delivery folder is built, so the shop as it is has no Shipments context:

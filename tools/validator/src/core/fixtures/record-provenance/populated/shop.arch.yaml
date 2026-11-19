@@ -1,0 +1,27 @@
+version: "1.0.0"
+name: Shop architecture
+channels:
+  - id: MCH001
+    name: order_event_bus
+    kind: topic
+    broker_ref: IR001
+    provenance:
+      discovery_stage: validated
+      certainty: confirmed
+      evidence:
+        - kind: codebase-analysis
+          source: deploy/broker/exchanges.tf
+          date: "2026-11-03"
+          summary: The exchange is declared under this name.
+    link_provenance:
+      broker_ref:
+        IR001:
+          certainty: probable
+  - id: MCH002
+    name: order_audit
+    kind: queue
+    broker_ref: IR001
+contexts:
+  - id: BC001
+    name: Orders
+    kind: core

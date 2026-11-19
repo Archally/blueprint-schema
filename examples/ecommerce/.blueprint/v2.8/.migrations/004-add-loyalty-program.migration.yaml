@@ -4,6 +4,8 @@
 # validation errors to demonstrate how the API surfaces migration failures.
 migration:
   id: MIG004
+  owned_by: { team: TM003 }
+  change_stream_ref: CS002
   name: add-loyalty-program
   date: "2026-02-25"
   status: pending

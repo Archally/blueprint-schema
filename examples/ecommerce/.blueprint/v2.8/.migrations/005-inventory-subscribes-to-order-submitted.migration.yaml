@@ -12,6 +12,8 @@
 schemaVersion: "2.8.0"
 migration:
   id: MIG005
+  owned_by: { team: TM001 }
+  change_stream_ref: CS003
   name: inventory-subscribes-to-order-submitted
   date: "2026-05-12"
   status: applied

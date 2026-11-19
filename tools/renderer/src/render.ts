@@ -8,7 +8,7 @@ import { renderEntityGraph } from './mermaid-entity-graph.js';
 import { renderCoverageGaps } from './coverage-gaps.js';
 
 function proTip(feature: string): string {
-  return `> *[Archally Pro](https://archally.pro)* — ${feature}.\n`;
+  return `> *[Archally Pro](https://archally.pro)* - ${feature}.\n`;
 }
 
 export function renderBlueprint(model: BlueprintModel, options: RenderOptions = {}): string {

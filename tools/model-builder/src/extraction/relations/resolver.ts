@@ -1,6 +1,7 @@
 import type { Entity } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { indexDeclarations, resolveReference, type RefDeclaration, type RefIndex, type RefResolution } from './refResolution.js';
+import { modelParts, type ModelPart } from './modelParts.js';
 
 /**
  * Extract domain from an entity's fileOrigin path (first path segment).
@@ -39,6 +40,63 @@ function entityIndex(allEntities: Entity[]): RefIndex {
   const index = indexDeclarations(declarations);
   indexes.set(allEntities, { size: allEntities.length, index });
   return index;
+}
+
+/** How a reference to any model element resolves: to one entity, to one part, to several, or to none. */
+export type ElementResolution =
+  | { status: 'resolved'; entity: Entity; part?: ModelPart }
+  | { status: 'ambiguous'; candidates: string[] }
+  | { status: 'unresolved' };
+
+const elementIndexes = new WeakMap<Entity[], { size: number; index: RefIndex; entities: Map<string, Entity>; parts: ModelPart[] }>();
+
+/** Entities under the keys `entityIndex` reads, and every declared part (`modelParts`) beside them. */
+function elementIndex(allEntities: Entity[]) {
+  const cached = elementIndexes.get(allEntities);
+  if (cached && cached.size === allEntities.length) return cached;
+  const declarations: RefDeclaration[] = [];
+  const byHandle = new Map<string, Entity>();
+  for (const entity of allEntities) {
+    if (entity.type === ENTITY_TYPE.Missing) continue;
+    const handle = `entity:${entity.id}`;
+    byHandle.set(handle, entity);
+    const declaredId = (entity.data as { id?: unknown } | undefined)?.id;
+    if (typeof entity.displayId === 'string' && entity.displayId) declarations.push({ id: entity.displayId, handle });
+    if (
+      (entity.type === ENTITY_TYPE.Context || entity.type === ENTITY_TYPE.Service) &&
+      typeof declaredId === 'string' && declaredId && declaredId !== entity.displayId
+    ) {
+      declarations.push({ id: declaredId, handle });
+    }
+  }
+  const parts = modelParts(allEntities);
+  parts.forEach((part, position) => declarations.push({ id: part.id, handle: `part:${position}` }));
+  const built = { size: allEntities.length, index: indexDeclarations(declarations), entities: byHandle, parts };
+  elementIndexes.set(allEntities, built);
+  return built;
+}
+
+/**
+ * Resolve a reference to any element the model declares by a typed id (`affects.element_refs`):
+ * an entity of any type, or a part of one (a process activity, a concept attribute), by exact
+ * string, the scope prefix included. Several declarations of the string are `ambiguous`, with the
+ * internal ids of the entities that declare it (a part's container), and none is `unresolved`.
+ */
+export function resolveElementRef(ref: string, allEntities: Entity[]): ElementResolution {
+  const { index, entities, parts } = elementIndex(allEntities);
+  const resolution = resolveReference(index, ref);
+  const ownerOf = (handle: string): { entity: Entity; part?: ModelPart } => {
+    if (handle.startsWith('part:')) {
+      const part = parts[Number(handle.slice('part:'.length))]!;
+      return { entity: part.container, part };
+    }
+    return { entity: entities.get(handle)! };
+  };
+  if (resolution.status === 'resolved') return { status: 'resolved', ...ownerOf(resolution.handle) };
+  if (resolution.status === 'ambiguous') {
+    return { status: 'ambiguous', candidates: resolution.handles.map((handle) => ownerOf(handle).entity.id) };
+  }
+  return { status: 'unresolved' };
 }
 
 /**

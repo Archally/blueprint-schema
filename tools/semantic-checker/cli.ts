@@ -2,6 +2,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import process from 'node:process';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { parse as parseYaml } from 'yaml';
@@ -52,6 +53,19 @@ async function main(): Promise<void> {
   }
 
   const resolvedDir = blueprintDir ?? path.resolve('.blueprint/v2.7');
+  const validatorPath = fileURLToPath(new URL('../../validator/src/cli.mjs', import.meta.url));
+  const validation = spawnSync(process.execPath, [validatorPath, resolvedDir], { stdio: 'inherit' });
+  if (validation.error) {
+    console.error(`Validation runner failed: ${validation.error.message}`);
+    process.exit(2);
+  }
+  if (validation.signal) {
+    console.error(`Validation runner failed: terminated by ${validation.signal}`);
+    process.exit(2);
+  }
+  if (validation.status !== 0) {
+    process.exit(validation.status ?? 2);
+  }
   const config = loadConfig(configPath);
   const rules = await loadRules(RULES_DIR);
 

@@ -53,6 +53,7 @@ $defs:
         description: "Unique party identifier (e.g. PRT001 or billing.PRT001)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Party name (e.g. company or business unit name)."
       description:
         type: string
@@ -103,6 +104,7 @@ $defs:
         description: "Unique department identifier (e.g. DPT001 or billing.DPT001)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Department name."
       description:
         type: string
@@ -272,6 +274,7 @@ $defs:
         description: "Unique team identifier (e.g. TM001 or billing.TM001)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Team name."
       kind:
         type: string

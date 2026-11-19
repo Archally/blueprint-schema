@@ -23,6 +23,13 @@ const LEVERAGE_REF_FIELDS: Array<[string, RelationType]> = [
   ['capability_refs', RELATION_TYPE.LeverageCapability],
 ];
 
+/** The ref lists of a watch item (WCH###) drawn as edges: its risks, findings and decisions. */
+const WATCH_ITEM_REF_FIELDS: Array<[string, RelationType]> = [
+  ['risk_refs', RELATION_TYPE.WatchItemRisk],
+  ['finding_refs', RELATION_TYPE.WatchItemFinding],
+  ['decision_refs', RELATION_TYPE.WatchItemDecision],
+];
+
 /** Push one relation per resolvable string ref in a ref-list field (source → target). */
 function pushListRefs(
   relations: Relation[],
@@ -66,6 +73,13 @@ export function extractLeverageRelations(
   const relations: Relation[] = [];
 
   for (const entity of entities) {
+    if (entity.type === ENTITY_TYPE.WatchItem) {
+      const watched = entity.data as Record<string, unknown> | undefined;
+      for (const [field, type] of WATCH_ITEM_REF_FIELDS) {
+        pushListRefs(relations, entity.id, watched?.[field], type, entityDomain(entity), entities, placeholders);
+      }
+      continue;
+    }
     if (entity.type !== ENTITY_TYPE.LeveragePoint) continue;
 
     const domain = entityDomain(entity);

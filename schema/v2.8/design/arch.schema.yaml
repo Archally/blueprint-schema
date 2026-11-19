@@ -16,6 +16,7 @@ anyOf:
 properties:
   name:
     type: string
+    pattern: "^\\S(?:.*\\S)?$"
     description: "Name of this architecture definition (e.g. system name or product name)."
   description:
     type: string
@@ -231,6 +232,7 @@ $defs:
         description: "Stable channel id (MCH###)."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Channel name, as the system's code and documentation call it."
       kind:
         type: string
@@ -249,6 +251,32 @@ $defs:
           The message broker this channel lives on: the infrastructure resource (IR###) that
           declares it, conventionally with `kind: broker`. Absent, the channel lives on the broker of
           the contracts whose operations name it.
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this channel exists as stated - its kind and its address - and
+          on what evidence. It is about the channel itself: evidence for the broker it lives on is
+          stated in `link_provenance`, and evidence for an operation published or read on it is
+          stated on that operation's topic or queue. A channel without one states no evidence of its
+          own.
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >
+          Evidence for the broker this channel names. `broker_ref` holds at most one entry, keyed by
+          the broker reference exactly as written in `broker_ref`, and its value is the shared
+          provenance of that placement: how sure the model is that the channel lives on that
+          broker, and on what evidence. An entry describes the placement `broker_ref` states; it
+          neither adds nor moves one. A placement without an entry states no evidence of its own.
+        properties:
+          broker_ref:
+            type: object
+            maxProperties: 1
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for the broker named in `broker_ref`, keyed by that reference."
       description:
         type: string
         description: "What travels on this channel and why it exists."
@@ -277,6 +305,7 @@ $defs:
 
   contract_output:
     type: string
+    pattern: "^(?:[^\\s/\\\\]+/)?[^\\s/\\\\]+$"
     description: >-
       SOFT-DEPRECATED (v2.8.14). Identity of the generated contract artifact, with the document's
       name, its placement and its serialization fused into one string. State the three separately
@@ -358,6 +387,7 @@ $defs:
           modelled there (parties are dual-sourced: arch + org).
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Party name (unique within this architecture document)."
       version:
         $ref: "../metamodel.schema.yaml#/$defs/entity_version"
@@ -398,12 +428,16 @@ $defs:
         description: >
           Stable bounded-context id (BC###) - the target of inter-context
           `dependency.bounded_context_ref` edges, the DERIVED operation to context
-          membership (`handled-by`, from a service contract's `expose`/`send`), and a
+          membership (`handled-by`, from service contracts), and a
           competency question's `bounded_context_ref`. Operations do NOT carry an
           ownership ref - their membership is contract-derived, not declared on the
-          domain file.
+          domain file. A sent command is handled by the service whose messaging contract
+          receives it when exactly one service receives it. With no receiver or several
+          receivers, membership retains the sending services and a check reports the
+          ambiguity. Events retain their sending services; API exposure is unchanged.
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Context name (unique within the party or document that declares it)."
       kind:
         $ref: "../metamodel.schema.yaml#/$defs/context_kind"
@@ -570,6 +604,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Team name."
       contactEmail:
         type: string
@@ -586,6 +621,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Name of the dependency (context or external system name)."
       bounded_context_ref:
         $ref: "../metamodel.schema.yaml#/$defs/bounded_context_ref"
@@ -632,6 +668,13 @@ $defs:
         $ref: "../metamodel.schema.yaml#/$defs/entity_properties"
       tags:
         $ref: "../metamodel.schema.yaml#/$defs/tags"
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          How sure the model is that this dependency holds as stated - its target, relationship,
+          direction and coupling - and on what evidence. It is about this dependency alone: the
+          provenance of the context that declares it, or of its target, is not evidence for it. A
+          dependency without one states no evidence of its own.
 
   entity:
     type: object
@@ -642,6 +685,7 @@ $defs:
     properties:
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Entity name."
       description:
         type: string
@@ -662,10 +706,22 @@ $defs:
           graph node.
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Service name (e.g. order-api, payment-worker)."
       kind:
         $ref: "../metamodel.schema.yaml#/$defs/service_kind"
         description: "Architectural component type. Determines applicable contract patterns."
+      role:
+        $ref: "../metamodel.schema.yaml#/$defs/service_role"
+        description: >
+          The responsibility this service takes in front of other services: `gateway` for an entry
+          point that forwards client requests to backend services, `bff` for a gateway dedicated to
+          one frontend or client experience. It leaves `kind` as it is: a gateway can be an `api`,
+          and an edge function that forwards requests is a `function` with `role: gateway`.
+          Optional, with no default; the services a gateway forwards to are named in `routes_to`.
+        examples:
+          - gateway
+          - bff
       system_ref:
         $ref: "../metamodel.schema.yaml#/$defs/party_ref"
         description: >
@@ -707,10 +763,29 @@ $defs:
           included; an item that names no declared service is a cross-reference error. The model
           graph draws a `service_uses` edge to each named service, so impact analysis reaches every
           service that depends on a changed one. A library this service is built on belongs in
-          `imports`. Once contracts are written, they state the operations, direction and transport
-          of the dependency. Optional.
+          `imports`, and a service this one forwards requests to belongs in `routes_to`. Once
+          contracts are written, they state the operations, direction and transport of the
+          dependency. Optional.
         examples:
           - ["payments.SVC003"]
+      routes_to:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+        description: >
+          The backend services this one forwards requests to: it receives a request and passes it
+          on to each named service, the statement a gateway or a backend for frontend makes about
+          where requests go. Each item names a service by its exact declared id, scope prefix
+          included; an item that names no declared service is a cross-reference error, and a
+          service named twice is a schema error. The list states forwarding and nothing else: not
+          the protocol, the operations, authentication or deployment, and contracts written later
+          do not replace it. A runtime dependency that is not forwarding, such as a token check
+          against an identity service, belongs in `uses`. An absent or empty list states only that
+          the model names no targets, not that the service forwards nothing. Optional.
+        examples:
+          - ["orders.SVC001"]
+          - ["orders.SVC001", "catalog.SVC002"]
       summary:
         type: string
         description: "Brief description of what this service does."
@@ -761,6 +836,7 @@ $defs:
           properties:
             url:
               type: string
+              pattern: "^\\S+$"
               description: "Base URL template (e.g., https://api.example.com/v1)."
             environment:
               description: >
@@ -799,6 +875,12 @@ $defs:
                     items:
                       type: string
                     description: "Allowed values for this variable."
+            provenance:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+              description: >
+                How sure the model is that the service is deployed at this server for this
+                environment, and on what evidence. It is about this deployment, not about the
+                service or the environment on their own.
       contracts:
         $ref: "#/$defs/contracts"
         description: "External contracts exposing and consuming interfaces for this service."
@@ -815,6 +897,48 @@ $defs:
       provenance:
         $ref: "../metamodel.schema.yaml#/$defs/provenance"
         description: "Epistemic provenance for this service (brownfield modeling confidence)."
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >
+          Evidence for individual links this service states in `imports`, `uses`, `routes_to` and
+          `resource_refs`. Under the name of the list, each key is a target exactly as written in
+          that list, and its value is the shared provenance of that one link: how sure the model is
+          that the link holds, and on what evidence. An entry describes a link the list states; it
+          neither adds nor redirects one, and one entry covers every occurrence of its target in the
+          list. A link without an entry states no evidence of its own, and the service's
+          `provenance` is about the service, not about its links.
+        properties:
+          imports:
+            type: object
+            propertyNames:
+              anyOf:
+                - $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+                - $ref: "../metamodel.schema.yaml#/$defs/package_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each library in `imports`, keyed by its service or package reference."
+          uses:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each service in `uses`, keyed by its service reference."
+          routes_to:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/service_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each service in `routes_to`, keyed by its service reference."
+          resource_refs:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each resource in `resource_refs`, keyed by its resource reference."
 
   service_need:
     type: object
@@ -853,6 +977,11 @@ $defs:
       description:
         type: string
         description: "Optional human note on why this need exists."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          How sure the model is that the service has this need, and on what evidence. It is about
+          the need, not about the service or about a binding that realizes it.
 
   contracts:
     type: object
@@ -937,6 +1066,45 @@ $defs:
             items:
               type: string
             description: "Root subscription field names exposed by this contract."
+          link_provenance:
+            type: object
+            additionalProperties: false
+            description: >
+              Evidence for individual root fields this contract lists. Under the name of the list,
+              each key is a field name exactly as written there, and its value is the shared
+              provenance of that one field: how sure the model is that this service exposes the
+              field through this contract, and on what evidence. A key is a field name, never an
+              operation reference. An entry describes a field the list states; it adds none, and
+              one entry covers every occurrence of its name in the list. A field without an entry
+              states no evidence of its own, and the contract's `provenance` is not evidence for it.
+            properties:
+              queries:
+                type: object
+                propertyNames:
+                  pattern: "^[_A-Za-z][_0-9A-Za-z]*$"
+                additionalProperties:
+                  $ref: "../metamodel.schema.yaml#/$defs/provenance"
+                description: "Evidence for each field in `queries`, keyed by its field name."
+              mutations:
+                type: object
+                propertyNames:
+                  pattern: "^[_A-Za-z][_0-9A-Za-z]*$"
+                additionalProperties:
+                  $ref: "../metamodel.schema.yaml#/$defs/provenance"
+                description: "Evidence for each field in `mutations`, keyed by its field name."
+              subscriptions:
+                type: object
+                propertyNames:
+                  pattern: "^[_A-Za-z][_0-9A-Za-z]*$"
+                additionalProperties:
+                  $ref: "../metamodel.schema.yaml#/$defs/provenance"
+                description: "Evidence for each field in `subscriptions`, keyed by its field name."
+          provenance:
+            $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: >
+              How sure the model is that this contract is declared as stated, and on what evidence.
+              It is about the contract as a whole and is not evidence for any one field it lists;
+              `link_provenance` states that.
       security_schemes:
         type: object
         description: "Security scheme definitions for this service's contracts."
@@ -988,6 +1156,31 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: "Operations exposed by this HTTP contract."
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >
+          Evidence for individual operations this contract lists. Under the name of the list, each
+          key is an operation reference exactly as written there, in either of its forms, and its
+          value is the shared provenance of that one link: how sure the model is that this service
+          reaches that operation through this contract as the list says, and on what evidence. An
+          entry describes a link the list states; it adds none, and one entry covers every
+          occurrence of its reference in the list. A link without an entry states no evidence of
+          its own; neither the contract's `provenance` nor the operation's is evidence for it.
+        properties:
+          expose:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `expose`, keyed by its reference."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          How sure the model is that this contract is declared as stated, and on what evidence. It
+          is about the contract as a whole and is not evidence for any one operation it lists;
+          `link_provenance` states that.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named input data structures accepted by this contract."
@@ -1018,6 +1211,31 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: "Operations this service calls via HTTP."
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >
+          Evidence for individual operations this contract lists. Under the name of the list, each
+          key is an operation reference exactly as written there, in either of its forms, and its
+          value is the shared provenance of that one link: how sure the model is that this service
+          reaches that operation through this contract as the list says, and on what evidence. An
+          entry describes a link the list states; it adds none, and one entry covers every
+          occurrence of its reference in the list. A link without an entry states no evidence of
+          its own; neither the contract's `provenance` nor the operation's is evidence for it.
+        properties:
+          call:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `call`, keyed by its reference."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >
+          How sure the model is that this contract is declared as stated, and on what evidence. It
+          is about the contract as a whole and is not evidence for any one operation it lists;
+          `link_provenance` states that.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named input structures sent to the dependency."
@@ -1054,12 +1272,12 @@ $defs:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-        description: "Operations this service publishes via messaging."
+        description: "Operations this service publishes via messaging. Events bind to the sender; a sent command binds to its unique receiving service, retaining the sender when no unique receiver exists."
       receive:
         type: array
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
-        description: "Operations this service consumes via messaging."
+        description: "Operations this service consumes via messaging. A sent command binds to this service when it is the only receiving service; events remain bound to their senders."
       broker_ref:
         $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
         description: >-
@@ -1094,6 +1312,68 @@ $defs:
             description: >-
               The subscription's name where it is not a channel of its own: the consumer group id on
               Kafka, the subscription name on a Service Bus topic.
+          link_provenance:
+            type: object
+            additionalProperties: false
+            description: >-
+              Evidence for the queue this subscription names. `channel_ref` holds at most one entry,
+              keyed by the channel reference exactly as written in `channel_ref`, and its value is
+              the shared provenance of that link: how sure the model is that this service reads
+              that queue, and on what evidence. An entry describes the link `channel_ref` states;
+              it neither adds nor redirects one. `name` is a name rather than a reference and has no
+              entry; the contract's `provenance` covers it.
+            properties:
+              channel_ref:
+                type: object
+                maxProperties: 1
+                propertyNames:
+                  $ref: "../metamodel.schema.yaml#/$defs/message_channel_ref"
+                additionalProperties:
+                  $ref: "../metamodel.schema.yaml#/$defs/provenance"
+                description: "Evidence for the queue named in `channel_ref`, keyed by that reference."
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >-
+          Evidence for individual links this contract states in `send`, `receive` and `broker_ref`.
+          Under the name of the field, each key is a reference exactly as written there - an
+          operation reference, in either of its forms, or the broker reference, which holds at most
+          one entry - and its value is the shared provenance of that one link: how sure the model
+          is that this service publishes or consumes that operation, or uses that broker, through
+          this contract, and on what evidence. An entry describes a link the contract states; it
+          adds none, and one entry covers every occurrence of its reference in a list. A link
+          without an entry states no evidence of its own; neither the contract's `provenance` nor
+          the operation's is evidence for it. `brokerId` is a name rather than a reference and has
+          no entry; the contract's `provenance` covers it.
+        properties:
+          send:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `send`, keyed by its reference."
+          receive:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `receive`, keyed by its reference."
+          broker_ref:
+            type: object
+            maxProperties: 1
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for the broker named in `broker_ref`, keyed by that reference."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this contract is declared as stated, and on what evidence. It
+          is about the contract as a whole and is not evidence for any one link it states;
+          `link_provenance` states that.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named message structures received (consumed)."
@@ -1129,6 +1409,38 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: "Operations this service calls via RPC."
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >-
+          Evidence for individual operations this contract lists. Under the name of the list, each
+          key is an operation reference exactly as written there, in either of its forms, and its
+          value is the shared provenance of that one link: how sure the model is that this service
+          reaches that operation through this contract as the list says, and on what evidence. An
+          entry describes a link the list states; it adds none, and one entry covers every
+          occurrence of its reference in the list. A link without an entry states no evidence of
+          its own; neither the contract's `provenance` nor the operation's is evidence for it.
+        properties:
+          expose:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `expose`, keyed by its reference."
+          call:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `call`, keyed by its reference."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this contract is declared as stated, and on what evidence. It
+          is about the contract as a whole and is not evidence for any one operation it lists;
+          `link_provenance` states that.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named input structures for RPC calls."
@@ -1176,6 +1488,38 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: "Operations this service calls as methods of another service's Protocol Buffers definition."
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >-
+          Evidence for individual operations this contract lists. Under the name of the list, each
+          key is an operation reference exactly as written there, in either of its forms, and its
+          value is the shared provenance of that one link: how sure the model is that this service
+          reaches that operation through this contract as the list says, and on what evidence. An
+          entry describes a link the list states; it adds none, and one entry covers every
+          occurrence of its reference in the list. A link without an entry states no evidence of
+          its own; neither the contract's `provenance` nor the operation's is evidence for it.
+        properties:
+          expose:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `expose`, keyed by its reference."
+          call:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `call`, keyed by its reference."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this contract is declared as stated, and on what evidence. It
+          is about the contract as a whole and is not evidence for any one operation it lists;
+          `link_provenance` states that.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named request messages."
@@ -1218,6 +1562,38 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: "Operations this service calls as tools of another MCP server."
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >-
+          Evidence for individual operations this contract lists. Under the name of the list, each
+          key is an operation reference exactly as written there, in either of its forms, and its
+          value is the shared provenance of that one link: how sure the model is that this service
+          reaches that operation through this contract as the list says, and on what evidence. An
+          entry describes a link the list states; it adds none, and one entry covers every
+          occurrence of its reference in the list. A link without an entry states no evidence of
+          its own; neither the contract's `provenance` nor the operation's is evidence for it.
+        properties:
+          expose:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `expose`, keyed by its reference."
+          call:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `call`, keyed by its reference."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this contract is declared as stated, and on what evidence. It
+          is about the contract as a whole and is not evidence for any one operation it lists;
+          `link_provenance` states that.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named input structures for tool calls."
@@ -1261,6 +1637,38 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: "Operations this service runs as commands of another program."
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >-
+          Evidence for individual operations this contract lists. Under the name of the list, each
+          key is an operation reference exactly as written there, in either of its forms, and its
+          value is the shared provenance of that one link: how sure the model is that this service
+          reaches that operation through this contract as the list says, and on what evidence. An
+          entry describes a link the list states; it adds none, and one entry covers every
+          occurrence of its reference in the list. A link without an entry states no evidence of
+          its own; neither the contract's `provenance` nor the operation's is evidence for it.
+        properties:
+          expose:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `expose`, keyed by its reference."
+          call:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `call`, keyed by its reference."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this contract is declared as stated, and on what evidence. It
+          is about the contract as a whole and is not evidence for any one operation it lists;
+          `link_provenance` states that.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named input structures for commands: arguments, options and standard input."
@@ -1291,6 +1699,12 @@ $defs:
         items:
           type: string
         description: "Workflow names defined in this contract."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this contract is declared as stated, the workflows it names
+          included, and on what evidence. A workflow name is a name rather than a reference, so the
+          contract has no `link_provenance`.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named input structures for workflow triggers."
@@ -1333,6 +1747,38 @@ $defs:
           wire from outside, which is two contracts over one operation. What the operation's own
           invocation model is, `dispatch:` says. A service listing an operation it provides itself
           states nothing and is redundant.
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >-
+          Evidence for individual operations this contract lists. Under the name of the list, each
+          key is an operation reference exactly as written there, in either of its forms, and its
+          value is the shared provenance of that one link: how sure the model is that this service
+          reaches that operation through this contract as the list says, and on what evidence. An
+          entry describes a link the list states; it adds none, and one entry covers every
+          occurrence of its reference in the list. A link without an entry states no evidence of
+          its own; neither the contract's `provenance` nor the operation's is evidence for it.
+        properties:
+          provide:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `provide`, keyed by its reference."
+          consume:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `consume`, keyed by its reference."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this coupling is declared as stated, and on what evidence. It
+          is about the coupling as a whole and is not evidence for any one operation it lists;
+          `link_provenance` states that.
 
   shared_data_contract:
     type: object
@@ -1376,6 +1822,58 @@ $defs:
         description: >-
           Document operations this service reads out of the shared store, written by another service.
           The consumer end: this service is bound to a schema it does not own.
+      store_ref:
+        $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+        description: >-
+          The store the shared data lives in: the infrastructure resource (IR###) that declares it,
+          usually a `database`, a `storage` or a `cache`. One store per contract, holding every
+          document this contract lists under `write` and `read`. Either end may name it, and both
+          ends name the same store, because the data sits in one place both services address. The
+          reference resolves like every other typed id, so a store nothing declares is a
+          cross-reference error. Absent, the contract does not say where the data lives: a
+          service's `resource_refs` name the resources it uses, not which of them holds this data.
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >-
+          Evidence for individual links this contract states in `write`, `read` and `store_ref`.
+          Under the name of the field, each key is a reference exactly as written there - an
+          operation reference, in either of its forms, or the store reference, which holds at most
+          one entry - and its value is the shared provenance of that one link: how sure the model is
+          that this service writes or reads that operation, or reaches the data in that store,
+          through this contract, and on what evidence. An entry describes a link the contract
+          states; it adds none, and one entry covers every occurrence of its reference in a list. A
+          link without an entry states no evidence of its own; neither the contract's `provenance`
+          nor the operation's is evidence for it.
+        properties:
+          write:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `write`, keyed by its reference."
+          read:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `read`, keyed by its reference."
+          store_ref:
+            type: object
+            maxProperties: 1
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/infra_resource_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for the store named in `store_ref`, keyed by that reference."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this contract is declared as stated, and on what evidence. It
+          is about the contract as a whole and is not evidence for any one link it states;
+          `link_provenance` states that.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named structures this service writes into the shared store."
@@ -1425,6 +1923,38 @@ $defs:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: >-
           Document operations this service ingests from the transfer, produced by another service.
+      link_provenance:
+        type: object
+        additionalProperties: false
+        description: >-
+          Evidence for individual operations this contract lists. Under the name of the list, each
+          key is an operation reference exactly as written there, in either of its forms, and its
+          value is the shared provenance of that one link: how sure the model is that this service
+          reaches that operation through this contract as the list says, and on what evidence. An
+          entry describes a link the list states; it adds none, and one entry covers every
+          occurrence of its reference in the list. A link without an entry states no evidence of
+          its own; neither the contract's `provenance` nor the operation's is evidence for it.
+        properties:
+          write:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `write`, keyed by its reference."
+          read:
+            type: object
+            propertyNames:
+              $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+            additionalProperties:
+              $ref: "../metamodel.schema.yaml#/$defs/provenance"
+            description: "Evidence for each operation in `read`, keyed by its reference."
+      provenance:
+        $ref: "../metamodel.schema.yaml#/$defs/provenance"
+        description: >-
+          How sure the model is that this contract is declared as stated, and on what evidence. It
+          is about the contract as a whole and is not evidence for any one operation it lists;
+          `link_provenance` states that.
       input_structures:
         $ref: "#/$defs/contract_structures"
         description: "Named structures this service produces for the transfer."
@@ -1443,6 +1973,7 @@ $defs:
       properties:
         description:
           type: string
+          pattern: "\\S"
           description: "What this structure represents and when it is used."
         schema:
           type: object
@@ -1529,9 +2060,11 @@ $defs:
         description: "Stable probe id (PRB###), making the instrument a referenceable node."
       name:
         type: string
+        pattern: "^\\S(?:.*\\S)?$"
         description: "Probe name, as it is invoked or as its supplier calls it."
       question:
         type: string
+        pattern: "^\\S.*\\?$"
         description: >
           The single question this probe answers, phrased as a question. A probe that answers two
           questions is two probes. An instrument reached for outside the question it was built for
@@ -1599,6 +2132,7 @@ $defs:
     properties:
       omitted_fact:
         type: string
+        pattern: "\\S"
         description: >
           What the probe does not report, stated as the fact that is missing rather than as a fault.
           An instrument that omits what it was never asked for is working correctly.

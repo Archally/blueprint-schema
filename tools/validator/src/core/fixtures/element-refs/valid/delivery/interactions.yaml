@@ -1,0 +1,15 @@
+version: "1.0.0"
+scope: delivery
+screens:
+  - id: delivery.SCR001
+    name: Parcel list
+  - id: delivery.SCR002
+    name: Parcel detail
+actions:
+  - id: delivery.UAC001
+    screen: delivery.SCR001
+    name: Open parcel
+navigation:
+  - id: delivery.UNV001
+    from: delivery.SCR001
+    to: delivery.SCR002

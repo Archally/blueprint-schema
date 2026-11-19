@@ -1,0 +1,10 @@
+version: "1.0.0"
+leverage_points:
+  - id: LP001
+    title: One parcel store
+    one_thing: Keep every parcel in one store.
+watchlist:
+  - id: WCH001
+    title: Nightly export load
+    risk_refs: [delivery.RSK001]
+    finding_refs: [delivery.FN001]

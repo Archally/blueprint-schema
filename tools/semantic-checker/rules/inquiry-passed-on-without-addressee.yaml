@@ -1,0 +1,20 @@
+engineVersion: "0.1"
+rules:
+  - id: inquiry-passed-on-without-addressee
+    severity: warn
+    description: >-
+      An unsettled inquiry that lists earlier addressees (`previously_asked_of`) and states no
+      current `asked_of`: it was passed on, and the model does not say to whom. A source may say
+      "ask someone else" without naming whom, so the state is legitimate and stays valid, but a
+      reader looking for the questions asked of them cannot find this one. An inquiry whose
+      `status` is `resolved` or `closed` is not reported. Reads the two fields only, never prose,
+      and never infers an addressee from `owner`, `owned_by` or `stakeholders`. One finding per
+      inquiry. Override per project via .blueprint-lint.yaml (e.g.
+      `inquiry-passed-on-without-addressee: off`).
+    find:
+      entity_type: Inquiry
+    check:
+      custom:
+        module: ./inquiry-passed-on-without-addressee.mjs
+        export: inquiryPassedOnWithoutAddressee
+    message: 'Inquiry "{displayId}" was last asked of {earlier} and names no current addressee. State who is asked now in `asked_of`, or settle the inquiry.'

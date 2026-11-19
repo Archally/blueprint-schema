@@ -1,3 +1,4 @@
+import { documentCompanionProblems } from './link-provenance.mjs';
 import fs from "node:fs";
 import YAML from "yaml";
 import path from "node:path";
@@ -15,7 +16,9 @@ import {
 import { archContextsOf, servicesOf } from "./arch-shape.mjs";
 import { FILENAME_TO_SCHEMA, detectSchemaType } from "./schema-types.mjs";
 import { classifyModelFiles } from "./file-membership.mjs";
+import { indexModelDeclarations, trackedRegisterFindings } from "./tracked-register.mjs";
 import { rootScopeFindings, rootScopeMessage } from "./root-scope.mjs";
+import { modelTextFindings, modelTextMessage } from "./model-text-paragraphs.mjs";
 import { isIdentityOrReferenceViolation } from "./references.mjs";
 import { SECTION_TO_CATEGORY, resolvesAgainst } from "./model-ref-match.mjs";
 
@@ -540,7 +543,7 @@ const TRACKED_REGISTER_SCHEMA = "tracked-migrations.schema.yaml";
  *
  * @returns {{ path: string, entries: number | null, checked: boolean }} what was examined
  */
-function checkTrackedRegister({ registerPath, modelDir, ajv, schemaErrors, warnings }) {
+function checkTrackedRegister({ registerPath, modelDir, ajv, schemaErrors, crossErrors, warnings, modelDocuments }) {
   // Named relative to the model where that is short enough to read - the register sits one level
   // above it - and absolutely otherwise. A path that climbs out of the tree tells a reader less
   // than the path they passed in.
@@ -566,6 +569,12 @@ function checkTrackedRegister({ registerPath, modelDir, ajv, schemaErrors, warni
       schemaErrors.push(`[${rel}] ${at} -> ${describeError(rawError)}`);
     }
   }
+  // The entries name things the model declares; they resolve against it like any reference, and the
+  // owner, dependency-reason and variant-stream statements get the warnings the semantic checks give
+  // migrations inside the model. See tracked-register.mjs.
+  const findings = trackedRegisterFindings(data, indexModelDeclarations(modelDocuments), rel);
+  crossErrors.push(...findings.crossErrors);
+  warnings.push(...findings.warnings);
   return { path: registerPath, entries: Array.isArray(data) ? data.length : null, checked: true };
 }
 
@@ -589,9 +598,19 @@ export function validateModel(args) {
   }));
   const result = validateModelTexts({ ...args, registry, files, singleFile: !isDir });
   if (args.trackedRegister && fs.existsSync(args.trackedRegister)) {
+    const modelDocuments = [];
+    for (const file of files) {
+      if (!membership.has(file.relFile)) continue;
+      try {
+        modelDocuments.push({ relFile: file.relFile, data: YAML.parse(file.text) });
+      } catch {
+        // A model file that does not parse is already a schema error of the model walk.
+      }
+    }
     result.trackedRegister = checkTrackedRegister({
       registerPath: args.trackedRegister, modelDir, ajv: makeAjv(registry),
-      schemaErrors: result.schemaErrors, warnings: result.warnings,
+      schemaErrors: result.schemaErrors, crossErrors: result.crossErrors, warnings: result.warnings,
+      modelDocuments,
     });
   }
   return result;
@@ -697,6 +716,7 @@ export function validateModelTexts(args) {
       continue;
     }
 
+    crossErrors.push(...documentCompanionProblems(data).map(problem => `[${relFile}] ${problem}`));
     const valid = validate(data);
     if (!valid) {
       // Iterate the raw Ajv errors (not the pre-formatted strings) so identity/reference
@@ -719,12 +739,16 @@ export function validateModelTexts(args) {
   // cannot demote them: a chain that does not terminate is not a version-compatibility question.
   // What the MODEL reserves, as opposed to what the SCHEMA LINE retires. Empty for every model
   // that declares no band, which is what keeps the whole check opt-in.
+  warnings.push(...modelTextFindings(parsedFiles).map(modelTextMessage));
   const declaredBands = declaredBandTable(parsedFiles);
   // The space each id is unique in is read off the same schema tree, so a line that scopes an
   // attribute to its bounded context is judged by that rule and no other.
   const references = resolveModelReferences(parsedFiles, refKeys, bandTable, declaredBands, deriveIdSpaces(registry));
   crossErrors.push(...references.goalRelations.errors.map(finding => finding.message));
   warnings.push(...references.goalRelations.warnings.map(finding => finding.message));
+  warnings.push(...references.idSliceWarnings.map(finding => finding.message));
+  crossErrors.push(...references.migrationPlacement.errors.map(finding => finding.message));
+  warnings.push(...references.migrationPlacement.warnings.map(finding => finding.message));
   // A duplicate id is an error: two declarations of one id leave every lookup by that id answering
   // one of them, so the other cannot be addressed at all.
   for (const { id, locations } of references.duplicates) {

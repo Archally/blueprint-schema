@@ -23,12 +23,14 @@ import { extractLeverage } from './leverage.js';
 import { extractRg } from './rg.js';
 import { extractInfrastructure } from './infrastructure.js';
 import { extractDynamics } from './dynamics.js';
+import { extractProducts, annotateProductResolution } from './products.js';
 import { extractDomains } from './domains.js';
+import { extractChangeStreams } from './changeStreams.js';
 import { extractMigrations } from './migrations.js';
 
 /** An extractor reads one document; the model's schema line is passed to those whose reading depends on it. */
 const EXTRACTORS: Record<string, (doc: ParsedBlueprintDocument, line: ServedSchemaLine) => Entity[]> = {
-  blueprint: extractDomains,
+  blueprint: doc => [...extractDomains(doc), ...extractProducts(doc), ...extractChangeStreams(doc)],
   concepts: extractConcepts,
   rules: extractRules,
   domain: extractDomain,
@@ -89,6 +91,7 @@ export function extractAllEntities(documentsByType: DocumentsBySchemaType): Enti
     }
   }
   inheritProcessDescribes(entities, documentsByType);
+  annotateProductResolution(entities, documentsByType);
   return entities;
 }
 

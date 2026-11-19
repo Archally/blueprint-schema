@@ -352,7 +352,7 @@ export function deriveServiceEdges(surface) {
 }
 
 /**
- * The three surface gaps.
+ * The three surface gaps, and the in-process consumes this surface holds no provider for.
  *
  * `exposedUnconsumed` is the one that needs care: an operation with no MODELLED consumer is
  * usually externally-facing surface, not a defect — one real service exposes four operations and
@@ -430,7 +430,16 @@ export function deriveSurfaceGaps(surface, declared = {}) {
     });
   }
 
-  return { exposedUnconsumed, calledUnprovided, sentUnreceived };
+  // An in-process consume whose provider is not in this surface. Not a gap: the provider is usually a
+  // module the surface does not hold, so a caller looks it up elsewhere in the model and draws it
+  // where it finds one, and reports nothing where it finds none.
+  const consumedUnprovided = [];
+  for (const [ref, consumers] of sortedEntries(surface.inProcessConsumersByOp)) {
+    if ((surface.inProcessProvidersByOp.get(ref) ?? []).length) continue;
+    consumedUnprovided.push({ ref, kind: 'inprocess', services: consumers.map((s) => s.name) });
+  }
+
+  return { exposedUnconsumed, calledUnprovided, sentUnreceived, consumedUnprovided };
 }
 
 /**

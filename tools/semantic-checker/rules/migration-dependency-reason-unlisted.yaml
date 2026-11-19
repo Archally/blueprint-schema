@@ -1,0 +1,18 @@
+engineVersion: "0.1"
+rules:
+  - id: migration-dependency-reason-unlisted
+    severity: warn
+    description: >-
+      An entry of a migration's `depends_on_reasons` names a migration its `depends_on` does not list,
+      or names a migration an earlier entry already named. A reason explains one listed dependency; a
+      reason for a migration the list does not hold explains a wait the model does not state, and a
+      second reason for one dependency leaves a reader to choose between them. The first reason for a
+      dependency is the one a migration map shows. One finding per migration. Override per project
+      via .blueprint-lint.yaml (e.g. `migration-dependency-reason-unlisted: off`).
+    find:
+      entity_type: Migration
+    check:
+      custom:
+        module: ./migration-stream.mjs
+        export: migrationDependencyReasonUnlisted
+    message: 'Migration "{displayId}" ({name|''unnamed''}) {finding}'

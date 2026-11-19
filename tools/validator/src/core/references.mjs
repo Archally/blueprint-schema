@@ -107,6 +107,13 @@ export function collectIds(node, ids = new Map(), duplicates = new Map(), pathSt
   if (!node || typeof node !== "object") return { ids, duplicates };
 
   for (const key of DECLARATION_KEYS) {
+    // Main-scenario identities belong to that scenario, never the global reference registry.
+    // Their duplicates and after targets are checked together by use-case-step-order.
+    if (key === "id") {
+      if (pathStack.at(-2) === "main_scenario") {
+        continue;
+      }
+    }
     const declared = node[key];
     if (typeof declared !== "string" || !ID_RE.test(declared)) continue;
     const loc = pathStack.join(".") || "root";

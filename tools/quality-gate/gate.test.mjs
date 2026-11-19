@@ -13,6 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { collectObservations } from './collect.mjs';
 import { evaluate, nextBaseline } from './evaluate.mjs';
 import { loadSpec, loadProjectConfig, writeBaseline } from './config.mjs';
@@ -21,6 +22,50 @@ import { rollupEntities, selectEntity, selectFile } from './entities.mjs';
 
 const TOOL_DIR = path.dirname(fileURLToPath(import.meta.url));
 const CLI = path.join(TOOL_DIR, 'cli.mjs');
+
+test('copied portable gate measures raw evidence without workspace builds and joins only matching graph input', () => {
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'evd01-portable-'));
+  try {
+    const gate = path.join(temporary, 'tools', 'quality-gate');
+    fs.cpSync(TOOL_DIR, gate, { recursive: true });
+    const require = createRequire(import.meta.url);
+    fs.cpSync(path.dirname(require.resolve('yaml/package.json')), path.join(temporary, 'node_modules', 'yaml'), { recursive: true });
+    fs.cpSync(path.resolve(TOOL_DIR, '../../v2.8'), path.join(temporary, 'schema', 'v2.8'), { recursive: true });
+    const model = path.join(temporary, 'fixture', '.blueprint', 'v2.8');
+    fs.mkdirSync(model, { recursive: true });
+    fs.writeFileSync(path.join(model, 'concepts.yaml'), 'name: fixture\nversion: 1.0.0\nschemaVersion: 2.8.0\nconcepts:\n  - id: CN001\n    name: Order\n    provenance:\n      evidence:\n        - kind: documentation\n          source: manual\n          summary: An order records a purchase.\n');
+    const run = (...flags) => JSON.parse(execFileSync(process.execPath, [path.join(gate, 'cli.mjs'), model, '--json', ...flags], { cwd: temporary, encoding: 'utf8', env: { ...process.env, BLUEPRINT_SCHEMAS: '', BLUEPRINT_TOOLS_ROOT: '' } })).runs[0];
+    const baseline = run();
+    assert.equal(baseline.evidence.raw.entities.total, 1);
+    assert.equal(baseline.evidence.raw.entities.withEvidence, 1);
+    assert.equal(baseline.evidence.graph.status, 'unavailable');
+    const input = { contractVersion: 1, scope: structuredClone(baseline.evidence.scope), entities: [], relations: [] };
+    const inputFile = path.join(temporary, 'graph.json');
+    fs.writeFileSync(inputFile, JSON.stringify(input));
+    assert.equal(run('--graph-census', inputFile).evidence.graph.status, 'available');
+    input.scope.project = 'another-project';
+    fs.writeFileSync(inputFile, JSON.stringify(input));
+    assert.throws(() => run('--graph-census', inputFile), error => error.status === 2 && /project mismatch/.test(String(error.stderr)));
+    input.scope = structuredClone(baseline.evidence.scope);
+    fs.appendFileSync(path.join(model, 'concepts.yaml'), '\n# changed after graph extraction\n');
+    fs.writeFileSync(inputFile, JSON.stringify(input));
+    assert.throws(() => run('--graph-census', inputFile), error => error.status === 2 && /fileSetIdentity mismatch/.test(String(error.stderr)));
+    fs.writeFileSync(path.join(model, 'domain.yaml'), JSON.stringify({
+      schemaVersion: '2.8.0',
+      operations: [
+        { id: 'CMD001', kind: 'command', materializes: [{ concept: 'CN001', action: 'update' }] },
+        { id: 'CMD002', kind: 'command', side_effects: { writes: [{ target: 'activity-log' }] } },
+        { id: 'CMD003', kind: 'command', produces: { mode: 'all', operations: [] } },
+      ],
+    }));
+    const outcomes = scoreOf(run(), 'domain.command.produces');
+    assert.equal(outcomes.total, 3);
+    assert.equal(outcomes.covered, 2, 'the copied public tool counts concept changes and log writes');
+    assert.equal(outcomes.missing, 1, 'an empty produces container leaves a gap');
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+  }
+});
 
 /** @type {string} */
 let fixtureRoot;
@@ -812,7 +857,7 @@ describe('CLI contract - --entity and --file', () => {
     assert.ok(Array.isArray(run.findings) && Array.isArray(run.worstFiles));
     const order = run.entities.find((entity) => entity.entityId === 'shop.CN001');
     // A concept is a measured structure kind, so its record carries `structure` after the findings.
-    assert.deepEqual(Object.keys(order), ['entityId', 'name', 'kind', 'file', 'ownedIds', 'counts', 'findings', 'structure']);
+    assert.deepEqual(Object.keys(order), ['entityId', 'name', 'kind', 'file', 'ownedIds', 'counts', 'textLength', 'findings', 'structure']);
     assert.equal(order.file, path.join('shop', 'concepts.yaml'));
     assert.deepEqual(order.findings.map((finding) => [finding.field, finding.subject, finding.status]), [['description', 'Order.status', 'filler'], ['example', 'Order.status', 'missing']]);
   });
@@ -851,4 +896,58 @@ describe('CLI contract - output on a pipe', () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+});
+
+
+describe('command outcome coverage', () => {
+  const cases = [
+    ['produced event', { produces: { operations: ['shop.EVT001'] } }, 'produces', 'covered'],
+    ['produced document', { produces: { operations: ['shop.DOC001'] } }, 'produces', 'covered'],
+    ['legacy scalar output', { produces: 'shop.E001' }, 'produces', 'covered'],
+    ['legacy list output', { produces: ['shop.E001'] }, 'produces', 'covered'],
+    ...['create', 'update', 'delete', 'archive'].map(action => [
+      `${action} concept`, { materializes: [{ concept: 'shop.CN001', action }] }, 'materializes', 'covered',
+    ]),
+    ['activity log write', { side_effects: { writes: [{ target: 'activity-log' }] } }, 'side_effects.writes', 'covered'],
+    ['external sink write', { side_effects: { writes: [{ target: 'external-sink' }] } }, 'side_effects.writes', 'covered'],
+    ['empty produces with a state change', { produces: {}, materializes: [{ concept: 'shop.CN001', action: 'update' }] }, 'materializes', 'covered'],
+    ['empty materializes with a write', { materializes: [], side_effects: { writes: [{ target: 'activity-log' }] } }, 'side_effects.writes', 'covered'],
+    ['multiple outcomes', { produces: { operations: ['shop.EVT001'] }, materializes: [{ concept: 'shop.CN001', action: 'create' }], side_effects: { writes: [{ target: 'activity-log' }] } }, 'produces', 'covered'],
+    ['no outcome', {}, 'produces', 'missing'],
+    ['empty containers', { produces: {}, materializes: [], side_effects: { writes: [] } }, 'produces', 'missing'],
+    ['produces mode only', { produces: { mode: 'all' } }, 'produces', 'missing'],
+    ['empty reference list', { produces: { operations: [] } }, 'produces', 'missing'],
+    ['blank references', { produces: { operations: [' '] }, materializes: [{ concept: ' ', action: 'update' }], side_effects: { writes: [{ target: ' ' }] } }, 'produces', 'missing'],
+    ['state change without action', { materializes: [{ concept: 'shop.CN001' }] }, 'produces', 'missing'],
+    ['write without target', { side_effects: { writes: [{}] } }, 'produces', 'missing'],
+  ];
+
+  for (const collectionForm of ['array', 'map']) {
+    for (const [name, outcome, field, status] of cases) {
+      test(`counts ${name} as ${status} in ${collectionForm} operations`, () => {
+        const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bp-quality-outcome-'));
+        try {
+          const command = { id: 'shop.CMD001', kind: 'command', name: 'Change order', ...outcome };
+          const event = { id: 'shop.EVT001', kind: 'event', materializes: [{ concept: 'shop.CN001', action: 'create' }] };
+          const query = { id: 'shop.QRY001', kind: 'query' };
+          const operations = collectionForm === 'array' ? [command, event, query] : { command, event, query };
+          fs.writeFileSync(path.join(root, 'domain.yaml'), JSON.stringify({ schemaVersion: '2.8.0', operations }));
+          const { observations, schemaVersion } = collectObservations(root);
+          const { spec } = loadSpec();
+
+          const result = evaluate({ observations, spec, schemaVersion });
+
+          const metric = scoreOf(result, 'domain.command.produces');
+          assert.equal(metric.total, 1, 'only commands enter the denominator, once per command');
+          assert.equal(metric.covered, status === 'covered' ? 1 : 0);
+          assert.equal(metric.missing, status === 'missing' ? 1 : 0);
+          const observation = observations.find(item => item.metric === 'domain.command.produces');
+          assert.equal(observation?.field, field, 'entity reports name the authored outcome field');
+          assert.equal(metric.threshold, 0.5);
+        } finally {
+          fs.rmSync(root, { recursive: true, force: true });
+        }
+      });
+    }
+  }
 });

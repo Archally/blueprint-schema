@@ -1,0 +1,19 @@
+engineVersion: "0.1"
+rules:
+  - id: inquiry-pin-named-twice
+    severity: warn
+    description: >-
+      An inquiry that names one id both in `affects.element_refs` and in a kind list beside it
+      (`operation_refs`, `concept_refs`, `process_refs`, `story_refs`, `bounded_context_refs`,
+      `service_refs`, `package_refs`, `capability_refs` or `process_activity_refs`). The two mean
+      the same, and the graph draws the pin once, from the kind list, so the model stays valid; the
+      repeat is reported so each id is named in one place. Compares the ids as written. One finding
+      per inquiry, naming every repeated id. Override per project via .blueprint-lint.yaml (e.g.
+      `inquiry-pin-named-twice: off`).
+    find:
+      entity_type: Inquiry
+    check:
+      custom:
+        module: ./inquiry-pin-named-twice.mjs
+        export: inquiryPinNamedTwice
+    message: 'Inquiry "{displayId}" names {ids} in `affects.element_refs` and in {lists}. Name each id once.'

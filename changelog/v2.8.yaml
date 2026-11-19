@@ -5,6 +5,1345 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.106"
+    date: "2026-11-18"
+    step: "an inquiry pins its question to any element the model declares by a typed id"
+    summary: |
+      An inquiry can name any element the model declares by a typed id in `affects.element_refs`
+      (titled Model elements): an entity of any type, such as an infrastructure resource, an
+      environment, a screen, a finding, a migration, a watch item or another inquiry, or a part of an
+      entity that carries its own id, a process activity (PA###) or a concept attribute (CAT###). A
+      part names that part only, never its process or concept as a whole, and an entity names itself
+      only: its children, parent and neighbours are not implied. The nine kind lists beside it keep
+      their values and their meaning, and naming an id in `element_refs` means the same as naming it
+      in the list for its kind, so each id is named once. For example:
+
+          inquiries:
+            - id: INQ002
+              statement: Does the nightly export need its own database, or can it read the replica?
+              status: open
+              affects:
+                element_refs: [IR003, ENV001, PA004]   # PA004 is an activity of PRC001
+                concept_refs: [CN001]
+
+      The list's items are a new reference type, `model_element_ref`: a typed id, scope prefix
+      optional, that is not a resource type (RT###, in the catalog outside the model) and not a use
+      case step (UCS###, unique only within its scenario); a scope name and the keyed `scope:key`
+      form are not typed ids. The list takes each id once. An id no file declares is a
+      cross-reference error, and the scope prefix is part of the id, so `CN001` does not name a
+      declared `delivery.CN001`.
+
+      In the model graph an `element_refs` id draws an `inquiry_affects` edge to the entity, and a
+      part draws one to the entity that declares it, with `data.part` naming the part
+      (`{ id, kind }`, kind `process_activity` or `concept_attribute`); an activity edge also keeps
+      `data.activity`, and an activity named in `process_activity_refs` now carries the same
+      `data.part`. One question pinned to one target through a kind list and through `element_refs`
+      is one edge. An id that several elements declare (in practice two processes that declare one
+      activity id) is drawn to an ambiguous placeholder that lists them, and an undeclared id to a
+      missing placeholder, never to a declared element. A watch item (WCH###) is a graph entity,
+      `WatchItem`, named by its title, and its `risk_refs` and `finding_refs` are `watch_item_risk`
+      and `watch_item_finding` edges. Its `decision_refs` draw `watch_item_decision` edges to the named decisions.
+      Three semantic rules read the list: `inquiry-pins-itself`
+      (error) reports an inquiry that names its own id, `inquiry-pin-named-twice` (warn) an id also
+      named in a kind list, and `inquiry-pin-ambiguous` (warn) an id several elements declare. The
+      governance ledger projection resolves the list among every entity and part and reports an id
+      declared by none or by several as a gap. A part id is found from either end: `bp node` and the
+      MCP `get_node` and `get_neighbors` answer an id no entity declares that names a part with the
+      part, its container and only the relations that pin that part, an inquiry's own view labels a
+      part pin with the part, and `bp impact` refuses a part and names its container.
+
+      BACKWARD: every document valid under 2.8.105 is valid under 2.8.106, and every value of the
+      kind lists resolves and draws as before. Not FORWARD: `affects` is closed, so a 2.8.105
+      validator rejects an inquiry that states `element_refs`, and a 2.8.105 model builder draws no
+      edge for it. No instance migration. Minted rather than folded into 2.8.105 because the set of
+      accepted documents grows.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/model_element_ref"
+        notes: "Typed id, scope prefix optional, `not` RT### and UCS###; one `modeling_guidance` lesson on pinning an inquiry."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/affects/properties/element_refs"
+        notes: "Optional, unique items of `model_element_ref`; the `affects` description names it beside the kind lists."
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "Two rows in the relations table: an inquiry's model elements and a watch item's risks and findings."
+  - version: "2.8.105"
+    date: "2026-11-18"
+    step: "a migration states where an entity it adds lands and moves an existing entity"
+    summary: |
+      An entity change can state where the entity it adds, splits off or merges into is declared
+      (`placement`), and a new entity change kind, `move`, declares an existing entity in another file
+      or slice while it keeps its id and content. A placement names a `slice` (a folder under the model
+      root), a `file` (relative to the model directory, its name routing to the entity's layer), or
+      both, the file then sitting in the slice. With a slice alone the entity is read from that slice's
+      one file for its layer, or from the layer's plain file name in the slice (`billing/infrastructure.yaml`)
+      when it holds none; a slice with several such files needs `file`. A move requires `placement` and
+      may state `placement_before`, where the entity is declared before the move, which applying the
+      move checks. `placement` is allowed on add, split (every new piece) and merge (the result),
+      required on move and not allowed on modify, deprecate, remove and rename. For example:
+
+          changes:
+            entities:
+              - kind: add
+                entity_type: resource
+                target: IR014
+                placement: { slice: billing }
+                after: { id: IR014, name: Billing database, kind: database }
+              - kind: move
+                entity_type: resource
+                target: IR009
+                placement: { slice: billing }
+                placement_before: { slice: orders }
+
+      Replaying a migration reads the entity from the placed file in every model state that includes
+      it (TO-BE and point-in-time), so a slice selection holds an unscoped addition that states its
+      slice, and a moved entity takes the document defaults of its new file. Without a placement an
+      addition is placed as before: beside entities of the same type that share its id's slice prefix,
+      else read from the migration document. The meta operations `move-to-slice` and `document-move`
+      keep their values and change no entity; their description now says so. Validation reports a file
+      outside the stated slice and a file name that routes to no layer as errors, and as warnings a
+      file of a layer that does not hold the entity type, a slice the model has neither as a folder nor
+      in `layout.slices`, a scoped id moved into another slice (with a rename suggested in the same
+      group), an internal `after._written_in` stated without `placement`, and a meta move word aimed at
+      an entity id; an `after._written_in` that disagrees with `placement` is an error.
+
+      A tracked change set gains a `move` operation (`target`, `file`, optional `from`): `bp move` on a
+      tracked project stages it after the same guards as in direct mode (same layer, same slice, an
+      existing destination), `bp migration apply` performs it with the same relocation, and a rollback
+      restores both files from the recorded edit sites. `bp split-file` and `bp merge-file` still
+      refuse in tracked mode and name `bp move`.
+
+      BACKWARD: every document valid under 2.8.104 is valid under 2.8.105 and replays to the same model;
+      no existing document states `placement`. Not FORWARD: `entity_change` and the tracked operations
+      are closed, so a 2.8.104 validator rejects a change that states `placement` or `placement_before`,
+      a change of kind `move` and a staged `move`. No instance migration. Minted rather than folded into
+      2.8.104 because the set of accepted documents grows.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/migration.schema.yaml#/$defs/entity_placement"
+        notes: "Closed object, at least one of `slice` (root slice name pattern) and `file` (tracked `new.file` pattern)."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/migration.schema.yaml#/$defs/entity_change/properties"
+        notes: "Optional `placement` and `placement_before` (`entity_placement`); `allOf` requires `placement` on move, refuses it on modify, deprecate, remove and rename, and refuses `placement_before` off a move."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/migration.schema.yaml#/$defs/entity_change_kind"
+        notes: "`move`."
+      - kind: docs
+        semver: none
+        target: "schema/v2.8/migration.schema.yaml#/$defs/meta_change/properties/kind"
+        notes: "States that no meta operation changes an entity when the migration applies."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/tracked-migrations.schema.yaml#/$defs/patch_op_move"
+        notes: "Closed object: required `op`, `target` and `file`, optional `from`; `move` added to `patch_op.op`."
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "Placement and move in the migration file structure."
+  - version: "2.8.104"
+    date: "2026-11-18"
+    step: "an inquiry names who is expected to answer it, apart from who drives it"
+    summary: |
+      An inquiry can state who is expected to answer it now (`asked_of`, titled Addressee) and whom it
+      was asked of before (`previously_asked_of`, titled Earlier addressees), apart from who drives it
+      to a resolution (`owner`), the unit accountable for it (`owned_by`) and who cares about the
+      answer (`stakeholders`). The addressee may work outside the area the inquiry is about: an
+      architecture question about a payments screen is driven by the payments team and asked of the
+      architecture team.
+
+      An addressee names an actor (`actor`, ACT###: a person or a role) or a team (`team`, TM###), or
+      states a `name` for an addressee the model does not declare, or a name beside one reference, the
+      reference then being the addressee and the name the addressee as the source states it. A name is
+      never a typed id and draws no graph edge; two addressees stated by name are one addressee only
+      when the names are written identically. One addressee at a time: a question for two answerers is
+      two questions, or one asked of a team both belong to. Absent: the model does not say who is
+      asked, and nothing is inferred from `owner`. `previously_asked_of` lists earlier addressees,
+      oldest first, each with how the inquiry left them (`redirected`, `partly-answered` or
+      `reassigned`) and a `date` and `note` only where a source gives them; the current addressee is
+      never listed there, and passing an inquiry on leaves `status` as it is. For example:
+
+          inquiries:
+            - id: payments.INQ101
+              statement: How long are declined card payments kept?
+              status: investigating
+              owner: TM001
+              asked_of: { team: TM003 }
+              previously_asked_of:
+                - asked_of: { actor: payments.ACT004 }
+                  outcome: partly-answered
+                  date: "2026-10-02"
+            - id: payments.INQ102
+              statement: Is a partial refund a new payment or a change to the old one?
+              status: open
+              asked_of: { name: Domain expert }
+
+      An actor or team reference nobody declares is a cross-reference error, for the current and for
+      each earlier addressee. The model graph gains an `inquiry_asked_of` edge to the addressee, with a
+      name stated beside the reference as edge data, and an `inquiry_previously_asked_of` edge per
+      earlier addressee, carrying its position, outcome and date; a name alone draws neither. A new
+      semantic rule, `inquiry-passed-on-without-addressee` (warn), reports an unsettled inquiry that
+      lists earlier addressees and states no `asked_of`: the state is valid, because a source may say
+      "ask someone else" without saying whom, and it is made visible. The governance ledger projection
+      reads both fields, gives each inquiry exactly one addressee group (a resolved reference, an exact
+      name, an unresolved or ambiguous reference, or unassigned) and reports the same case as a gap.
+
+      BACKWARD: every document valid under 2.8.103 is valid under 2.8.104; `owner`, `owned_by`,
+      `stakeholders` and `status` keep their meaning, and an inquiry without the new keys draws exactly
+      the edges it drew before. Not FORWARD: `inquiry` is closed, so a 2.8.103 validator rejects an
+      inquiry that states `asked_of` or `previously_asked_of`. No instance migration: nothing copies
+      `owner` into `asked_of`, and an addressee is written only where a source states it. Minted rather
+      than folded into 2.8.103 because the set of accepted documents grows.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties"
+        notes: "Optional `asked_of` (`inquiry_addressee`) and `previously_asked_of` (array of `inquiry_earlier_addressee`); `owner` names `asked_of` as distinct."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry_addressee"
+        notes: "Closed object: optional `actor` (`actor_ref`), `team` (`team_ref`) and `name` (non-blank, never a typed id); at least one, at most one reference."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry_earlier_addressee"
+        notes: "Closed object: required `asked_of` and `outcome` (`redirected`, `partly-answered`, `reassigned`), optional `date` (ISO date) and `note`."
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "Two rows in the relations table: the addressee and the earlier addressees."
+  - version: "2.8.103"
+    date: "2026-11-18"
+    step: "a migration states its owning team, change stream, tracker item, reach and why it waits"
+    summary: |
+      A migration can state who carries it out, where it belongs and why it waits, in the same keys on
+      all three shapes: a migration document (`migration:`), a register entry and a tracked entry.
+
+      `owned_by` names the one team that carries the migration out, as one release; a change too large
+      for one team is several migrations joined by `depends_on`. `change_stream_ref` names the change
+      stream the migration belongs to, at most one. Change streams are declared once in
+      `blueprint.yaml` `change_streams[]` (`CS###`, `name`, optional `description`): a stream groups
+      migrations for a reader and states no team and no scope, because its teams are the owners of its
+      migrations and its reach is theirs. `tracker_ref` names the item that stands for the migration in
+      an external issue tracker, resolved to a link like every other `tracker_ref`; several migrations
+      may share one item. `depends_on_reasons` states why the migration waits for a migration in
+      `depends_on`, one entry per dependency with a prose reason; `depends_on` itself is unchanged.
+      `reach` states the bounded contexts and domains the migration changes, only where its changes
+      cannot show them; otherwise they are derived from the changes. A tracked entry also gains
+      `related_decisions`, as the register entry has. `migration.schema.yaml` carries an `x-gdsm`
+      block naming the task it serves: a migration map grouped by change stream.
+
+      A change stream, team, decision, context or domain nothing declares is a cross-reference error,
+      on every shape; on a tracked entry the entry-level references resolve against the model the
+      register sits beside. The model graph gains a `ChangeStream` node per registry entry, a
+      `migration_in_change_stream` edge, the stated reason on the `migration_depends_on` edge, and a
+      `migration_reach` edge per context or domain with its provenance (`derived`, `declared` or
+      `both`); each Migration node carries the derivation with every change it read, the model state
+      it read it against and the outcome, and an untraced change is counted rather than read as a
+      reach of nothing. Three semantic rules warn where the schema cannot decide:
+      `migration-without-team-owner` (no owner, or a department or party instead of a team; a name
+      alone is not reported), `migration-reach-disagrees` (a stated reach the changes contradict) and
+      `migration-dependency-reason-unlisted` (a reason for a migration `depends_on` does not list, or a
+      second reason for one). Validation gives the same warnings for a tracked register, and warns
+      when variants of one group belong to different change streams. For example:
+
+          change_streams:
+            - id: CS001
+              name: Orders modularization
+
+          migration:
+            id: MIG005
+            name: order-api
+            date: "2026-11-18"
+            status: draft
+            description: The order API moves behind the orders module.
+            owned_by: { team: TM001 }
+            change_stream_ref: CS001
+            tracker_ref: ABC-1200
+            depends_on: [MIG002]
+            depends_on_reasons:
+              - migration: MIG002
+                reason: The order API calls the identity module MIG002 extracts.
+
+      BACKWARD: every document valid under 2.8.102 is valid under 2.8.103. Not FORWARD: a 2.8.102
+      validator rejects a migration that states any of the new keys, and a root that declares
+      `change_streams`. No instance migration is needed; a migration without an owner is reported by
+      the new owner rule as a warning. Minted rather than folded into 2.8.102 because the set of
+      accepted documents changes.
+
+      This release ALSO states that a command's outcome need not be an event. A command states its
+      outcome through `produces`, `materializes` or `side_effects.writes`; creating, updating,
+      deleting or archiving a concept, and writing an activity-log record or an external sink, are
+      outcomes of their own. `missing-causal-links` (warn) now reports only a command that states
+      none of the three: any nonempty `produces.operations` list counts, a document included, while
+      `mode` alone or an empty list states nothing. Two new semantic rules, both `info`, give advice
+      and never require an event or a deletion. `governed-command-without-event` reports a command
+      governed by a rule (`governed_by`, `preconditions`, `postconditions` or a substantive legacy
+      `rules` clause) whose `produces` names no event, so its decision can be reviewed.
+      `anemic-event-candidate` reports an event whose producers are all commands with no rule
+      governance, when no operation reacts to it, it is not published and no `translates` names it
+      or is written on it; an event with no producer is not reported, and one reaction is enough to
+      make an event meaningful. The finding names the event's derived reach, and `unstated` reach
+      there is uncertainty, not proof that the event stays inside its context. The descriptions of
+      `operation.kind`, `produces`, `materializes` and `side_effects.writes` say the same. No field
+      and no enum value is added: whether an event is anemic is a review hint, not a kind.
+
+      FULL: only descriptions and the semantic rule pack change, so every document valid under the
+      earlier 2.8.103 is valid now and the reverse. A model sees fewer `missing-causal-links`
+      warnings where a command already stated a materialization, a write or a document, and new
+      `info` findings. Folded into this entry rather than minted: 2.8.103 carries no tag, it has not
+      been ported, and descriptions and rules leave the set of accepted documents identical in both
+      directions. Residual risk, stated because folding is never silent: the number 2.8.103 names two
+      states of the semantic rule pack and of four descriptions in this file's history.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/change_stream_ref"
+        notes: "`^CS\\d{3,}$`, model-wide, no context prefix."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/migration_reach"
+        notes: "Closed object: optional `bounded_context_refs` and `domain_refs`, each a unique array of typed references."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/migration_dependency_reason"
+        notes: "Closed object: required `migration` (`migration_ref`) and `reason` (non-blank)."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/blueprint.schema.yaml#/properties/change_streams"
+        notes: "Optional array of `change_stream`: required `id` and `name`, optional `description`, closed."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/migration.schema.yaml#/properties/migration/properties"
+        notes: "Optional `owned_by`, `change_stream_ref`, `reach`, `tracker_ref`, `depends_on_reasons`; a root `x-gdsm` block."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/migrations.schema.yaml#/$defs/register_entry/properties"
+        notes: "Optional `owned_by`, `change_stream_ref`, `reach`, `tracker_ref`, `depends_on_reasons`."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/tracked-migrations.schema.yaml#/$defs/tracked_entry/properties"
+        notes: "Optional `owned_by`, `change_stream_ref`, `reach`, `tracker_ref`, `depends_on_reasons` (over `tracked_dependency_reason`) and `related_decisions`."
+      - kind: docs
+        semver: none
+        target: schema/v2.8/metamodel.schema.yaml#/x-gdsm/modeling_guidance
+        notes: "The `tracker_ref` lesson lists the three migration shapes."
+      - kind: docs
+        semver: none
+        target: "schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties"
+        notes: "`kind`, `produces`, `materializes` and `side_effects.writes` describe a command's outcome without a required event, derived event reach and the anemic-event review hint."
+  - version: "2.8.102"
+    date: "2026-11-16"
+    step: "a process activity carries typed stage questions and gates"
+    summary: |
+      A process activity can state the questions asked every time the work reaches it, in
+      `questions`, and the pass or fail conditions the work meets there before it goes on, in
+      `gates`. Each item has a `key`, lowercase words joined by hyphens and unique among the
+      questions or among the gates of that activity, so a record of one run can cite it as the
+      activity id and the key, `PA012/release`. A question is `key` and `statement`, and may name
+      who asks it (`asked_by`, an actor), who answers it (`asked_of`, an actor or a team) and where
+      the answer is recorded (`answer`, a name and an optional concept). A gate is `key` and
+      `criterion`, and may name who judges it (`evaluated_by`, an actor or a team), the declared
+      rule that states it (`rule`), what shows the result (`evidence`, a name and an optional
+      concept) and the activity the work goes to when it fails (`on_fail`). The shape follows the
+      activity's `inputs`, `outputs` and `tools`: an inline value object with optional typed
+      references, not a new entity.
+
+      Every reference resolves like every other typed id, so an actor, team, rule, concept or
+      activity nothing declares is a cross-reference error. The model graph draws an
+      `activity_question` edge from the process to each actor, team or concept a question names and
+      an `activity_gate` edge to each actor, team, rule or concept a gate names; each edge carries
+      the activity, the item's key and the field it comes from. Two semantic rules check what the
+      schema cannot: `activity-item-key-repeated` (error) reports a key repeated within one
+      activity's questions or gates, and `gate-on-fail-not-a-successor` (warn) reports an `on_fail`
+      that names an activity this activity does not lead to. For example:
+
+          activities:
+            - id: website.PA001
+              name: Write the brief
+              questions:
+                - key: audience
+                  statement: Who reads this page?
+                  asked_of: website.ACT001
+            - id: website.PA012
+              name: Release the site
+              next:
+                - to: website.PA013
+                - to: website.PA011
+              gates:
+                - key: accessibility
+                  criterion: The page passes the accessibility check
+                  evaluated_by: website.ACT003
+                  rule: website.VR010
+                  evidence: {name: Accessibility report}
+                  on_fail: website.PA011
+
+      BACKWARD: every document valid under 2.8.101 is valid under 2.8.102. Not FORWARD: a 2.8.101
+      validator rejects an activity that states `questions` or `gates`. No instance migration is
+      needed; a model that keeps stage questions and gates as prose keeps its meaning and may move
+      them into the typed lists. Minted rather than folded into 2.8.101 because the set of accepted
+      documents changes.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process_activity/properties/questions"
+        notes: "Optional array of `activity_question`, `uniqueItems`; no default."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/process_activity/properties/gates"
+        notes: "Optional array of `activity_gate`, `uniqueItems`; no default."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/activity_question"
+        notes: "Closed object: required `key` and `statement`; optional `asked_by` (`actor_ref`), `asked_of` (`owner_ref`) and `answer` (`process_artifact`)."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/activity_gate"
+        notes: "Closed object: required `key` and `criterion`; optional `evaluated_by` (`owner_ref`), `rule` (`rule_ref`), `evidence` (`process_artifact`) and `on_fail` (`process_activity_ref`)."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/activity_item_key"
+        notes: "Lowercase words joined by hyphens, `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`."
+      - kind: docs
+        semver: none
+        target: docs/2026-11-11-work-processes.md
+        notes: "A section on questions and gates at an activity with an example; the validation table names the new cases and the two semantic rules."
+      - kind: docs
+        semver: none
+        target: schema/v2.8/metamodel.schema.yaml#/x-gdsm/modeling_guidance
+        notes: "One lesson: a recurring stage question and an activity gate are neither a competency question nor an inquiry."
+  - version: "2.8.101"
+    date: "2026-11-14"
+    step: "a command sent over messaging is handled by the service that receives it"
+    summary: |
+      A command sent over messaging is handled by the service whose messaging contract receives
+      it, when exactly one service receives it. Several contracts of one service count as one
+      receiver; two services in one context count as two. With no receiver or several receivers,
+      the command stays with the services that send it, and the `messaging-command-receiver`
+      check reports the ambiguity as a warning. An event stays with its senders, and an operation
+      a service exposes over an API is unchanged. For example:
+
+          # orders/arch.yaml
+          services:
+            - id: SVC010
+              name: Orders Service
+              contracts:
+                - kind: channel
+                  send: [kitchen.CMD001]
+          # kitchen/arch.yaml
+          services:
+            - id: SVC020
+              name: Kitchen Service
+              contracts:
+                - kind: channel
+                  receive: [kitchen.CMD001]
+
+      Here `kitchen.CMD001` is handled by the Kitchen Service, and a sequence diagram draws the
+      Kitchen Service as its handler. Before this rule the command was bound to the Orders
+      Service, which sends it.
+      FULL: the accepted documents are unchanged; only the descriptions state the rule.
+    changes:
+      - kind: docs
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/context/properties/id"
+        notes: "The context membership description states the handler rule for a sent command and the fallback when no single service receives it."
+      - kind: docs
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/{send,receive}"
+        notes: "`send` and `receive` say how a sent command and an event bind to a service."
+  - version: "2.8.100"
+    date: "2026-11-14"
+    step: "the records at a link's ends state their own evidence"
+    summary: |
+      Five kinds of record that stand at the ends of architectural links can state their own
+      evidence, in the shared `provenance` shape (`discovery_stage`, `certainty` and `evidence`,
+      all optional): a message channel, an infrastructure resource, an environment, a deployment
+      scope, and each grant in a resource's `access` list. A record's `provenance` is about that
+      record; a link it takes part in states its own evidence, and neither is evidence for the
+      other. A record without one states no evidence of its own. A grant carries its own, because
+      one grant may come from infrastructure code and another from a ticket, and the resource's
+      evidence covers neither.
+      For example:
+
+          # infrastructure.yaml
+          resources:
+            - id: IR002
+              kind: database
+              name: Orders Database
+              provenance:
+                certainty: confirmed
+                evidence:
+                  - kind: codebase-analysis
+                    source: deploy/orders/main.tf
+                    date: "2026-11-03"
+                    summary: The orders database is declared in the orders infrastructure code.
+              access:
+                - identity: order-api
+                  target: IR002
+                  role: db_datawriter
+                  provenance: { certainty: probable }
+
+      BACKWARD: every document valid under 2.8.99 is valid under 2.8.100. Not FORWARD: a 2.8.99
+      validator rejects `provenance` on each of the five. No instance migration is needed. Minted
+      rather than folded into 2.8.99 because the set of accepted documents changes.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/message_channel/properties/provenance"
+        notes: "Optional; a `$ref` to the shared `provenance`. Evidence for the broker stays in `link_provenance.broker_ref`."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/infrastructure.schema.yaml#/$defs/{resource,environment,deployment_scope}/properties/provenance"
+        notes: "Optional; a `$ref` to the shared `provenance`. A plain-string environment carries none."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/infrastructure.schema.yaml#/$defs/access_grant/properties/provenance"
+        notes: "Optional; a `$ref` to the shared `provenance`, on each grant of `resource.access`."
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "The section on link evidence names the five records that state their own evidence and says that it is not evidence for a link."
+  - version: "2.8.99"
+    date: "2026-11-14"
+    step: "a decision can state that nobody was consulted or informed"
+    summary: |
+      A decision can state that nobody was consulted or that nobody is told its outcome, apart
+      from not recording it. In `participants`, an empty `consulted` or `informed` list now
+      validates and states that nobody holds that role; an absent role still states nothing, so a
+      reader tells "nobody was consulted" from "consultation is not recorded". `decision_makers`,
+      when stated, still names at least one actor or team, and `participants` still states at
+      least one role, so `participants: {}` and `decision_makers: []` are rejected as before. Each
+      role still lists a reference once. For example:
+
+          # decisions.yaml
+          decisions:
+            - id: DC004
+              participants:
+                decision_makers: [ACT001]
+                consulted: []        # stated: nobody was consulted
+                                     # informed is absent: who is told is not recorded
+
+      BACKWARD: every document valid under 2.8.98 is valid under 2.8.99. Not FORWARD: a 2.8.98
+      validator rejects a decision whose `consulted` or `informed` is an empty list. No instance
+      migration is needed. Minted rather than folded into 2.8.98 because the set of accepted
+      documents changes.
+    changes:
+      - kind: change
+        semver: minor
+        target: "schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants/properties/{consulted,informed}"
+        notes: |
+          `minItems: 1` removed; `uniqueItems: true` and the `owner_ref` items stay. Each
+          description says what an empty list and an absent role state, and each gains the example
+          `[]`.
+      - kind: docs
+        semver: none
+        target: "schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants"
+        notes: |
+          The description states that at least one role is stated, that an empty `consulted` or
+          `informed` states nobody, and that a stated `decision_makers` names at least one actor
+          or team; a second example states nobody consulted. `decision_makers` keeps
+          `minItems: 1` and the object keeps `minProperties: 1`.
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "The traceability row for decision participants says that an empty `consulted` or `informed` states nobody and an absent role is not recorded."
+  - version: "2.8.98"
+    date: "2026-11-14"
+    step: "text required in one branch states something"
+    summary: |
+      Text that becomes required in one arm of a choice states something, as every other required
+      text field does. 13 such properties accepted an empty string and now carry the constraint
+      that fits what they hold:
+
+      - A concept's and an enumeration's `name` and `term`, one of which each requires, are one
+        line with no surrounding whitespace (`^\S(?:.*\S)?$`). `term: ""` and `name: "Order "`
+        are rejected.
+      - A test case's act `description`, required when the act names no `operation`, needs at
+        least one visible character (`\S`).
+      - A contract's superseded `output`, required in eight contract definitions when the contract
+        has no `contract_name`, is one of its documented forms, `<name>`, `<slice>/<name>` or
+        `_global/<name>`: one or two segments without whitespace or backslash, joined by one `/`
+        (`^(?:[^\s/\\]+/)?[^\s/\\]+$`). An empty value, a value holding a space, a leading or
+        trailing `/` and a path of three segments are rejected.
+
+      A tightening in a patch version, stated rather than implied: a document holding an empty,
+      blank or padded value in one of these fields, or an `output` outside its documented forms,
+      was accepted under 2.8.97 and is rejected under 2.8.98. FORWARD compatible: every document
+      valid under 2.8.98 is valid under 2.8.97. The published examples and the schema's own
+      examples validate unchanged. A model that fails now is fixed by writing the text the field
+      asks for or trimming its surrounding whitespace; an `output` can instead be replaced by
+      `contract_name` with `slice` or `cross_cutting`. No instance migration is provided. Minted
+      rather than folded into 2.8.97 because the set of accepted documents changes.
+    changes:
+      - kind: change
+        semver: major
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/contract_output"
+        notes: |
+          Pattern `^(?:[^\s/\\]+/)?[^\s/\\]+$`. Reaches `output` in the `openapi`, `httpClient`,
+          `asyncapi`, `openrpc`, `arazzo`, `cncfsw`, `shareddata`, `scheduledtransfer` and
+          `graphql` contracts; each requires `output` when it has no `contract_name`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/concepts.schema.yaml
+        notes: |
+          4 required text fields, each required when the other of its pair is absent. One line
+          without surrounding whitespace: `concept.name`, `concept.term`, `enumeration.name`,
+          `enumeration.term`.
+      - kind: change
+        semver: major
+        target: "schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_act/properties/description"
+        notes: "At least one visible character (`\\S`). Required when the act names no `operation`."
+  - version: "2.8.97"
+    date: "2026-11-14"
+    step: "a shared-data contract names the store its data lives in"
+    summary: |
+      A shared-data contract can name the store its data lives in: `store_ref` on
+      `contracts.shareddata`, the infrastructure resource (IR###) that declares the store, usually a
+      `database`, a `storage` or a `cache`. One store per contract holds every document the
+      contract lists under `write` and `read`, and both ends name the same store, because the data
+      sits in one place both services address. A contract without it states that two services
+      share data, not where; a service's `resource_refs` name the resources it uses, not which of
+      them holds the data.
+
+      The reference resolves like every other typed id, so a store nothing declares is a
+      cross-reference error, and a free-string name fails the `infra_resource_ref` pattern.
+      Evidence for the store sits beside the evidence for the contract's operations, in
+      `link_provenance.store_ref`: one entry at most, keyed by the reference `store_ref` writes.
+      An entry for a store the contract does not name is an error, as for every other link. For
+      example:
+
+          services:
+            - id: orders.SVC001
+              contracts:
+                shareddata:
+                  contract_name: order-ledger
+                  write: [orders.DOC001]
+                  store_ref: IR001
+                  link_provenance:
+                    store_ref:
+                      IR001:
+                        certainty: confirmed
+            - id: orders.SVC002
+              contracts:
+                shareddata:
+                  contract_name: order-ledger
+                  read: [orders.DOC001]
+                  store_ref: IR001
+
+      BACKWARD: every document valid under 2.8.96 is valid under 2.8.97. Not FORWARD: a 2.8.96
+      validator rejects `store_ref` and its evidence key. No instance migration is needed. Minted
+      rather than folded into 2.8.96 because the set of accepted documents changes.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/shared_data_contract/properties/store_ref"
+        notes: "Optional; a `$ref` to `infra_resource_ref`. No default; the contract's other fields are unchanged."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/shared_data_contract/properties/link_provenance/properties/store_ref"
+        notes: "Optional object: one `infra_resource_ref` key at most (`maxProperties: 1`), the shared `provenance` as its value, as for a messaging contract's `broker_ref`."
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "The contract kinds section describes the store of a shared-data contract with an example; the traceability map and the link evidence table name `store_ref`."
+  - version: "2.8.96"
+    date: "2026-11-14"
+    step: "an architectural link states the evidence behind it"
+    summary: |
+      An architectural link can state its own evidence, apart from the evidence of the records at
+      its ends, in the shared `provenance` shape: `discovery_stage`, `certainty` and `evidence`, all
+      optional. A link without evidence of its own states none; the provenance of a context, a
+      service, an operation or a resource is not evidence for a link it takes part in.
+
+      - `provenance` on a declaration that is itself the link: a context's dependency on another
+        context or an external system (`dependency.provenance`), an infrastructure relation of every
+        verb and either kind of target (`resource.relations[].provenance`), a service's need
+        (`service.needs[].provenance`), a server entry (`service.servers[].provenance`), a binding
+        (`binding.provenance`, about its stated realization) and an operation's protocol binding
+        (`operation.exchange.provenance`, about the binding, not the operation).
+      - `provenance` on every contract kind, for the contract as a whole. It is not evidence for
+        any one operation the contract lists. A workflow contract's workflow names are names, so it
+        has this field and no map.
+      - `link_provenance` on a record that writes a link as a reference: a map keyed by the field's
+        name, then by the target exactly as written there, whose values are `provenance`. A service
+        names `imports`, `uses`, `routes_to` and `resource_refs`; a contract names its operation
+        lists (`expose`, `call`, `send`, `receive`, `provide`, `consume`, `write`, `read`, by kind),
+        and a messaging contract also `broker_ref`; a GraphQL contract names `queries`, `mutations`
+        and `subscriptions`, keyed by field name in the GraphQL name grammar, never by operation
+        reference; a message channel names `broker_ref`; a messaging contract's subscription and an
+        exchange's topic and queue each name `channel_ref`. A key takes what its field takes,
+        including both forms of an operation reference, and a single reference has at most one
+        entry. The map describes links its record states and neither adds nor redirects one; one
+        entry covers every occurrence of its target in a list.
+
+      A typed key resolves like every other reference, so a key naming nothing declared is a
+      cross-reference error. A key naming a declared target that its field does not state is valid
+      under the schema. For example:
+
+          services:
+            - id: SVC001
+              uses: [SVC002]
+              link_provenance:
+                uses:
+                  SVC002:
+                    certainty: confirmed
+                    evidence:
+                      - kind: codebase-analysis
+                        source: services/orders/payments-client.ts
+                        date: "2026-11-02"
+                        summary: The order service builds a payments client at start-up.
+
+      BACKWARD: every document valid under 2.8.95 is valid under 2.8.96. Not FORWARD: a 2.8.95
+      validator rejects each new field. No instance migration is needed. Minted rather than folded into 2.8.95 because the set of
+      accepted documents changes.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/dependency/properties/provenance"
+        notes: "Optional; a `$ref` to the shared `provenance`."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/link_provenance"
+        notes: |
+          Optional closed object with `imports`, `uses`, `routes_to` and `resource_refs`. Each is an
+          object whose `propertyNames` are the list's item schema (`service_ref` or `package_ref`
+          for `imports`, `service_ref`, `service_ref`, `infra_resource_ref`) and whose values are
+          the shared `provenance`. No required keys, no minimum size, no default.
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/servers/items/properties/provenance"
+        notes: "Optional; a `$ref` to the shared `provenance`."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/service_need/properties/provenance"
+        notes: "Optional; a `$ref` to the shared `provenance`."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/{endpoint_contract,http_client_contract,channel_contract,rpc_contract,protobuf_contract,mcp_contract,cli_contract,inprocess_contract,shared_data_contract,scheduled_transfer_contract}/properties/link_provenance"
+        notes: |
+          Optional closed object naming exactly the contract kind's operation lists: `expose`
+          (endpoint), `call` (HTTP client), `send`, `receive` and `broker_ref` (channel), `expose`
+          and `call` (rpc, protobuf, mcp, cli), `provide` and `consume` (inprocess), `write` and
+          `read` (shared data, scheduled transfer). Operation maps take `operation_ref` keys, both
+          forms; `broker_ref` takes one `infra_resource_ref` key at most (`maxProperties: 1`).
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/{endpoint_contract,http_client_contract,channel_contract,rpc_contract,protobuf_contract,mcp_contract,cli_contract,flow_contract,inprocess_contract,shared_data_contract,scheduled_transfer_contract}/properties/provenance"
+        notes: "Optional; a `$ref` to the shared `provenance`, for the contract as a whole."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/contracts/properties/graphql/properties/{link_provenance,provenance}"
+        notes: |
+          `link_provenance` is an optional closed object with `queries`, `mutations` and
+          `subscriptions`, keyed by `^[_A-Za-z][_0-9A-Za-z]*$`, the pattern of an operation binding's
+          GraphQL `field`. `provenance` is the shared object, for the contract as a whole.
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/channel_contract/properties/subscription/properties/link_provenance"
+        notes: "Optional closed object with `channel_ref`: one `message_channel_ref` key at most. The subscription's `minProperties: 1` is unchanged."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/message_channel/properties/link_provenance"
+        notes: "Optional closed object with `broker_ref`: one `infra_resource_ref` key at most."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/domain.schema.yaml#/$defs/exchange/properties/provenance"
+        notes: "Optional; a `$ref` to the shared `provenance`. The protocol conditions and `unevaluatedProperties: false` are unchanged."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/domain.schema.yaml#/$defs/{topic,queue}/properties/link_provenance"
+        notes: "Optional closed object with `channel_ref`: one `message_channel_ref` key at most, on the topic or queue that names the channel, so both can state evidence under one exchange."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/infrastructure.schema.yaml#/$defs/infra_relation_edge/properties/provenance"
+        notes: "Optional; a `$ref` to the shared `provenance`, for every verb. The target and outputs conditions are unchanged."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/infrastructure.schema.yaml#/$defs/binding/properties/provenance"
+        notes: "Optional; a `$ref` to the shared `provenance`."
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "A new section describes link evidence, and the traceability map names the typed keys of `link_provenance` as a reference position."
+  - version: "2.8.95"
+    date: "2026-11-14"
+    step: "a migration states its business case, a register entry its decisions, and a decision its participants"
+    summary: |
+      A migration can state what carrying it out costs and is expected to return, a register entry
+      can name the decisions behind it, and a decision can name who decides, who is consulted and
+      who is informed.
+
+      - `business_case` on a migration document (`migration.business_case`) and on a register entry
+        (`migrations[].business_case`): the forecast economics of that one migration, the metamodel
+        definition `migration_business_case`. It requires all six inputs, so a business case is
+        complete or absent: `horizon_months`, a finite whole number of at least 1; `currency`, an
+        ISO 4217 alphabetic code of three uppercase letters; `initial_cost`, `recurring_cost` and
+        `recurring_benefit`, each a finite number of zero or more in that currency; and `period`,
+        `month` or `year`, the period the two recurring amounts are stated per. Optional
+        `assumption_refs` name the assumptions the estimate rests on, each once, and optional
+        `evidence` takes the shared evidence shape. No other property is accepted. Over the horizon
+        the undiscounted totals are: cost is the initial cost plus the recurring cost multiplied by
+        the number of periods, and benefit is the recurring benefit multiplied by the number of
+        periods, where the number of periods is `horizon_months` for a month and `horizon_months`
+        divided by 12 for a year. An estimate is a forecast, not a measured outcome; no discounting,
+        currency conversion or rate of return is implied, and a migration without a business case
+        states no estimate rather than zero. The decisions and goals a migration serves carry no
+        amounts. A model declares each migration id once, in a document or in a register entry, so
+        one migration carries at most one business case.
+      - `related_decisions` on a register entry: the decisions that motivated the migration, a list
+        of decision references, each listed once, the link a migration document already states in
+        `migration.related_decisions`. Without the list, the register records no decision for the
+        migration; it does not state that none was taken.
+      - `participants` on a decision, the new `decision_participants`: `decision_makers`,
+        `consulted` and `informed`, each a non-empty list of actor (ACT###) or team (TM###)
+        references, each listed once; at least one role is stated, and an absent role is not
+        recorded. The roles state who is meant to decide, advise and be told. They are not an
+        approval and leave the decision's `status` as it is; an agreement is recorded as `evidence`
+        of kind `stakeholder-signoff`. `owned_by` stays the unit accountable for the decision record.
+
+      Every new reference resolves like every other reference: a decision, assumption, actor or
+      team id that nothing declares is a cross-reference error. For example:
+
+          # migrations.yaml
+          migrations:
+            - id: MIG003
+              name: Billing becomes its own context
+              status: planned
+              related_decisions: [DC004]
+              business_case:
+                horizon_months: 24
+                currency: EUR
+                initial_cost: 12000
+                recurring_cost: 100
+                recurring_benefit: 900
+                period: month
+                assumption_refs: [ASM002]
+              changes:
+                - type: add
+                  description: A billing context takes over invoicing from ordering.
+
+          # decisions.yaml
+          decisions:
+            - id: DC004
+              participants:
+                decision_makers: [ACT001]
+                consulted: [TM002]
+                informed: [ACT003]
+
+      Over 24 months the estimate costs 12000 + 100 x 24 = 14400 EUR and is expected to return
+      900 x 24 = 21600 EUR, undiscounted.
+
+      BACKWARD: every document valid under 2.8.94 is valid under 2.8.95. Not FORWARD: a 2.8.94
+      validator rejects a migration document or register entry carrying `business_case`, a register
+      entry carrying `related_decisions` and a decision carrying `participants`. No instance
+      migration is needed. Minted rather than folded into 2.8.94 because the set of accepted
+      documents changes.
+    changes:
+      - kind: add
+        semver: minor
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/migration_business_case"
+        notes: |
+          Closed object requiring `horizon_months` (integer, minimum 1), `currency` (`^[A-Z]{3}$`),
+          `initial_cost`, `recurring_cost`, `recurring_benefit` (numbers, minimum 0) and `period`
+          (`month` | `year`), with optional unique `assumption_refs` and shared `evidence`. Each
+          number is bounded by the largest finite double, so the YAML values `.inf` and `.nan` are
+          rejected; nothing has a default.
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/migration.schema.yaml#/properties/migration/properties/business_case"
+        notes: "Optional; a `$ref` to `migration_business_case`."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/migrations.schema.yaml#/$defs/register_entry/properties/related_decisions"
+        notes: "Optional unique list of `decision_ref`, with no minimum length and no default."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/migrations.schema.yaml#/$defs/register_entry/properties/business_case"
+        notes: "Optional; a `$ref` to `migration_business_case`."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/decisions.schema.yaml#/$defs/decision/properties/participants"
+        notes: "Optional; a `$ref` to `decision_participants`."
+      - kind: add
+        semver: minor
+        target: "schema/v2.8/governance/decisions.schema.yaml#/$defs/decision_participants"
+        notes: "Closed object with at least one of `decision_makers`, `consulted` and `informed`, each a unique list of at least one `owner_ref`."
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "The traceability map names the three new reference positions, and the migration section describes the business case and its totals."
+  - version: "2.8.94"
+    date: "2026-11-14"
+    step: "a capability lists the products it is available in"
+    summary: |
+      A model can declare the products its capabilities are built into, and a capability can state
+      the products it is available in.
+
+      - `products` in `blueprint.yaml`, beside `domains`: the product registry. Each entry has an
+        `id`, PDT followed by three or more digits, model-wide and with no context prefix; a `name`
+        on one line without surrounding whitespace; and an optional `description` that states
+        something. No other property is accepted, and a product contains no other product.
+      - `products` on a capability: the products it is available in, a list of product ids, each
+        listed once. A capability may be available in several products, so counts per product can
+        overlap. Without the field, a capability takes the whole list of the nearest capability
+        above it in `children` that states one. A stated list replaces the inherited list instead
+        of adding to it, and an empty list is a stated replacement that assigns no product. When
+        neither the capability nor any capability above it states a list, its products are not
+        stated.
+      - `product_ref` in the metamodel: the reference both fields use, `^PDT\d{3,}$`.
+
+      A product id resolves like every other reference: a capability naming an id the registry does
+      not declare is a cross-reference error, and an id declared twice is a duplicate. For example:
+
+          # blueprint.yaml
+          products:
+            - id: PDT001
+              name: Storefront
+            - id: PDT002
+              name: Marketplace
+              description: Lets third-party sellers list and ship their own goods.
+
+          # capability.yaml
+          capabilities:
+            - id: CAP001
+              name: Order Management
+              level: 1
+              products: [PDT001, PDT002]
+              children:
+                - id: CAP002
+                  name: Order Capture
+                  level: 2
+                - id: CAP003
+                  name: Seller Payouts
+                  level: 2
+                  products: [PDT002]
+
+      Order Capture is available in both products, from Order Management; Seller Payouts replaces
+      that list and is available in the Marketplace only.
+
+      BACKWARD: every document valid under 2.8.93 is valid under 2.8.94. Not FORWARD: a 2.8.93
+      validator rejects a root `products` registry and a capability carrying `products`. No
+      instance migration is needed. Minted rather than folded into 2.8.93 because the set of
+      accepted documents changes.
+    changes:
+      - kind: add
+        semver: minor
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/product_ref"
+        notes: "Pattern `^PDT\\d{3,}$`: a product declared in the root registry, model-wide with no context prefix."
+      - kind: add
+        semver: minor
+        target: "schema/v2.8/blueprint.schema.yaml#/properties/products"
+        notes: "Optional root registry beside `domains`: a list of `$defs/product`."
+      - kind: add
+        semver: minor
+        target: "schema/v2.8/blueprint.schema.yaml#/$defs/product"
+        notes: "Closed object with required `id` (`product_ref`) and `name` (one line, no surrounding whitespace) and an optional `description` holding a visible character."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/governance/capability.schema.yaml#/$defs/capability/properties/products"
+        notes: |
+          Optional unique list of `product_ref`, with no minimum length and no default. The
+          description states the inherited list through `children`, its replacement by a stated
+          list, and the empty list as a stated replacement.
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "The id pattern registry names the product band, `PDT\\d{3,}`, and the cross-layer reference table names `capability.products`."
+  - version: "2.8.93"
+    date: "2026-11-14"
+    step: "a service states its role and what it routes to"
+    summary: |
+      A service can state the responsibility it takes in front of other services and the services
+      it forwards requests to, and an infrastructure resource can route requests to a service.
+
+      - `role` on a service: `gateway`, an entry point that receives requests from clients and
+        forwards them to backend services, or `bff` (backend for frontend), a gateway dedicated to
+        one frontend or client experience. The values are the new metamodel vocabulary
+        `service_role`. Optional, with no default, and accepted on every `kind`; the role leaves the
+        kind as it is, so a gateway can be `kind: api` and an edge function that forwards requests
+        is `kind: function` with `role: gateway`. Running at the network edge is a placement,
+        stated by the `edge` substrate of an environment or deployment scope, not a role. No role
+        is inferred from a name, a kind or a tag.
+      - `routes_to` on a service: the services it forwards requests to, a list of exact service
+        references, each listed once. It states forwarding and nothing else (not the protocol, the
+        operations, authentication or deployment), and contracts written later do not replace it.
+        A runtime dependency that is not forwarding, such as a token check against an identity
+        service, stays in `uses`. An absent or empty list states only that the model names no
+        targets, not that the service forwards nothing.
+      - An infrastructure relation of `type: routes_to` may name a service (SVC###) as its
+        `target`, as a bought API gateway or load balancer does for the services behind it. Every
+        other verb still names a resource, and a `routes_to` to a resource keeps its `outputs`. A
+        relation whose target is a service carries no `outputs`, not even an empty list, because a
+        service publishes no resource outputs. A resource type (RT###) or a third-party package
+        (PKG###) is never a target.
+
+      Architecture and C4 views retain a service's kind while showing its Gateway or BFF role.
+      Authored forwarding reaches exact backend service ids and is distinct from runtime dependencies
+      and imports. Infrastructure maps show service route endpoints separately from resources;
+      placement follows resource intent and remains unknown when the model does not state it.
+
+      Both references resolve like every other reference: an id that names nothing declared is a
+      cross-reference error, and a target written without the scope prefix its declaration carries
+      resolves to nothing. For example:
+
+          services:
+            - id: mobile.SVC001
+              name: mobile-bff
+              kind: api
+              role: bff
+              routes_to: [orders.SVC001]
+              uses: [identity.SVC002]
+
+          resources:
+            - id: IR001
+              kind: api-gateway
+              name: Public gateway
+              relations:
+                - type: routes_to
+                  target: mobile.SVC001
+
+      The BFF forwards business requests to the orders service and checks tokens with the identity
+      service; the bought gateway forwards to the BFF.
+
+      BACKWARD: every document valid under 2.8.92 is valid under 2.8.93. Not FORWARD: a 2.8.92
+      validator rejects a service carrying `role` or `routes_to`, and a resource relation routing
+      to a service. No instance migration is needed. Minted rather than folded into 2.8.92 because
+      the set of accepted documents changes.
+      This release also exempts entries with `kind: feature` from the informational
+      `capability-nested-deeper-than-two-levels` rule at every depth: a feature sits one level
+      below the capability it serves. Capabilities, including entries with omitted `kind`,
+      retain the nesting diagnostic. Schema acceptance is unchanged by this exemption.
+      Residual risk of the fold: version 2.8.93 describes two checker states with identical
+      schema acceptance while the release is untagged and unported.
+      Authored forwarding appears as `routes_to` graph edges from services to services and from
+      infrastructure resources to services or resources, resolving exact declared ids. Reverse
+      impact reaches built and bought gateways. Routing states neither placement nor resource intent.
+      Archally Pro's `bp check` reports warning-level advisories: `gateway-without-route` for a
+      gateway or BFF naming no targets, `routes-target-is-library` for a resolved route to a declared
+      library, and `routes-restates-uses` at each redundant `uses` entry. Unresolved authored routes
+      retain their reference errors without an additional missing-route warning.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/metamodel.schema.yaml#/$defs/service_role"
+        notes: "Enum `gateway`, `bff`: the responsibility a service takes in front of other services, independent of `service_kind`."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/role"
+        notes: "Optional `service_role`, no default, on every service kind."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/routes_to"
+        notes: "Optional unique list of `service_ref`: the services this one forwards requests to. An empty list is accepted."
+      - kind: docs
+        semver: none
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/uses"
+        notes: "The description states that a service this one forwards requests to belongs in `routes_to`."
+      - kind: change
+        semver: patch
+        target: "schema/v2.8/design/infrastructure.schema.yaml#/$defs/infra_relation_edge"
+        notes: |
+          `target` accepts `infra_resource_ref` or `service_ref`. A conditional keeps every verb
+          other than `routes_to` on a resource target, with the error at `target`, and refuses
+          `outputs` on a relation whose target is a service, with the error at `outputs`. The edge,
+          `target`, `outputs` and resource `relations` descriptions state both.
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "The relationship table names `service.routes_to` and a resource's `routes_to` relation to a service."
+  - version: "2.8.92"
+    date: "2026-11-14"
+    step: "a use case step states its order"
+    summary: |
+      A step of a use case's main scenario can state which steps must be finished before it
+      starts, whether it may be skipped, whether it may happen more than once, and the business
+      rule behind a constraint on it. Five optional fields, on main scenario steps only:
+
+      - `id`: UCS followed by 3 or more digits, with no context prefix. Unique within its main
+        scenario; another use case may use the same identifier. It names a step, not an entity.
+      - `after`: the ids of the steps of the same scenario that must be finished first, each
+        listed once; every one is required. When present it replaces the default predecessor, the
+        step listed immediately before. An empty list states that the step needs no predecessor.
+      - `optional`: true or false; omitted means the step happens. A skipped optional step counts
+        as finished for the steps that follow it, is recorded as skipped rather than done, and
+        does not perform its operation.
+      - `repeat`: true or false; omitted means once. True means one or more times until the actor
+        finishes the step, or zero or more together with `optional: true`. The steps that follow
+        it start after its last repetition; a repetition is not a return to an earlier step.
+      - `rule`: a rule reference, resolved like every other rule reference. It documents the
+        reason for a constraint and does not make the scenario enforce the rule.
+
+      A step without `after` follows the step listed immediately before it, as every existing
+      scenario reads. The list keeps its order for the reader, and `step` stays the label a reader
+      sees and the anchor an alternative flow names; its value does not order the steps. Two steps
+      with no required order between them happen in either order, one at a time: freedom of order
+      is not concurrency, which a process states. Whether an `after` id names a step of the same
+      scenario, and whether the order closes a cycle, are not checked by the schema.
+
+      A user story's `operations` lists each operation once, and its order carries no meaning: a
+      story states no order of work.
+
+      BACKWARD for use cases: every use case valid under 2.8.91 is valid under 2.8.92, and older
+      closed schemas reject a step carrying any of the five fields. NOT BACKWARD for user stories,
+      stated rather than implied: a story listing one operation twice was accepted under 2.8.91
+      and is rejected under 2.8.92. Such a story is fixed by removing the repeated entry; the order
+      of the remaining list does not matter. No instance migration is provided. The published
+      examples list no operation twice and validate unchanged. Minted rather than folded into
+      2.8.91 because the set of accepted documents changes.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/main_scenario/items"
+        notes: |
+          Optional `id` (use_case_step_id), `after` (a unique list of use_case_step_id, empty
+          allowed), `optional` (boolean), `repeat` (boolean) and `rule` (the metamodel's
+          rule_ref). The `main_scenario` and `step` descriptions state the default predecessor
+          and that the list, not the number, orders the steps.
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/use_case_step_id"
+        notes: "Pattern `^UCS\\d{3,}$`: a step identifier local to one main scenario, with no context prefix."
+      - kind: change
+        semver: major
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/user_story/properties/operations"
+        notes: "`uniqueItems: true`; the description states that the list is a set and orders nothing."
+      - kind: docs
+        semver: none
+        target: docs/2026-11-14-use-case-step-order.md
+        notes: "How the order is read, with five examples: a sequence, two steps in either order, a step that waits for several, optional and repeated steps, and a rule link."
+      - kind: docs
+        semver: none
+        target: docs/schema-reference.md
+        notes: "The id pattern registry names the use case step band, `UCS\\d{3,}`."
+  - version: "2.8.91"
+    date: "2026-11-14"
+    step: "required text states something"
+    summary: |
+      Every required text field states something. 166 required string properties that accepted an
+      empty string now carry the constraint that fits what they hold:
+
+      - 84 names, titles, state names and short phrases are one line with no surrounding whitespace
+        (`^\S(?:.*\S)?$`). `name: ""`, `name: "Orders "` and a block scalar such as `name: |`
+        (read as "Orders" plus a line break) are rejected.
+      - 49 prose fields (statements, descriptions, reasons, mitigations, rationale, targets a person
+        agrees to) need at least one visible character (`\S`). A `statement` that is empty or holds
+        only whitespace is rejected; prose over several lines stays valid.
+      - 13 identifiers, codes, and parameter and secret names are one token without whitespace
+        (`^\S+$`).
+      - 14 fields carry the pattern their definition implies: a GraphQL Name for
+        `graphql_binding.field`, an RFC 9110 token for a response header name, a JSON Pointer to a
+        field for a patch `path`, a relative `migration.yaml` or `*.migration.yaml` file for a
+        migration entry, a relative `.yaml` model file for a tracked operation's `file`, a
+        lowercase kind word for a resource `kind`, a render `tool`, a contract `kind` and a new
+        entity's type, one method word for an endpoint `method`, an absolute URL template for a
+        tracker `url`, the union of the concept and operation reference patterns for an actor
+        interaction `target`, and a question ending in "?" for a probe `question`.
+      - 3 relative paths (`code_ref_entry.path`, the render manifest's `model` and a test case's
+        contract `file`) start with neither "/" nor "\".
+      - `repository_config.url` is a URI, the render manifest's `stamp` is a date or a date-time,
+        and a parameter's `type` is one of `path`, `query`, `header` and `cookie`.
+
+      `edit_window.prior` stays unconstrained: it is empty when an operation only inserted text.
+
+      A tightening in a patch version, stated rather than implied: a document holding an empty,
+      blank or padded value in one of these fields was accepted under 2.8.90 and is rejected under
+      2.8.91. FORWARD compatible: every document valid under 2.8.91 is valid under 2.8.90. The
+      published examples and the schema's own examples validate unchanged. A model that fails now
+      is fixed by writing the text the field asks for, or by trimming the surrounding whitespace;
+      no instance migration is provided. Minted rather than folded into 2.8.90, which is tagged and
+      published, because the set of accepted documents changes.
+    changes:
+      - kind: change
+        semver: major
+        target: schema/v2.8/blueprint.schema.yaml
+        notes: |
+          12 required text fields. One line without surrounding whitespace: the root `name`,
+          `constitution.principles[].name`, `constitution.conventions[].name`, `domain.name`,
+          `subdomain.name`, `profile.name`, `profile.schemas[].file`. At least one visible character:
+          `constitution.principles[].statement`, `constitution.conventions[].rule`.
+          `migrations[].file`: pattern `^(?![/\\])(?:.*[./])?migration\.ya?ml$`.
+          `repository_config.url`: format `uri`. `tracker_config.url`: pattern
+          `^[A-Za-z][A-Za-z0-9+.-]*://\S+$`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/arch.schema.yaml
+        notes: |
+          13 required text fields. One line without surrounding whitespace: the root `name`,
+          `message_channel.name`, `party.name`, `context.name`, `team.name`, `dependency.name`,
+          `entity.name`, `service.name`, `probe.name`. At least one visible character:
+          `contract_structures.*.description`, `blind_spot.omitted_fact`. One token without
+          whitespace: `service.servers[].url`. `probe.question`: pattern `^\S.*\?$`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/concepts.schema.yaml
+        notes: |
+          8 required text fields. One line without surrounding whitespace: `concept.examples[].name`,
+          `concept.states[].name`, `actor.name`, `actor.interactions[].verb`, `persona.name`,
+          `enumeration.values[].name`. At least one visible character:
+          `concept_attribute.description`. `actor.interactions[].target`: pattern
+          `^(?:([a-z][a-z0-9-]*\.)?(?:CN\d{3}|(?:CMD|EVT|QRY|DOC)\d{3,})|[a-z][a-z0-9-]*:[a-z][a-zA-Z0-9]*)$`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/domain.schema.yaml
+        notes: |
+          20 required text fields. One line without surrounding whitespace: the root `name`,
+          `operation.side_effects.reads[].target`, `operation.side_effects.writes[].target`,
+          `operation.examples[].name`, `endpoint.path`, `filter.name`, `filter.ref`,
+          `error_entry.name`. At least one visible character: `response.description`,
+          `reason.description`, `question.statement`. One token without whitespace: `method.name`,
+          `parameter.name`, `rpc_parameter.name`, `response.code`, `reason.name`. `endpoint.method`:
+          pattern `^[A-Za-z]+$`. `graphql_binding.field`: pattern `^[_A-Za-z][_0-9A-Za-z]*$`.
+          `parameter.type`: the metamodel's `parameter_location` (`path`, `query`, `header`,
+          `cookie`). `response_header.name`: pattern `` ^[!#$%&'*+.^_`|~0-9A-Za-z-]+$ ``.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/dynamics.schema.yaml
+        notes: |
+          5 required text fields. One line without surrounding whitespace:
+          `parallelism_opportunity.name`, `race_condition.name`. At least one visible character:
+          `race_condition.scenario`, `race_condition.impact`, `race_condition.mitigation`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/infrastructure.schema.yaml
+        notes: |
+          10 required text fields. One line without surrounding whitespace: `resource.name`,
+          `deployment_tier.name`, `environment.name`, `deployment_scope.name`, `iac_ref.locator`,
+          `binding_module.ref`, `access_grant.role`. One token without whitespace: `secret_ref.name`,
+          `io_field.name`. `resource.kind`: pattern `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/interactions.schema.yaml
+        notes: |
+          2 required text fields. One line without surrounding whitespace: `screen.name`,
+          `action.name`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/models.schema.yaml
+        notes: |
+          1 required text field. At least one visible character: `model_schema.description`.
+          `parameter_definition.in` references the metamodel's `parameter_location`, the same four
+          values it listed inline; its accepted values are unchanged.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/quality.schema.yaml
+        notes: |
+          18 required text fields. One line without surrounding whitespace: `metric.name`,
+          `metric.unit`, `kpi.name`, `slo.name`, `sla.name`, `security_requirement.name`,
+          `compliance_requirement.name`, `compliance_requirement.regulation`,
+          `resilience_requirement.name`, `finding.title`. At least one visible character:
+          `kpi.target`, `slo.target`, `sla.penalties[].condition`, `sla.penalties[].action`,
+          `security_requirement.requirement`, `compliance_requirement.requirement`,
+          `finding.statement`, `observability_signal.description`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/rules.schema.yaml
+        notes: |
+          5 required text fields. One line without surrounding whitespace: `rule.name`,
+          `transition_rule.name`, `transition_rule.from`, `transition_rule.to`. At least one visible
+          character: `transition_rule.guard.when`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/design/story.schema.yaml
+        notes: |
+          9 required text fields. One line without surrounding whitespace: the root `name`,
+          `process.title`, `process.end_states[].name`, `process_activity.name`, `use_case.name`. At
+          least one visible character: `user_story.goal`, `alternative_flow.condition`,
+          `alternative_flow.action`, `use_case.main_scenario[].action`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/governance/capability.schema.yaml
+        notes: |
+          1 required text field. One line without surrounding whitespace: `capability.name`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/governance/decisions.schema.yaml
+        notes: |
+          7 required text fields. One line without surrounding whitespace: `decision.title`,
+          `option.name`, `business_decision.name`. At least one visible character: `decision.summary`,
+          `rationale.problem`, `rationale.chosen`, `business_decision.description`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/governance/leverage.schema.yaml
+        notes: |
+          3 required text fields. One line without surrounding whitespace: `leverage_point.title`,
+          `watch_item.title`. At least one visible character: `leverage_point.one_thing`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/governance/motivation.schema.yaml
+        notes: |
+          14 required text fields. At least one visible character: `vision.statement`,
+          `goal.statement`, `non_goal.statement`, `non_goal.reason`, `risk.statement`,
+          `risk.mitigation`, `assumption.statement`, `assumption.consequence`, `trade_off.choice`,
+          `trade_off.selected`, `trade_off.rejected`, `trade_off.rationale`, `inquiry.statement`,
+          `concern.statement`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/governance/organization.schema.yaml
+        notes: |
+          3 required text fields. One line without surrounding whitespace: `party.name`,
+          `department.name`, `team.name`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/governance/roadmap.schema.yaml
+        notes: |
+          2 required text fields. One line without surrounding whitespace: `milestone.name`,
+          `work_item.name`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/governance/test-cases.schema.yaml
+        notes: |
+          5 required text fields. One line without surrounding whitespace: `fitness_function.name`,
+          `test_case.name`. At least one visible character: `fitness_function.assertion`. A relative
+          path: `test_case.contract.file`. `test_case.contract.kind`: pattern `^[a-z][a-z0-9_-]*$`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/governance/value-stream.schema.yaml
+        notes: |
+          2 required text fields. One line without surrounding whitespace: `value_stream.name`,
+          `value_stream_stage.name`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/metamodel.schema.yaml
+        notes: |
+          3 required text fields. At least one visible character: `logic_tuple.then`,
+          `evidence[].summary`. A relative path: `code_ref_entry.path`. New `$defs/parameter_location`
+          (`path`, `query`, `header`, `cookie`), the one declaration of a request parameter's
+          location, referenced by a domain `parameter.type` and a model `parameter_definition.in`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/migration.schema.yaml
+        notes: |
+          7 required text fields. One line without surrounding whitespace: `entity_change.target`,
+          `property_change.target`, `relationship_change.subject`, `relationship_change.object`,
+          `meta_change.target`. At least one visible character: `migration.description`. One token
+          without whitespace: `property_change.property`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/migrations.schema.yaml
+        notes: |
+          2 required text fields. One line without surrounding whitespace: `register_entry.name`. At
+          least one visible character: `register_change.description`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/render.manifest.schema.yaml
+        notes: |
+          4 required text fields. One line without surrounding whitespace: `license.name`. A relative
+          path: the root `model`. `stamp`: format `date` or `date-time`. `target.tool`: pattern
+          `^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$`.
+      - kind: change
+        semver: major
+        target: schema/v2.8/tracked-migrations.schema.yaml
+        notes: |
+          10 required text fields. One line without surrounding whitespace: `patch_op_patch.target`,
+          `patch_op_delete.target`. One token without whitespace: `patch_op_rename.from`,
+          `patch_op_rename.to`, `patch_op_rewrite_ref.from`, `patch_op_rewrite_ref.to`.
+          `patch_op_new.entity_type`: pattern `^[a-z][a-z0-9_-]*$`. `patch_op_new.file`: pattern
+          `^(?![/\\])[^\\\r\n]*\.ya?ml$`. `json_patch_op.path`: pattern `^(?:/(?:[^~/]|~[01])*)+$`.
+          `edit_site.file`: pattern `^(?![/\\])[^\\\r\n]*\.ya?ml$`.
   - version: "2.8.90"
     date: "2026-11-12"
     step: "ecommerce v2.8 and eShop are public examples"

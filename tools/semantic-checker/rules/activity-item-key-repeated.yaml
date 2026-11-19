@@ -1,0 +1,13 @@
+engineVersion: "0.1"
+rules:
+  - id: activity-item-key-repeated
+    severity: error
+    description: >-
+      Two stage questions, or two gates, of one activity share a key, so a record that cites the activity and the key cannot say which one it means.
+    find:
+      entity_type: Process
+    check:
+      custom:
+        module: ./work-process.mjs
+        export: activityItemKeyRepeated
+    message: 'Activity question or gate keys repeat in process "{displayId}": {problems}.'
