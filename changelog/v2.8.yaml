@@ -5,6 +5,150 @@
 #
 # The index, with every line and its status, is ../CHANGELOG.md.
 entries:
+  - version: "2.8.108"
+    date: "2026-11-25"
+    step: "prose fields accept any length in schema validation; length guidance lives in the quality gate"
+    summary: |
+      Twenty-two authored prose fields across twelve schema files (twenty `summary` fields,
+      `concern.title` and `operation.examples[].description`) accept strings of any length without a
+      schema `maxLength` constraint. Editorial length limits for text fields are reported as advisory
+      warnings by the quality gate (soft limit and 1.5x upper advisory limit) rather than schema
+      validation errors. The two integer `maxLength` property declarations in
+      `design/models.schema.yaml` (`model_property.maxLength` and `field_definition.maxLength`)
+      remain unchanged.
+
+      BACKWARD, PATCH: every document valid under 2.8.107 remains valid under 2.8.108, and no
+      instance migration is needed. Not FORWARD: validators predating 2.8.108 reject summaries
+      longer than 200 characters or operation example descriptions longer than 255 characters. Minted
+      as a new patch because the set of accepted documents grows.
+    changes:
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/arch.schema.yaml#/$defs/probe/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/concepts.schema.yaml#/$defs/concept/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/concepts.schema.yaml#/$defs/actor/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/concepts.schema.yaml#/$defs/enumeration/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties/examples/items/properties/description"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/dynamics.schema.yaml#/$defs/parallelism_opportunity/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/dynamics.schema.yaml#/$defs/race_condition/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/interactions.schema.yaml#/$defs/screen/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/quality.schema.yaml#/$defs/metric/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/quality.schema.yaml#/$defs/finding/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/rules.schema.yaml#/$defs/rule/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/rules.schema.yaml#/$defs/transition_rule/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/user_story/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/design/story.schema.yaml#/$defs/use_case/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/governance/decisions.schema.yaml#/$defs/decision/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/governance/leverage.schema.yaml#/$defs/leverage_point/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/goal/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/inquiry/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/governance/motivation.schema.yaml#/$defs/concern/properties/title"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+      - kind: modify
+        semver: patch
+        target: "schema/v2.8/governance/test-cases.schema.yaml#/$defs/test_case/properties/summary"
+        notes: "Accepts strings of any length; editorial length is checked by the quality gate."
+  - version: "2.8.107"
+    date: "2026-11-19"
+    step: "migrations name their purpose and operations name what they replace"
+    summary: |
+      Migration documents, history entries and tracked entries accept optional `leverage_refs`,
+      a list of distinct leverage point ids. A link records purpose, not completion. The leverage
+      point's `migration_refs` remains valid and readable, soft-deprecated with a warning naming
+      the edit needed to move each link to its migration. Both ends contribute to one
+      `migration_serves_leverage` edge (Migration -> LeveragePoint), with provenance `migration`,
+      `leverage-point` or `both`. The `leverage_migration` relation is retired; chains and its graph
+      style use the new direction. Tracked entries resolve against their model without becoming
+      graph nodes. BACKWARD, PATCH; validators predating this field reject it. Removal of the old
+      field belongs to the next major schema line.
+      Operations accept an optional unique `supersedes` list of operation references. References
+      resolve against every retained model record, including a removal's before data. The graph
+      draws one `operation_supersedes` edge per pair present in the same state, with no placeholder
+      for an absent target. Self-replacement and replacement cycles produce warnings, including
+      operations retained only in a removal's `before` data. Coexistence
+      is valid, and replacement does not imply that callers move. The field is BACKWARD, PATCH;
+      older validators reject it.
+      Replay applies an entity `rename`: the entity keeps its graph identity, content, file and
+      relationships under its new declared id, and children placed in a renamed context follow it.
+      A later change in the same migration does not yet address the entity by its new id. Entity
+      bodies in a migration's `before` and `after` blocks are checked against their entity schemas;
+      an invalid body produces a warning naming the migration, the body and the field. Placement
+      fields replay reads (`_written_in`, `_context`) are not checked as entity fields.
+    changes:
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties/supersedes"
+        notes: "Optional unique operation references record succession; graph edges join operations in one state and cycles warn."
+      - kind: add
+        semver: patch
+        target: "schema/v2.8/migration.schema.yaml#/properties/migration/properties/leverage_refs"
+        notes: "Optional unique leverage refs in all three migration forms; tracked reference checks included."
+      - kind: deprecate
+        semver: none
+        target: "schema/v2.8/governance/leverage.schema.yaml#/$defs/leverage_point/properties/migration_refs"
+        notes: "Still accepted and read; warn with the remedy per migration."
   - version: "2.8.106"
     date: "2026-11-18"
     step: "an inquiry pins its question to any element the model declares by a typed id"

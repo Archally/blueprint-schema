@@ -68,7 +68,8 @@ $defs:
     description: >
       A prioritized cross-cutting intervention - "the one thing to do for X". Synthesizes the model:
       it references (does NOT duplicate) the findings/risks/decisions/fitness-functions it addresses,
-      the migrations/roadmap-work-items that deliver it, and the goals/value-streams it advances.
+      the roadmap work-items that deliver it and the goals/value-streams it advances; the migrations
+      that carry it out name it in their own `leverage_refs`.
       Caps the remediation chain finding → risk → decision → migration with a prioritization tier.
       Connected to decisions three ways: directly via `decision_refs`; indirectly via
       `finding_refs → finding.decision_refs`; and via `realized_by → work_item.realizes_decisions`.
@@ -87,8 +88,7 @@ $defs:
         description: "Short imperative title of the intervention (e.g. 'Isolate reporting workloads from the interactive path')."
       summary:
         type: string
-        maxLength: 200
-        description: "One-line summary for listings (≤200 chars)."
+        description: "One-line summary for listings."
       one_thing:
         type: string
         pattern: "\\S"
@@ -133,9 +133,16 @@ $defs:
       # --- Deliver (TO-BE): how it gets done ---
       migration_refs:
         type: array
+        deprecated: true
         items:
           $ref: "../metamodel.schema.yaml#/$defs/migration_ref"
-        description: "Migrations (MIG###) that implement the TO-BE change this intervention calls for."
+        description: >
+          SOFT-DEPRECATED (v2.8.107). Migrations (MIG###) that carry out this intervention, named
+          from the leverage point. The link is stated by the migration instead, in its
+          `leverage_refs`. Still accepted and read as the same link; removal is on the next major
+          line. Where a migration already lists this leverage point, remove its entry here.
+          Otherwise add this leverage point to the migration's `leverage_refs` before removing
+          the entry here.
       realized_by:
         type: array
         items:

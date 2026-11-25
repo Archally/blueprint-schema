@@ -89,7 +89,6 @@ $defs:
         description: "Human-readable name (e.g. 'Parallel inventory scanning')."
       summary:
         type: string
-        maxLength: 200
         description: "One-line summary for listings."
       operations:
         type: array
@@ -206,7 +205,6 @@ $defs:
         description: "Human-readable name for this hazard."
       summary:
         type: string
-        maxLength: 200
         description: "One-line summary for listings."
       scenario:
         type: string

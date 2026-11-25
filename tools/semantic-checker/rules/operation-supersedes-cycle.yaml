@@ -1,0 +1,19 @@
+engineVersion: "0.1"
+rules:
+  - id: operation-supersedes-cycle
+    severity: warn
+    description: >-
+      An operation names itself in `supersedes`, or a chain of `supersedes` entries returns to the operation it
+      started from. A replacement runs from a successor to what it takes over, so a cycle says each operation
+      replaces the other and a reader cannot tell which one is current. The finding names the cycle once, from
+      its lowest id. The check includes operations retained in a removal's `before` data. A finding
+      whose lowest operation exists only in history is attached to its migration. Override per project via
+      .blueprint-lint.yaml
+      (e.g. `operation-supersedes-cycle: off`).
+    find:
+      entity_type_in: [Operation, Migration]
+    check:
+      custom:
+        module: ./operation-supersedes-cycle.mjs
+        export: operationSupersedesCycle
+    message: 'Operation replacement cycle: {cycle}.'

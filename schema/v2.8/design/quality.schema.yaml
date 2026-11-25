@@ -105,7 +105,6 @@ $defs:
         description: "Human-readable metric name (e.g. 'Order Processing Latency')."
       summary:
         type: string
-        maxLength: 200
         description: "One-line summary for listings."
       type:
         type: string
@@ -685,7 +684,6 @@ $defs:
         description: "Short descriptive title understandable without reading the full statement."
       summary:
         type: string
-        maxLength: 200
         description: "One-line summary for listings."
       kind:
         type: string

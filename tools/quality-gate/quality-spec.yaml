@@ -340,8 +340,13 @@ structure:
   prose_fields: [description, summary, statement]
   reference_text_fields: [description, logic]
 
-# Advisory limits do not affect coverage, baselines, verdicts or strict exit codes.
+# Advisory text limits do not affect coverage, baselines, verdicts or strict exit codes.
+# Field-kind entries (`<definition> / <property>` or `<schema>: <definition> / <property>`) take
+# precedence over bare field-name fallbacks. Exempt field kinds set `off: true`.
+# Each numeric limit derives its hard limit as 1.5 times `max_chars` rounded to the nearest 10
+# unless `hard_chars` overrides it.
 text_length:
+  # Fallback limits by bare field name when no schema field kind matches.
   description:
     max_chars: 400
     calibration: "archally 324/4722 (6.86%); prestashop 158/5686 (2.78%); ecommerce 79/778 (10.15%); realestate-en 11/1058 (1.04%)."
@@ -355,3 +360,494 @@ text_length:
   context:
     max_chars: 600
     calibration: "archally 0/0 (N/A); prestashop 0/0 (N/A); ecommerce 0/1 (0.00%); realestate-en 0/0 (N/A)."
+
+  # Per-field-kind limits keyed by schema definition and property path.
+  "(root) / constitution.conventions[].name": { max_chars: 140 }
+  "(root) / constitution.conventions[].rule": { max_chars: 280 }
+  "(root) / constitution.principles[].applies_to": { max_chars: 140 }
+  "(root) / constitution.principles[].name": { max_chars: 140 }
+  "(root) / constitution.principles[].statement": { max_chars: 280 }
+  "(root) / contact{oneOf:1}.name": { max_chars: 140 }
+  "(root) / horizon": { max_chars: 140 }
+  "(root) / license{oneOf:2}.name": { max_chars: 140 }
+  "(root) / migration.author": { max_chars: 140 }
+  "(root) / migration.description": { max_chars: 400 }
+  "(root) / migration.rationale": { max_chars: 800 }
+  "(root) / migration.tags[]": { max_chars: 140 }
+  "(root) / name": { max_chars: 140 }
+  "(root) / ranking_basis[]": { max_chars: 280 }
+  "(root) / rollback.external_actions[]": { max_chars: 280 }
+  "(root) / rollback.warnings[]": { max_chars: 280 }
+  "(root) / stage": { max_chars: 140 }
+  "acceptance_criteria / new_tests_to_add[]": { max_chars: 280 }
+  "acceptance_criteria / reviews_required[]": { max_chars: 280 }
+  "access_grant / identity": { max_chars: 140 }
+  "access_grant / role": { max_chars: 140 }
+  "access_grant / target": { max_chars: 140 }
+  "action / description": { max_chars: 400 }
+  "action / name": { max_chars: 140 }
+  "activity_gate / criterion": { max_chars: 140 }
+  "activity_question / statement": { max_chars: 280 }
+  "actor / description": { max_chars: 400 }
+  "actor / interactions[].description": { max_chars: 400 }
+  "actor / interactions[].verb": { max_chars: 140 }
+  "actor / name": { max_chars: 140 }
+  "actor / responsibilities[]": { max_chars: 280 }
+  "actor / summary": { max_chars: 140, max_sentences: 1 }
+  "alternative_flow / action": { max_chars: 140 }
+  "alternative_flow / condition": { max_chars: 140 }
+  "association / description": { max_chars: 280 }
+  "assumption / consequence": { max_chars: 400 }
+  "assumption / description": { max_chars: 400 }
+  "assumption / statement": { max_chars: 280 }
+  "binding / description": { max_chars: 400 }
+  "binding / profile": { max_chars: 140 }
+  "binding_module / system": { max_chars: 140 }
+  "blind_spot / cause": { max_chars: 400 }
+  "blind_spot / consequence": { max_chars: 400 }
+  "blind_spot / established_by": { max_chars: 280 }
+  "blind_spot / omitted_fact": { max_chars: 280 }
+  "blocker / {oneOf:0}": { max_chars: 280 }
+  "blocker / {oneOf:1}.text": { max_chars: 280 }
+  "blueprint: (root) / description": { max_chars: 600 }
+  "business_decision / description": { max_chars: 800 }
+  "business_decision / name": { max_chars: 140 }
+  "capability / description": { max_chars: 400 }
+  "capability / name": { max_chars: 140 }
+  "change_item / after": { off: true }
+  "change_item / before": { off: true }
+  "change_item / notes": { max_chars: 400 }
+  "change_stream / description": { max_chars: 400 }
+  "change_stream / name": { max_chars: 140 }
+  "code_ref_entry / description": { max_chars: 140 }
+  "code_ref_entry / role": { max_chars: 140 }
+  "compliance_requirement / description": { max_chars: 400 }
+  "compliance_requirement / name": { max_chars: 140 }
+  "compliance_requirement / regulation": { max_chars: 140 }
+  "compliance_requirement / requirement": { max_chars: 280 }
+  "compliance_requirement / retention.period": { off: true }
+  "concept / algorithm.derivation": { max_chars: 400 }
+  "concept / algorithm.description": { max_chars: 400 }
+  "concept / algorithm.methods.*.certainty": { max_chars: 140 }
+  "concept / algorithm.methods.*.description": { max_chars: 400 }
+  "concept / algorithm.methods.*.speed": { max_chars: 140 }
+  "concept / definition": { max_chars: 400 }
+  "concept / description": { max_chars: 600 }
+  "concept / examples[].description": { max_chars: 140 }
+  "concept / examples[].name": { max_chars: 140 }
+  "concept / format.comparison_type": { max_chars: 140 }
+  "concept / format.examples[]": { off: true }
+  "concept / format.input_type": { max_chars: 140 }
+  "concept / format.pattern": { off: true }
+  "concept / identity": { max_chars: 280 }
+  "concept / name": { max_chars: 140 }
+  "concept / purpose": { max_chars: 280 }
+  "concept / rationale": { max_chars: 600 }
+  "concept / scope": { max_chars: 280 }
+  "concept / states[]{oneOf:1}.description": { max_chars: 140 }
+  "concept / states[]{oneOf:1}.name": { max_chars: 140 }
+  "concept / summary": { max_chars: 140, max_sentences: 1 }
+  "concept / synonyms[]": { max_chars: 140 }
+  "concept / term": { max_chars: 140 }
+  "concept_attribute / description": { max_chars: 140 }
+  "concept_attribute / example": { off: true }
+  "concern / description": { max_chars: 400 }
+  "concern / statement": { max_chars: 280 }
+  "concern / title": { max_chars: 140 }
+  "context / description": { max_chars: 600 }
+  "context / name": { max_chars: 140 }
+  "context / responsibilities[]": { max_chars: 280 }
+  "context / summary": { max_chars: 280, max_sentences: 1 }
+  "contract_structures / .*.condition": { max_chars: 140 }
+  "contract_structures / .*.description": { max_chars: 400 }
+  "contracts / security_schemes.*.scopes.*": { max_chars: 280 }
+  "cpu_spec / complexity": { off: true }
+  "decision / consequences.negative[]": { max_chars: 280 }
+  "decision / consequences.positive[]": { max_chars: 280 }
+  "decision / decision_scope": { max_chars: 140 }
+  "decision / description": { max_chars: 600 }
+  "decision / summary": { max_chars: 280, max_sentences: 1 }
+  "decision / title": { max_chars: 140 }
+  "department / description": { max_chars: 400 }
+  "department / name": { max_chars: 140 }
+  "department / responsibilities[]": { max_chars: 280 }
+  "dependency / description": { max_chars: 400 }
+  "dependency / name": { max_chars: 140 }
+  "dependency / translation": { max_chars: 280 }
+  "deployment_scope / description": { max_chars: 400 }
+  "deployment_scope / name": { max_chars: 140 }
+  "deployment_scope / provider": { max_chars: 140 }
+  "deployment_scope / region": { max_chars: 140 }
+  "deployment_scope / summary": { max_chars: 140, max_sentences: 1 }
+  "deployment_tier / description": { max_chars: 280 }
+  "deployment_tier / name": { max_chars: 140 }
+  "deployment_tier / region": { max_chars: 140 }
+  "deployment_topology / constraints[]": { max_chars: 280 }
+  "design/arch: (root) / description": { max_chars: 400 }
+  "design/domain: (root) / description": { max_chars: 800 }
+  "design/infrastructure: (root) / description": { max_chars: 800 }
+  "domain / description": { max_chars: 400 }
+  "domain / name": { max_chars: 140 }
+  "domain_coverage / description": { max_chars: 400 }
+  "domain_coverage / reason": { max_chars: 280 }
+  "edit_window / prior": { off: true }
+  "endpoint / description": { max_chars: 280 }
+  "endpoint / group": { max_chars: 140 }
+  "entity / description": { max_chars: 400 }
+  "entity / name": { max_chars: 140 }
+  "entity_change / description": { max_chars: 140 }
+  "entity_change / group": { max_chars: 140 }
+  "entity_change / reason": { max_chars: 280 }
+  "enumeration / description": { max_chars: 140 }
+  "enumeration / name": { max_chars: 140 }
+  "enumeration / summary": { max_chars: 140, max_sentences: 1 }
+  "enumeration / term": { max_chars: 140 }
+  "enumeration / values[]{oneOf:0}": { max_chars: 140 }
+  "enumeration / values[]{oneOf:1}.description": { max_chars: 140 }
+  "enumeration / values[]{oneOf:1}.name": { max_chars: 140 }
+  "environment / name": { max_chars: 140 }
+  "environment / provider": { max_chars: 140 }
+  "environment_config / resource_name": { max_chars: 140 }
+  "error_entry / description": { max_chars: 400 }
+  "error_entry / name": { max_chars: 140 }
+  "evidence / [].summary": { max_chars: 280, max_sentences: 1 }
+  "execution_model / description": { max_chars: 400 }
+  "execution_model / rationale": { max_chars: 600 }
+  "expected_result / behavior": { max_chars: 280 }
+  "expected_result / output.sections[]": { max_chars: 280 }
+  "field_definition / description": { max_chars: 140 }
+  "field_definition / externalDocs.description": { max_chars: 140 }
+  "field_definition / pattern": { off: true }
+  "filter / name": { max_chars: 140 }
+  "finding / recommendation": { max_chars: 400 }
+  "finding / regulatory[]": { max_chars: 140 }
+  "finding / statement": { max_chars: 400 }
+  "finding / summary": { max_chars: 280, max_sentences: 1 }
+  "finding / title": { max_chars: 140 }
+  "fitness_function / assertion": { max_chars: 280 }
+  "fitness_function / description": { max_chars: 400 }
+  "fitness_function / name": { max_chars: 140 }
+  "goal / description": { max_chars: 600 }
+  "goal / examples[].description": { max_chars: 140 }
+  "goal / measure": { max_chars: 280 }
+  "goal / statement": { max_chars: 280 }
+  "goal / summary": { max_chars: 140, max_sentences: 1 }
+  "goal_relation / rationale": { max_chars: 600 }
+  "governance/roadmap: (root) / description": { max_chars: 280 }
+  "iac_ref / role": { max_chars: 140 }
+  "id_band / notes": { max_chars: 400 }
+  "impact_declaration / transitive_hints[]": { max_chars: 280 }
+  "infra_relation_edge / description": { max_chars: 140 }
+  "inquiry / description": { max_chars: 800 }
+  "inquiry / resolution": { max_chars: 600 }
+  "inquiry / statement": { max_chars: 280 }
+  "inquiry / summary": { max_chars: 140, max_sentences: 1 }
+  "inquiry_addressee / name": { max_chars: 140 }
+  "inquiry_earlier_addressee / note": { max_chars: 400 }
+  "io_field / description": { max_chars: 140 }
+  "io_spec / bottleneck": { max_chars: 280 }
+  "io_spec / pattern": { max_chars: 280 }
+  "io_spec / throughput": { off: true }
+  "kpi / description": { max_chars: 400 }
+  "kpi / name": { max_chars: 140 }
+  "kpi / target": { max_chars: 280 }
+  "kpi / thresholds.critical": { off: true }
+  "kpi / thresholds.warning": { off: true }
+  "kpi / window": { off: true }
+  "leverage_point / area": { max_chars: 140 }
+  "leverage_point / consequences_if_done[]": { max_chars: 280 }
+  "leverage_point / consequences_if_not_done[]": { max_chars: 280 }
+  "leverage_point / one_thing": { max_chars: 280 }
+  "leverage_point / summary": { max_chars: 280, max_sentences: 1 }
+  "leverage_point / title": { max_chars: 140 }
+  "logic_tuple / else": { max_chars: 140 }
+  "logic_tuple / then": { max_chars: 140 }
+  "logic_tuple / when": { max_chars: 140 }
+  "memory_spec / examples[].input": { max_chars: 280 }
+  "memory_spec / examples[].memory": { off: true }
+  "memory_spec / formula": { off: true }
+  "message_channel / description": { max_chars: 400 }
+  "message_channel / name": { max_chars: 140 }
+  "meta_change / description": { max_chars: 140 }
+  "meta_change / filter.tags[]": { max_chars: 140 }
+  "meta_change / group": { max_chars: 140 }
+  "meta_change / reason": { max_chars: 280 }
+  "method / description": { max_chars: 140 }
+  "method / summary": { max_chars: 140, max_sentences: 1 }
+  "metric / collection.source": { max_chars: 140 }
+  "metric / description": { max_chars: 400 }
+  "metric / name": { max_chars: 140 }
+  "metric / summary": { max_chars: 140, max_sentences: 1 }
+  "metric / unit": { max_chars: 140 }
+  "migration_dependency_reason / reason": { max_chars: 280 }
+  "milestone / deliverables[].description": { max_chars: 140 }
+  "milestone / description": { max_chars: 800 }
+  "milestone / name": { max_chars: 140 }
+  "milestone / success_criteria[]": { max_chars: 280 }
+  "model_property / description": { max_chars: 140 }
+  "model_property / pattern": { off: true }
+  "model_property / title": { max_chars: 140 }
+  "model_schema / description": { max_chars: 400 }
+  "navigation / condition": { max_chars: 140 }
+  "navigation / description": { max_chars: 280 }
+  "non_goal / description": { max_chars: 400 }
+  "non_goal / reason": { max_chars: 280 }
+  "non_goal / statement": { max_chars: 140 }
+  "objective / statistic": { max_chars: 140 }
+  "observability_pillar / strategy": { max_chars: 280 }
+  "observability_signal / condition": { max_chars: 140 }
+  "observability_signal / description": { max_chars: 400 }
+  "observability_signal / name": { max_chars: 140 }
+  "operation / correlation_id.description": { max_chars: 400 }
+  "operation / description": { max_chars: 400 }
+  "operation / examples[].description": { max_chars: 140 }
+  "operation / examples[].name": { max_chars: 140 }
+  "operation / examples[].provider_state": { off: true }
+  "operation / materializes[].description": { max_chars: 400 }
+  "operation / name": { max_chars: 140 }
+  "operation / reacts_to[].condition": { max_chars: 140 }
+  "operation / reacts_to[].policy": { max_chars: 280 }
+  "operation / rules.businessDomain": { max_chars: 140 }
+  "operation / rules.constraints[]": { max_chars: 280 }
+  "operation / rules.invariants[]": { max_chars: 280 }
+  "operation / rules.postConditions[]": { max_chars: 280 }
+  "operation / rules.preConditions[]": { max_chars: 280 }
+  "operation / side_effects.reads[].pattern": { off: true }
+  "operation / side_effects.reads[].target": { max_chars: 140 }
+  "operation / side_effects.writes[].target": { max_chars: 140 }
+  "operation / side_effects.writes[].when": { max_chars: 140 }
+  "option / cons[]": { max_chars: 280 }
+  "option / description": { max_chars: 400 }
+  "option / name": { max_chars: 140 }
+  "option / open_questions[]": { max_chars: 280 }
+  "option / pros[]": { max_chars: 280 }
+  "ordering_constraint / condition": { max_chars: 140 }
+  "ordering_constraint / description": { max_chars: 400 }
+  "ordering_constraint / note": { max_chars: 400 }
+  "ordering_constraint / summary": { max_chars: 140, max_sentences: 1 }
+  "org_interaction / about": { max_chars: 280 }
+  "owned_by / name": { max_chars: 140 }
+  "owned_relationship / description": { max_chars: 280 }
+  "package / description": { max_chars: 400 }
+  "package / name": { max_chars: 140 }
+  "package / summary": { max_chars: 140, max_sentences: 1 }
+  "package_license / terms": { max_chars: 600 }
+  "parallelism_opportunity / benefit": { max_chars: 280 }
+  "parallelism_opportunity / description": { max_chars: 400 }
+  "parallelism_opportunity / name": { max_chars: 140 }
+  "parallelism_opportunity / summary": { max_chars: 140, max_sentences: 1 }
+  "parameter_definition / description": { max_chars: 140 }
+  "parameter_definition / name": { max_chars: 140 }
+  "party / description": { max_chars: 400 }
+  "party / name": { max_chars: 140 }
+  "party / responsibilities[]": { max_chars: 280 }
+  "party_relation / about": { max_chars: 280 }
+  "payload / description": { max_chars: 140 }
+  "payload / stage": { max_chars: 140 }
+  "persona / behaviors[]": { max_chars: 280 }
+  "persona / context": { max_chars: 600 }
+  "persona / demographics.industry": { max_chars: 140 }
+  "persona / demographics.role": { max_chars: 140 }
+  "persona / demographics.team_size": { max_chars: 140 }
+  "persona / description": { max_chars: 400 }
+  "persona / goals[]": { max_chars: 280 }
+  "persona / job_to_be_done": { max_chars: 280 }
+  "persona / name": { max_chars: 140 }
+  "persona / pain_points[]": { max_chars: 280 }
+  "persona / quote": { off: true }
+  "probe / name": { max_chars: 140 }
+  "probe / question": { max_chars: 140 }
+  "probe / source_kind": { max_chars: 140 }
+  "probe / summary": { max_chars: 280, max_sentences: 1 }
+  "process / description": { max_chars: 600 }
+  "process / end_states[].description": { max_chars: 140 }
+  "process / end_states[].name": { max_chars: 140 }
+  "process / status": { max_chars: 140 }
+  "process / title": { max_chars: 140 }
+  "process_activity / description": { max_chars: 400 }
+  "process_activity / name": { max_chars: 140 }
+  "process_activity / next[].condition": { max_chars: 140 }
+  "process_activity / steps[].note": { max_chars: 400 }
+  "process_artifact / name": { max_chars: 140 }
+  "process_handover / name": { max_chars: 140 }
+  "process_start / description": { max_chars: 280 }
+  "process_start / schedule": { max_chars: 140 }
+  "process_tool / name": { max_chars: 140 }
+  "process_trigger / description": { max_chars: 280 }
+  "process_trigger / schedule": { max_chars: 140 }
+  "product / description": { max_chars: 400 }
+  "product / name": { max_chars: 140 }
+  "profile / constraints[]": { max_chars: 280 }
+  "profile / description": { max_chars: 400 }
+  "profile / name": { max_chars: 140 }
+  "profile / schemas[].description": { max_chars: 400 }
+  "property_change / description": { max_chars: 280 }
+  "property_change / group": { max_chars: 140 }
+  "property_change / new_name": { off: true }
+  "property_change / reason": { max_chars: 280 }
+  "question / description": { max_chars: 800 }
+  "question / name": { max_chars: 140 }
+  "question / resolution": { max_chars: 600 }
+  "question / statement": { max_chars: 280 }
+  "question / summary": { max_chars: 280, max_sentences: 1 }
+  "queue / description": { max_chars: 280 }
+  "queue / name": { max_chars: 140 }
+  "race_condition / description": { max_chars: 400 }
+  "race_condition / impact": { max_chars: 280 }
+  "race_condition / mitigation": { max_chars: 400 }
+  "race_condition / name": { max_chars: 140 }
+  "race_condition / scenario": { max_chars: 280 }
+  "race_condition / summary": { max_chars: 140, max_sentences: 1 }
+  "rationale / chosen": { max_chars: 600 }
+  "rationale / options[]{oneOf:0}": { max_chars: 280 }
+  "rationale / problem": { max_chars: 600 }
+  "reason / description": { max_chars: 140 }
+  "redundancy / domains[]": { max_chars: 140 }
+  "redundancy / strategy": { max_chars: 280 }
+  "register_change / description": { max_chars: 280 }
+  "register_change / reason": { max_chars: 280 }
+  "register_entry / description": { max_chars: 600 }
+  "register_entry / inverse_summary": { max_chars: 800 }
+  "register_entry / name": { max_chars: 140 }
+  "relationship_change / description": { max_chars: 140 }
+  "relationship_change / edge_properties.condition": { max_chars: 140 }
+  "relationship_change / edge_properties.relationship_type": { max_chars: 140 }
+  "relationship_change / group": { max_chars: 140 }
+  "relationship_change / reason": { max_chars: 280 }
+  "resilience_requirement / description": { max_chars: 400 }
+  "resilience_requirement / name": { max_chars: 140 }
+  "resilience_requirement / rpo": { off: true }
+  "resilience_requirement / rto": { off: true }
+  "resilience_requirement / strategy": { max_chars: 280 }
+  "resilience_requirement / target": { max_chars: 280 }
+  "resource / description": { max_chars: 600 }
+  "resource / exposure_detail": { max_chars: 140 }
+  "resource / name": { max_chars: 140 }
+  "resource / platform.name": { max_chars: 140 }
+  "resource / summary": { max_chars: 140, max_sentences: 1 }
+  "resource_identity / name": { max_chars: 140 }
+  "resource_owner / team": { max_chars: 140 }
+  "resource_owner / vendor": { max_chars: 140 }
+  "response / description": { max_chars: 140 }
+  "risk / contingency": { max_chars: 400 }
+  "risk / description": { max_chars: 400 }
+  "risk / mitigation": { max_chars: 400 }
+  "risk / statement": { max_chars: 280 }
+  "risk / summary": { max_chars: 140, max_sentences: 1 }
+  "rpc_parameter / description": { max_chars: 140 }
+  "rpc_parameter / summary": { max_chars: 140, max_sentences: 1 }
+  "rpc_result / description": { max_chars: 140 }
+  "rpc_result / summary": { max_chars: 140, max_sentences: 1 }
+  "rule / description": { max_chars: 800 }
+  "rule / examples[].input": { max_chars: 280 }
+  "rule / examples[].note": { max_chars: 400 }
+  "rule / examples[].output": { max_chars: 280 }
+  "rule / fact": { max_chars: 280 }
+  "rule / name": { max_chars: 140 }
+  "rule / rationale": { max_chars: 600 }
+  "rule / scope": { max_chars: 280 }
+  "rule / summary": { max_chars: 140, max_sentences: 1 }
+  "rule_reference / description": { max_chars: 140 }
+  "screen / description": { max_chars: 800 }
+  "screen / name": { max_chars: 140 }
+  "screen / summary": { max_chars: 140, max_sentences: 1 }
+  "secret_ref / {oneOf:1}.description": { max_chars: 140 }
+  "security_requirement / description": { max_chars: 800 }
+  "security_requirement / name": { max_chars: 140 }
+  "security_requirement / requirement": { max_chars: 280 }
+  "security_requirement / standard": { max_chars: 140 }
+  "service / description": { max_chars: 800 }
+  "service / name": { max_chars: 140 }
+  "service / servers[].description": { max_chars: 140 }
+  "service / summary": { max_chars: 280, max_sentences: 1 }
+  "service_need / class": { max_chars: 140 }
+  "service_need / description": { max_chars: 280 }
+  "service_side_effects / filesystem[].action": { max_chars: 140 }
+  "service_side_effects / filesystem[].condition": { max_chars: 140 }
+  "service_side_effects / stderr[].condition": { max_chars: 140 }
+  "service_side_effects / stderr[].description": { max_chars: 140 }
+  "service_side_effects / stdout[].condition": { max_chars: 140 }
+  "service_side_effects / stdout[].description": { max_chars: 140 }
+  "sla / description": { max_chars: 400 }
+  "sla / name": { max_chars: 140 }
+  "sla / parties.consumer": { max_chars: 140 }
+  "sla / parties.provider": { max_chars: 140 }
+  "sla / penalties[].action": { max_chars: 140 }
+  "sla / penalties[].condition": { max_chars: 140 }
+  "sla / review_period": { off: true }
+  "slice / description": { max_chars: 400 }
+  "slice / subdomains[]{oneOf:1}.description": { max_chars: 400 }
+  "slo / breach.action": { max_chars: 140 }
+  "slo / breach.notification": { max_chars: 140 }
+  "slo / description": { max_chars: 400 }
+  "slo / name": { max_chars: 140 }
+  "slo / target": { max_chars: 280 }
+  "slo / window": { off: true }
+  "subdomain / description": { max_chars: 400 }
+  "subdomain / name": { max_chars: 140 }
+  "tags / []": { max_chars: 140 }
+  "target / audience[]": { max_chars: 140 }
+  "target_scope_inline / name": { max_chars: 140 }
+  "team / description": { max_chars: 400 }
+  "team / name": { max_chars: 140 }
+  "team / responsibilities[]": { max_chars: 280 }
+  "test_act / description": { max_chars: 140 }
+  "test_case / counter_example.description": { max_chars: 400 }
+  "test_case / counter_example.wrong_expect": { off: true }
+  "test_case / counter_example.wrong_output": { off: true }
+  "test_case / description": { max_chars: 400 }
+  "test_case / name": { max_chars: 140 }
+  "test_case / note": { max_chars: 400 }
+  "test_case / summary": { max_chars: 280, max_sentences: 1 }
+  "test_setup / description": { max_chars: 280 }
+  "test_setup / fixtures[].description": { max_chars: 280 }
+  "topic / description": { max_chars: 280 }
+  "topic / name": { max_chars: 140 }
+  "tracked_dependency_reason / reason": { max_chars: 280 }
+  "tracked_entry / author": { max_chars: 140 }
+  "tracked_entry / description": { max_chars: 600 }
+  "tracked_entry / inverse_unavailable[]": { max_chars: 140 }
+  "tracked_entry / variant_group": { max_chars: 140 }
+  "tracker_config / label": { max_chars: 140 }
+  "trade_off / accepted_risk": { max_chars: 280 }
+  "trade_off / choice": { max_chars: 280 }
+  "trade_off / description": { max_chars: 400 }
+  "trade_off / rationale": { max_chars: 600 }
+  "trade_off / rejected": { max_chars: 280 }
+  "trade_off / selected": { max_chars: 280 }
+  "transition_rule / description": { max_chars: 280 }
+  "transition_rule / fact": { max_chars: 280 }
+  "transition_rule / guard.when": { off: true }
+  "transition_rule / name": { max_chars: 140 }
+  "transition_rule / rationale": { max_chars: 600 }
+  "transition_rule / summary": { max_chars: 140, max_sentences: 1 }
+  "use_case / description": { max_chars: 800 }
+  "use_case / goal": { max_chars: 280 }
+  "use_case / main_scenario[].action": { max_chars: 140 }
+  "use_case / main_scenario[].pain_point": { max_chars: 280 }
+  "use_case / name": { max_chars: 140 }
+  "use_case / postconditions[]": { max_chars: 280 }
+  "use_case / preconditions[]": { max_chars: 280 }
+  "use_case / summary": { max_chars: 140, max_sentences: 1 }
+  "user_story / acceptance_criteria[]": { max_chars: 280 }
+  "user_story / benefit": { max_chars: 280 }
+  "user_story / description": { max_chars: 600 }
+  "user_story / goal": { max_chars: 280 }
+  "user_story / summary": { max_chars: 140, max_sentences: 1 }
+  "value_stream / description": { max_chars: 400 }
+  "value_stream / name": { max_chars: 140 }
+  "value_stream / outcome": { max_chars: 280 }
+  "value_stream / trigger": { max_chars: 280 }
+  "value_stream_stage / description": { max_chars: 280 }
+  "value_stream_stage / lead_time": { off: true }
+  "value_stream_stage / name": { max_chars: 140 }
+  "value_stream_stage / pain_points[]": { max_chars: 280 }
+  "violation_response / message": { max_chars: 280 }
+  "vision / aspiration": { max_chars: 400 }
+  "vision / statement": { max_chars: 280 }
+  "watch_item / note": { max_chars: 400 }
+  "watch_item / title": { max_chars: 140 }
+  "work_item / description": { max_chars: 400 }
+  "work_item / executor[]": { max_chars: 140 }
+  "work_item / name": { max_chars: 140 }
+  "work_item / note": { max_chars: 400 }

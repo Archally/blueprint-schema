@@ -73,6 +73,23 @@ function collectAffects(data: Record<string, unknown>, item: Record<string, unkn
   return [...new Set(refs)];
 }
 
+/** Retained succession is checker input on the migration, never an operation node or graph edge. */
+function collectRemovedOperations(data: Record<string, unknown>): Array<{ id: string; supersedes: string[] }> {
+  const changes = data.changes as { entities?: unknown } | undefined;
+  if (!changes || !Array.isArray(changes.entities)) return [];
+  const operations: Array<{ id: string; supersedes: string[] }> = [];
+  for (const change of changes.entities) {
+    if (!change || change.kind !== 'remove' || change.entity_type !== 'operation') continue;
+    const before = change.before;
+    if (!before || typeof before.id !== 'string') continue;
+    const supersedes = Array.isArray(before.supersedes)
+      ? before.supersedes.filter((reference: unknown): reference is string => typeof reference === 'string')
+      : [];
+    operations.push({ id: before.id, supersedes });
+  }
+  return operations;
+}
+
 /**
  * Build one node from an already-identified migration record.
  *
@@ -95,6 +112,7 @@ function toEntity(
   const name = text(item.name);
   const impact = item.impact ?? item.semver_impact;
   const affects = collectAffects(doc.data ?? {}, item);
+  const removedOperations = genre === 'change-program' ? collectRemovedOperations(doc.data ?? {}) : [];
 
   return {
     id: makeInternalId(doc.scope, doc.filePath, displayId),
@@ -108,6 +126,7 @@ function toEntity(
     data: {
       ...item,
       _genre: genre,
+      ...(removedOperations.length > 0 ? { _removed_operations: removedOperations } : {}),
       ...(impact != null ? { _impact: String(impact) } : {}),
       ...(affects.length > 0 ? { _affects: affects } : {}),
     },

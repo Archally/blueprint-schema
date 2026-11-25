@@ -38,9 +38,9 @@ const KEYED_MAPS = new Set(["operations", "errors"]);
  * implemented as a single global demotion of *every* schema failure, which also swallowed the two
  * classes that leave a model structurally unusable downstream:
  *
- *   - **identity** — a missing, malformed or non-string `id`. Every entity in the graph is keyed by
+ *   - **identity** - a missing, malformed or non-string `id`. Every entity in the graph is keyed by
  *     it; without one the builder cannot address the entity at all.
- *   - **references** — a `*_ref` / `*_refs[]` that is absent or the wrong shape. Relations are built
+ *   - **references** - a `*_ref` / `*_refs[]` that is absent or the wrong shape. Relations are built
  *     from these, so a demoted reference error becomes a silently missing edge rather than a warning.
  *
  * Everything else stays demotable. "What counts as a reference" is the derived key set the caller
@@ -54,19 +54,19 @@ export function isIdentityOrReferenceViolation(instancePath, message, refKeys) {
   // A `required` failure is the one case the instancePath cannot classify: Ajv points it at the
   // PARENT object ("/concepts/0"), never at the missing key, so the key has to come from the text.
   //
-  // Measured against the pinned Ajv 8.20: the message is `must have required property 'id'` —
+  // Measured against the pinned Ajv 8.20: the message is `must have required property 'id'` -
   // single quotes, deterministically, including when the property name itself contains a quote.
   // (Ajv has no locale mechanism here; ajv-i18n is a separate opt-in package this stack does not use.)
   //
   // The parse is therefore correct today, and the guard below is for the day it is not: if a message
   // announces a missing required property but the key cannot be read out of it, FAIL SAFE and keep
-  // the error fatal. Getting this wrong in the other direction is silent — a missing `id` would be
+  // the error fatal. Getting this wrong in the other direction is silent - a missing `id` would be
   // quietly demoted to a warning under --compat and the model would build with an unaddressable entity.
   //
   // The guard covers a change in Ajv's ENGLISH message format (quoting, wording). It cannot cover
   // localization: a translated message matches nothing here and every required-error would become
   // demotable. So installing `ajv-i18n` in either validator stack is a decision that has to come
-  // back to this function — it is not a drop-in.
+  // back to this function - it is not a drop-in.
   const text = String(message ?? "");
   const required = /must have required property '([^']+)'/.exec(text);
   if (required) {
@@ -160,7 +160,7 @@ export function collectKeyedIds(node, scope, ids = new Map(), pathStack = []) {
 }
 
 /**
- * A location that declares a party — `…parties.[3]`, at any depth.
+ * A location that declares a party - `…parties.[3]`, at any depth.
  *
  * Also matches the `parties[3]` spelling, so a caller that joins its path stack without a separator
  * before the index is covered too.
@@ -172,7 +172,7 @@ const PARTY_DECLARATION = /(?:^|\.)parties\.?\[\d+\]$/;
  *
  * A party is dual-sourced and re-declared by design: an arch document requires `parties` at its
  * root, so a context map split across slice folders re-states the party in every slice, and the
- * org layer states it again. The shared `PRT###` is what makes those declarations ONE party — so
+ * org layer states it again. The shared `PRT###` is what makes those declarations ONE party - so
  * repeating it is the correct, intended state, not a collision.
  *
  * The exemption is deliberately narrow: EVERY location must be a party declaration. An id used once

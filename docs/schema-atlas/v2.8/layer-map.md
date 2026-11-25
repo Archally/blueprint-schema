@@ -15,7 +15,7 @@ Version-root schemas that belong to neither plane and apply across every layer: 
 | [`migration.schema.yaml`](./entity-catalog.md#migration) | Blueprint Migration Schema | 4 | 5 | Versioned, ordered changes to a blueprint model instance. Enables AS-IS to TO-BE model transformation with traceability… |
 | [`migrations.schema.yaml`](./entity-catalog.md#migrations) | Blueprint Migration Register | 4 | 2 | An ordered record of the changes a blueprint model has been through and the ones it is planned to go through, written f… |
 | [`profiles/infrastructure/profiles.schema.yaml`](./entity-catalog.md#profiles-infrastructure-profiles) | Blueprint Infrastructure Resource-Type Profile | 6 | 4 | Validates a resource-type catalog profile file (v2.7.7). A profile is DATA, not schema: the resource-type catalog is sh… |
-| [`render.manifest.schema.yaml`](./entity-catalog.md#render-manifest) | Blueprint Render Manifest | 12 | 1 | Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their ou… |
+| [`render.manifest.schema.yaml`](./entity-catalog.md#render-manifest) | Blueprint Render Manifest | 14 | 1 | Declares one project's full artifact set for the `bp render` command: which renderer targets to produce, where their ou… |
 | [`tracked-migrations.schema.yaml`](./entity-catalog.md#tracked-migrations) | Blueprint Tracked Migration Register | 0 | 14 | The staged changes a blueprint model is carrying, each one replayable and each one reversible. A project in tracked mod… |
 
 ### Cross-cutting - reference dependencies
@@ -69,9 +69,9 @@ graph LR
     blueprint_schema_yaml -->|1| governance_value_stream_schema_yaml
     blueprint_schema_yaml -->|22| metamodel_schema_yaml
     blueprint_schema_yaml -->|1| migration_schema_yaml
-    migration_schema_yaml -->|15| metamodel_schema_yaml
-    migrations_schema_yaml -->|13| metamodel_schema_yaml
-    tracked_migrations_schema_yaml -->|5| metamodel_schema_yaml
+    migration_schema_yaml -->|16| metamodel_schema_yaml
+    migrations_schema_yaml -->|14| metamodel_schema_yaml
+    tracked_migrations_schema_yaml -->|6| metamodel_schema_yaml
 ```
 
 ## Design Plane
@@ -110,7 +110,7 @@ graph LR
     metamodel_schema_yaml(["metamodel"])
     design_arch_schema_yaml -->|157| metamodel_schema_yaml
     design_concepts_schema_yaml -->|44| metamodel_schema_yaml
-    design_domain_schema_yaml -->|62| metamodel_schema_yaml
+    design_domain_schema_yaml -->|63| metamodel_schema_yaml
     design_dynamics_schema_yaml -->|29| metamodel_schema_yaml
     design_infrastructure_schema_yaml -->|37| metamodel_schema_yaml
     design_interactions_schema_yaml -->|33| metamodel_schema_yaml

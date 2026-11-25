@@ -1,3 +1,4 @@
+import { orderReplay as topoSort, expandAtomicGroupErrors, replayValidated, applyChangePhases } from './replayKernel.js';
 import type {
   BlueprintModel,
   Entity,
@@ -33,54 +34,6 @@ export interface MigrationToApply {
 }
 
 export { MigrationError };
-
-// ---------------------------------------------------------------------------
-// Topological sort (engine-local, pure)
-// ---------------------------------------------------------------------------
-
-function topoSort(migrations: MigrationToApply[]): MigrationToApply[] {
-  if (migrations.length <= 1) return [...migrations];
-
-  const byId = new Map<string, MigrationToApply>();
-  for (const m of migrations) byId.set(m.id, m);
-
-  const inDegree = new Map<string, number>();
-  const dependents = new Map<string, string[]>();
-  for (const m of migrations) {
-    inDegree.set(m.id, 0);
-    dependents.set(m.id, []);
-  }
-
-  for (const m of migrations) {
-    for (const dep of m.dependsOn) {
-      if (!byId.has(dep)) continue; // external dep — skip
-      inDegree.set(m.id, (inDegree.get(m.id) ?? 0) + 1);
-      dependents.get(dep)!.push(m.id);
-    }
-  }
-
-  const queue = migrations
-    .filter((m) => (inDegree.get(m.id) ?? 0) === 0)
-    .sort((a, b) => (a.filePath ?? a.id).localeCompare(b.filePath ?? b.id))
-    .map((m) => m.id);
-
-  const result: MigrationToApply[] = [];
-  while (queue.length > 0) {
-    const id = queue.shift()!;
-    result.push(byId.get(id)!);
-    for (const depId of dependents.get(id) ?? []) {
-      const deg = (inDegree.get(depId) ?? 1) - 1;
-      inDegree.set(depId, deg);
-      if (deg === 0) queue.push(depId);
-    }
-  }
-
-  if (result.length !== migrations.length) {
-    const stuck = migrations.filter((m) => !result.some((r) => r.id === m.id)).map((m) => m.id);
-    throw new MigrationError(`Circular dependency: ${stuck.join(', ')}`);
-  }
-  return result;
-}
 
 // ---------------------------------------------------------------------------
 // Migration validation (step-03)
@@ -358,45 +311,6 @@ function validateMigrationChanges(
 }
 
 /**
- * Expand errors for atomic groups: if any change in a group has an error, add an error for every change in that group.
- */
-function expandAtomicGroupErrors(
-  migration: MigrationToApply,
-  errors: Array<{ path: string; message: string }>,
-): Array<{ path: string; message: string }> {
-  const changes = migration.data.changes as Record<string, unknown> | undefined;
-  if (!changes) return errors;
-  const allChanges: Array<{ path: string; group?: string }> = [];
-  const entityChanges = asRecordArrayForValidation(changes.entities);
-  entityChanges.forEach((ch, i) => allChanges.push({ path: `${migration.id}/entities/${i}`, group: ch.group as string | undefined }));
-  asRecordArrayForValidation(changes.properties).forEach((ch, i) => allChanges.push({ path: `${migration.id}/properties/${i}`, group: ch.group as string | undefined }));
-  asRecordArrayForValidation(changes.relationships).forEach((ch, i) => allChanges.push({ path: `${migration.id}/relationships/${i}`, group: ch.group as string | undefined }));
-  asRecordArrayForValidation(changes.meta).forEach((ch, i) => allChanges.push({ path: `${migration.id}/meta/${i}`, group: ch.group as string | undefined }));
-  const errorPaths = new Set(errors.map((e) => e.path));
-  const byGroup = new Map<string, typeof allChanges>();
-  for (const c of allChanges) {
-    if (c.group) {
-      if (!byGroup.has(c.group)) byGroup.set(c.group, []);
-      byGroup.get(c.group)!.push(c);
-    }
-  }
-  const added: Array<{ path: string; message: string }> = [];
-  for (const e of errors) {
-    const change = allChanges.find((c) => c.path === e.path);
-    if (change?.group) {
-      const groupChanges = byGroup.get(change.group) ?? [];
-      for (const gc of groupChanges) {
-        if (!errorPaths.has(gc.path)) {
-          added.push(pathFor(gc.path, `Atomic group '${change.group}' failed (see ${e.path})`));
-          errorPaths.add(gc.path);
-        }
-      }
-    }
-  }
-  return [...errors, ...added];
-}
-
-/**
  * Validate migrations before apply. Returns validation result; does not mutate baseModel.
  * When valid is false, caller should not apply. When valid is true, warnings may still be present.
  */
@@ -444,47 +358,23 @@ function validateAndApply(
   } catch {
     ordered = migrationsToApply;
   }
-  let workingModel = structuredClone(baseModel);
-  let derived = deriveFrom(workingModel);
-  for (const migration of ordered) {
-    const migErrors: Array<{ path: string; message: string }> = [];
-    const migWarnings: Array<{ path: string; message: string }> = [];
-    validateMigrationChanges(workingModel, migration, migErrors, migWarnings);
-    warnings.push(...migWarnings);
-    if (migErrors.length > 0) {
-      const expanded = expandAtomicGroupErrors(migration, migErrors);
-      errors.push(...expanded);
-      return fail({ valid: false, errors, warnings });
-    }
-    try {
-      applySingleMigration(workingModel, migration);
-      // After EACH migration, not once at the end, so the migration that follows validates against
-      // the edges the one before produced, and applying [A, B] in one call yields the model applying
-      // A and then B in two calls yields.
-      derived = rederiveRelations(workingModel, derived);
-    } catch (err) {
-      const msg = err instanceof MigrationError ? err.message : String(err);
-      errors.push(pathFor(migration.id, `Apply failed: ${msg}`));
-      return fail({ valid: false, errors, warnings });
-    }
-  }
-  return { validation: { valid: true, errors, warnings }, model: workingModel };
+  return replayValidated(baseModel, ordered, {
+    initialize: deriveFrom,
+    validate: (workingModel, migration) => {
+      const errors: Array<{ path: string; message: string }> = [];
+      const warnings: Array<{ path: string; message: string }> = [];
+      validateMigrationChanges(workingModel, migration, errors, warnings);
+      return { errors, warnings };
+    },
+    expandErrors: expandAtomicGroupErrors,
+    apply: applySingleMigration,
+    rebuild: rederiveRelations,
+  });
 }
 
 // ---------------------------------------------------------------------------
 // Single migration application
 // ---------------------------------------------------------------------------
-
-/**
- * Sort changes by explicit `order` field (lower first); stable for unordered.
- */
-function sortByOrder(changes: Record<string, unknown>[]): Record<string, unknown>[] {
-  return [...changes].sort((a, b) => {
-    const oa = typeof a.order === 'number' ? a.order : Infinity;
-    const ob = typeof b.order === 'number' ? b.order : Infinity;
-    return oa - ob;
-  });
-}
 
 function applySingleMigration(
   model: BlueprintModel,
@@ -493,28 +383,13 @@ function applySingleMigration(
   const changes = migration.data.changes as Record<string, unknown> | undefined;
   if (!changes) return;
 
-  const entityChanges = asRecordArray(changes.entities);
-  const propertyChanges = asRecordArray(changes.properties);
-  const relationshipChanges = asRecordArray(changes.relationships);
-  const metaChanges = asRecordArray(changes.meta);
-
-  // Apply changes. For atomic groups, the migration author structures all
-  // changes in the same group. If any change fails, the MigrationError
-  // propagates and the caller can decide whether to roll back the entire
-  // model (deep-clone at the top-level ensures base model safety).
   try {
-    if (entityChanges.length > 0) {
-      applyEntityChanges(model, sortByOrder(entityChanges), migration.filePath);
-    }
-    if (propertyChanges.length > 0) {
-      applyPropertyChanges(model, sortByOrder(propertyChanges));
-    }
-    if (relationshipChanges.length > 0) {
-      applyRelationshipChanges(model, sortByOrder(relationshipChanges), migration.filePath);
-    }
-    if (metaChanges.length > 0) {
-      applyMetaChanges(model, sortByOrder(metaChanges));
-    }
+    applyChangePhases(changes, {
+      entities: (operations) => applyEntityChanges(model, operations, migration.filePath),
+      properties: (operations) => applyPropertyChanges(model, operations),
+      relationships: (operations) => applyRelationshipChanges(model, operations, migration.filePath),
+      meta: (operations) => applyMetaChanges(model, operations),
+    });
   } catch (err) {
     if (err instanceof MigrationError) {
       err.migrationId = migration.id;
@@ -569,13 +444,4 @@ export function applyMigrations(
   model.metadata.migrationValidation = validation;
 
   return model;
-}
-
-// ---------------------------------------------------------------------------
-// Utility helpers
-// ---------------------------------------------------------------------------
-
-function asRecordArray(v: unknown): Record<string, unknown>[] {
-  if (!Array.isArray(v)) return [];
-  return v.filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null);
 }

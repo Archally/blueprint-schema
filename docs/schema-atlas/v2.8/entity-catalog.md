@@ -653,6 +653,7 @@ One migration in the register.
 | `depends_on` | `array<ref → migration_ref>` | - |  | Migrations that apply before this one. |
 | `depends_on_reasons` | `array<ref → migration_dependency_reason>` | - |  | Why this migration waits for a migration in `depends_on`: one entry per dependency with a stated reason. A dependency without an entry states no reason. |
 | `related_decisions` | `array<ref → decision_ref>` | - |  | Decisions (DC###) that motivated this migration, each listed once: the link a migration document states in `migration.related_decisions`. An id no decisions fi… |
+| `leverage_refs` | `array<ref → leverage_ref>` | - |  | Leverage points (LP###) whose change this migration carries out, wholly or in part, each listed once: the link a migration document states in `migration.levera… |
 | `owned_by` | `ref → owned_by` | - |  | The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct f… |
 | `change_stream_ref` | `ref → change_stream_ref` | - |  | The change stream this migration belongs to. At most one; absent means none. An id that `change_streams` in blueprint.yaml does not declare is a cross-referenc… |
 | `reach` | `ref → migration_reach` | - |  | The bounded contexts and domains this migration changes, stated by hand only where its changes cannot show them. Otherwise they are derived from the changes, a… |
@@ -792,6 +793,8 @@ _Source: `schema/v2.8/render.manifest.schema.yaml` · root type `object`_
 | `out` | `string` | - |  | Artifact root directory, relative to this file and living beside the model directory, not inside it. `.generated` is the conventional value for a manifest in `… |
 | `stamp` | `string` | ✓ |  | The single build stamp ("as of" date or instant) shared by every target in the run, so a partial re-render overwrites the same files a full run would rather th… |
 | `stamp_in_filename` | `boolean` | - |  | Whether the delivery date leads each artifact's filename. True, the default, names an artifact `<stamp date>-<scope>-<target>.<view>.<ext>`, so a basename says… |
+| `omission_text` | `string` | - | `hidden`, `drawn` | Whether renderers draw omission text inside SVG, PNG and PDF pictures. `hidden` (default) keeps omission text off the canvas while leaving the full omission li… |
+| `omission_sections` | `string` | - | `hidden`, `included` | Whether document renderers include omission list sections in report HTML and PDF documents. `hidden` (default) leaves omission list sections out of the documen… |
 | `archive` | `boolean` | - |  | Keep every delivery instead of replacing the last one. Each run then writes beneath a folder named for its own stamp, so two deliveries never share a directory… |
 | `build_id` | `string` | - |  | Provenance token recorded INSIDE each artifact - its drawn footer and its machine-readable provenance block - identifying the code that produced it. The litera… |
 | `link_template` | `string` | - |  | Optional source-link URL template with `{file}`/`{line}` placeholders, passed through to every target whose renderer supports one. |
@@ -1056,6 +1059,7 @@ One migration: a named set of changes with a status, and once applied, a record 
 | `depends_on` | `array<ref → tracked_migration_ref>` | - |  | Migrations that must apply before this one. |
 | `depends_on_reasons` | `array<ref → tracked_dependency_reason>` | - |  | Why this migration waits for a migration in `depends_on`: one entry per dependency with a stated reason. A dependency without an entry states no reason. |
 | `related_decisions` | `array<ref → decision_ref>` | - |  | Decisions (DC###) that motivated this migration, each listed once. An id no decisions file of the model declares is a cross-reference error. Without the list,… |
+| `leverage_refs` | `array<ref → leverage_ref>` | - |  | Leverage points (LP###) whose change this migration carries out, wholly or in part, each listed once. The link is stated here, beside the decisions that motiva… |
 | `owned_by` | `ref → owned_by` | - |  | The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct f… |
 | `change_stream_ref` | `ref → change_stream_ref` | - |  | The change stream this migration belongs to. At most one; absent means none. An id that `change_streams` in the model's blueprint.yaml does not declare is a cr… |
 | `reach` | `ref → migration_reach` | - |  | The bounded contexts and domains this migration changes, stated by hand only where its changes cannot show them. Otherwise they are derived from the changes, a… |
@@ -1674,7 +1678,7 @@ Core domain vocabulary entry. Minimum: id + name (v2.3) or id + term (v2.1/v2.2 
 | `name` | `string` | - |  | Display name for this concept (e.g. Order, Customer, Payment). |
 | `description` | `string` | - |  | Human-readable description of the concept. |
 | `term` | `string` | - |  | Optional formal DDD term. Use when it differs from name. Prefer properties.term for v2.3+. |
-| `summary` | `string` | - |  | Brief summary (≤200 chars, for RAG and quick reference). |
+| `summary` | `string` | - |  | Brief summary for RAG and quick reference. |
 | `definition` | `string` | - |  | Optional formal glossary definition. Prefer properties.definition for v2.3+. |
 | `stereotype` | `string` | - | `entity`, `value-object`, `aggregate-root`, `domain-service`, `specification`, `read-model` | DDD modeling classification. entity = has identity and lifecycle. value-object = structural equality, immutable. aggregate-root = entity that forms a transacti… |
 | `properties` | `ref → entity_properties` | - |  | Open metadata bag. Known keys: term (DDD formal name), definition (glossary entry). |
@@ -1728,7 +1732,7 @@ Stakeholder, user, system, or role interacting with the domain.
 | `id` | `ref → actor_ref` | ✓ |  | Unique actor identifier (e.g. ACT001 or billing.ACT001). |
 | `name` | `string` | ✓ |  | Actor name (e.g. Customer, Payment Gateway). |
 | `type` | `string` | ✓ | `human`, `system`, `external`, `role`, `time` | Actor classification: human=person, system=internal service, external=third-party, role=abstract role, time=temporal trigger (timer, schedule, time passing). |
-| `summary` | `string` | - |  | Brief description of this actor (≤200 chars). |
+| `summary` | `string` | - |  | Brief description of this actor. |
 | `responsibilities` | `array<string>` | - |  | What this actor is responsible for in the domain. |
 | `interactions` | `array<object>` | - |  | Concepts or operations this actor interacts with. |
 | `description` | `string` | - |  | Human-readable description of this actor. |
@@ -1779,7 +1783,7 @@ Closed value set for a domain category (e.g. order statuses, payment types).
 | `name` | `string` | - |  | Display name for this enumeration (e.g. Order Status, Payment Type). |
 | `term` | `string` | - |  | Optional formal DDD term. Use when it differs from name. |
 | `description` | `string` | - |  | Human-readable description of this value set. |
-| `summary` | `string` | - |  | Brief description of this value set (≤200 chars). |
+| `summary` | `string` | - |  | Brief description of this value set. |
 | `extensible` | `boolean` | - |  | Whether consumers can extend this value set with additional values. |
 | `values` | `array<union>` | ✓ |  | Allowed values. Plain strings or objects with name, description, code, and optional state transitions. |
 | `properties` | `ref → entity_properties` | - |  |  |
@@ -1891,6 +1895,7 @@ A domain operation with protocol binding, rule governance, and behavioral proper
 | `produces` | `object` | - |  | Operations this operation emits upon execution: the events and documents that carry its outcome. A command states its outcome through `produces`, `materializes… |
 | `reacts_to` | `array<object>` | - |  | Events or signals this operation reacts to. Each entry is a reactive policy binding: a statement of CAUSALITY, true of the operation wherever it appears. A per… |
 | `translates` | `array<ref → operation_ref>` | - |  | Written on an integration event (an operation of `kind: event` that leaves its bounded context): the domain events of the same context that this event is the p… |
+| `supersedes` | `array<ref → operation_ref>` | - |  | Operations (CMD/QRY/EVT/DOC) this operation replaces, each listed once: a successor names what it takes over, usually under a new id in another slice, often ov… |
 | `task_type` | `string` | - | `automated`, `manual`, `user-decision`, `external` | Execution type: automated=system-executed, manual=human action outside system, user-decision=human choice within system (UI), external=third-party system. |
 | `tags` | `ref → tags` | - |  |  |
 | `owned_by` | `ref → owned_by` | - |  | Operation-level ownership override. |
@@ -2170,7 +2175,7 @@ A competency question this domain was created to answer. Questions are first-cla
 | `id` | `ref → question_ref` | ✓ |  | Unique question identifier (e.g. QN001 or billing.QN001). |
 | `statement` | `string` | ✓ |  | The question as a natural-language interrogative sentence. Should be phrased from the stakeholder's perspective, not the system's. E.g., "What is the current s… |
 | `name` | `string` | - |  | Short name for listings and graph nodes (e.g. 'Order Status'). |
-| `summary` | `string` | - |  | One-line summary for listings (≤200 chars). |
+| `summary` | `string` | - |  | One-line summary for listings. |
 | `description` | `string` | - |  | Extended context: why this question matters, what answering it enables, and what business decisions depend on the answer. |
 | `category` | `string` | - | `existence`, `enumeration`, `relationship`, `measurement`, `temporal`, `behavioral` … (14) | Question category. Ontology categories (existence through compliance) classify what the question asks about - from Gruninger & Fox 1995. Domain categories (bus… |
 | `priority` | `ref → priority_scale` | - |  | Question priority. Critical questions define the domain's raison d'être - if the system can't answer them, the domain has no justification. |
@@ -2777,7 +2782,7 @@ A UI screen or view the user interacts with. Links to models, goals, decisions, 
 | --- | --- | --- | --- | --- |
 | `id` | `ref → screen_ref` | ✓ |  | Unique screen identifier (SCR001, SCR002, etc.). |
 | `name` | `string` | ✓ |  | Human-readable screen name (e.g. 'Order Summary'). |
-| `summary` | `string` | - |  | One-line summary for listings (≤200 chars). |
+| `summary` | `string` | - |  | One-line summary for listings. |
 | `description` | `string` | - |  | Detailed screen purpose and content overview. |
 | `uses_models` | `array<ref → model_ref>` | - |  | Data models this screen displays or consumes. |
 | `motivated_by` | `array<ref → goal_ref>` | - |  | Goals this screen helps achieve. |
@@ -3313,7 +3318,7 @@ Business rule. Minimum: id, name.
 | `id` | `ref → rule_ref` | ✓ |  | Unique rule ID. Prefix indicates category: SR=structural, CR=classification, DR=derivation, EQ=equivalence, VR=validation. |
 | `name` | `string` | ✓ |  | Human-readable name in imperative form. Describes what the rule enforces, not how. |
 | `description` | `string` | - |  | Human-readable description of what the rule does and why. |
-| `summary` | `string` | - |  | One-line summary (≤200 chars) for listings and quick reference. Must be self-contained. |
+| `summary` | `string` | - |  | One-line summary for listings and quick reference. Must be self-contained. |
 | `logic` | `ref → logic_tuple` | - |  | Business logic as when/then/else. 'when' = condition (omit for invariants). 'then' = required outcome. 'else' = alternative. |
 | `version` | `ref → entity_version` | - |  | Rule version for individual lifecycle tracking. |
 | `modality` | `ref → sbvr_modality` | - |  | Deontic strength: necessary=domain truth, obligatory=system enforced, prohibited=must never happen, permitted=explicitly allowed. |
@@ -3343,7 +3348,7 @@ State transition rule. Defines when and how a concept moves between lifecycle st
 | --- | --- | --- | --- | --- |
 | `id` | `ref → transition_ref` | ✓ |  | Unique transition rule ID (e.g. TR001 or billing.TR001). |
 | `name` | `string` | ✓ |  | Human-readable name for this transition. |
-| `summary` | `string` | - |  | One-line summary of the state transition (≤200 chars). |
+| `summary` | `string` | - |  | One-line summary of the state transition. |
 | `concept` | `ref → concept_ref` | ✓ |  | The concept whose lifecycle state machine this transition belongs to. Must define states[]. |
 | `from` | `string` | ✓ |  | Source state name. Must match a state defined in the referenced concept's states[]. |
 | `to` | `string` | ✓ |  | Target state name. Must match a state defined in the referenced concept's states[]. |
@@ -3765,7 +3770,7 @@ An Architecture Decision Record (ADR). Minimum: id, title, summary, date, status
 | `id` | `ref → decision_ref` | ✓ |  | Unique decision ID (e.g. DC001 or billing.DC001). Assigned chronologically; never reused. |
 | `description` | `string` | - |  | Human-readable description. |
 | `title` | `string` | ✓ |  | Short descriptive title understandable without reading the full rationale. |
-| `summary` | `string` | ✓ |  | One-line summary for listings and quick scanning (≤200 chars). Self-contained. |
+| `summary` | `string` | ✓ |  | One-line summary for listings and quick scanning. Self-contained. |
 | `date` | `string` | ✓ |  | Date proposed or accepted. Format: YYYY-MM or YYYY-MM-DD. |
 | `status` | `ref → decision_status` | ✓ |  | Lifecycle status: open -> proposed -> rfc -> accepted -> landed; rejected or deprecated at any stage. |
 | `rationale` | `ref → rationale` | ✓ |  | The reasoning behind this decision. Answers 'why' for future readers. |
@@ -3955,7 +3960,7 @@ _Source: `schema/v2.8/governance/leverage.schema.yaml` · root type `object`_
 
 #### `leverage_point`
 
-A prioritized cross-cutting intervention - "the one thing to do for X". Synthesizes the model: it references (does NOT duplicate) the findings/risks/decisions/fitness-functions it addresses, the migrations/roadmap-work-items that deliver it, and the goals/value-streams it advances. Caps the remediation chain finding → risk → decision → migration with a prioritization tier. Connected to decisions…
+A prioritized cross-cutting intervention - "the one thing to do for X". Synthesizes the model: it references (does NOT duplicate) the findings/risks/decisions/fitness-functions it addresses, the roadmap work-items that deliver it and the goals/value-streams it advances; the migrations that carry it out name it in their own `leverage_refs`. Caps the remediation chain finding → risk → decision → mi…
 
 **Required:** `id`, `title`, `one_thing`
 
@@ -3963,7 +3968,7 @@ A prioritized cross-cutting intervention - "the one thing to do for X". Synthesi
 | --- | --- | --- | --- | --- |
 | `id` | `ref → leverage_ref` | ✓ |  | Unique leverage-point identifier (LP + 3 digits, optional context prefix). |
 | `title` | `string` | ✓ |  | Short imperative title of the intervention (e.g. 'Isolate reporting workloads from the interactive path'). |
-| `summary` | `string` | - |  | One-line summary for listings (≤200 chars). |
+| `summary` | `string` | - |  | One-line summary for listings. |
 | `one_thing` | `string` | ✓ |  | The single highest-value thing this intervention achieves, in prose. The definitional core: if you did only one thing here, this is it (e.g. 'make schema evolu… |
 | `rank` | `integer` | - |  | Priority rank (1 = highest). Assigned per `ranking_basis`. Optional. |
 | `area` | `string` | - |  | Concern area this intervention sits in (e.g. 'delivery-data', 'domain-architecture', 'platform'). Free-text label for grouping. |
@@ -3972,7 +3977,7 @@ A prioritized cross-cutting intervention - "the one thing to do for X". Synthesi
 | `risk_refs` | `array<ref → risk_ref>` | - |  | Motivation risks (RSK###) this intervention mitigates. |
 | `decision_refs` | `array<ref → decision_ref>` | - |  | Decisions (DC###) this intervention bundles / is realized through - the DIRECT link to the architecture decision log. (Indirect links also exist via `finding_r… |
 | `fitness_function_refs` | `array<ref → fitness_function_ref>` | - |  | Fitness functions (FF###) this intervention establishes or relies on as guardrails. |
-| `migration_refs` | `array<ref → migration_ref>` | - |  | Migrations (MIG###) that implement the TO-BE change this intervention calls for. |
+| `migration_refs` | `array<ref → migration_ref>` | - |  | ⚠ *deprecated* - SOFT-DEPRECATED (v2.8.107). Migrations (MIG###) that carry out this intervention, named from the leverage point. The link is stated by the… |
 | `realized_by` | `array<ref → work_item_ref>` | - |  | Roadmap work-items (WI###) that deliver/sequence this intervention. Delivery is DELEGATED to the roadmap execution tier - leverage does not re-model steps/hori… |
 | `advances_goals` | `array<ref → goal_ref>` | - |  | Motivation goals (GL###) this intervention advances. |
 | `advances_value_streams` | `array<ref → value_stream_ref>` | - |  | Value streams (VS###) / initiatives this intervention unblocks or accelerates. |
@@ -4589,7 +4594,7 @@ A single test case. Minimum: id, name, summary, validates.
 | `id` | `ref → test_ref` | ✓ |  | Unique test ID. Prefix indicates suite: TC=happy-path, EC=edge-case, ER=error-case. |
 | `description` | `string` | - |  | Human-readable description. |
 | `name` | `string` | ✓ |  | Human-readable scenario name (e.g. 'Submit order with valid items'). |
-| `summary` | `string` | - |  | One-line summary for listings (≤200 chars). Self-contained. |
+| `summary` | `string` | - |  | One-line summary for listings. Self-contained. |
 | `validates` | `ref → validates_refs` | ✓ |  | What this test proves. Authoritative source for test-to-blueprint traceability. |
 | `version` | `ref → entity_version` | - |  | Test version for lifecycle tracking. |
 | `given` | `ref → test_setup` | - |  | Initial state and preconditions (Arrange phase). |

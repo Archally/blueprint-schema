@@ -264,6 +264,23 @@ $defs:
         items:
           $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
         description: "Written on an integration event (an operation of `kind: event` that leaves its bounded context): the domain events of the same context that this event is the published form of. One integration event may translate several domain events, and one domain event may be translated by several integration events. The reference is stated once, on the integration event; the domain event carries no field for it. An event published with no domain event behind it states none. A `translates` entry that names something other than an unpublished event of the same context, or that is written on an event that is not itself published, is reported by the semantic checker. It changes no event's reach: whether an event is published is still read from the contracts and the exchange."
+      supersedes:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "../metamodel.schema.yaml#/$defs/operation_ref"
+        description: >
+          Operations (CMD/QRY/EVT/DOC) this operation replaces, each listed once: a successor names
+          what it takes over, usually under a new id in another slice, often over another protocol.
+          Several entries state a many-to-one replacement; several operations naming one entry state a
+          one-to-many replacement. A replaced operation need not exist in the same state as this one:
+          it resolves wherever the model records it, in its files or in the migration that removes it,
+          and an id the model records nowhere is a cross-reference error. The list says what replaces
+          what, not who calls which: callers are stated by contracts. Without the list, the operation
+          records no replacement; it does not state that it replaces nothing.
+        examples:
+          - [billing.QRY001]
+          - [billing.CMD001, billing.CMD002]
       task_type:
         type: string
         enum: [automated, manual, user-decision, external]
@@ -348,7 +365,6 @@ $defs:
               description: "Example name (e.g., valid-order, duplicate-order)."
             description:
               type: string
-              maxLength: 255
               description: "What this example demonstrates."
             scenario:
               type: string
@@ -982,8 +998,7 @@ $defs:
         description: "Short name for listings and graph nodes (e.g. 'Order Status')."
       summary:
         type: string
-        maxLength: 200
-        description: "One-line summary for listings (≤200 chars)."
+        description: "One-line summary for listings."
       description:
         type: string
         description: >

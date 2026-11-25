@@ -19,10 +19,9 @@
  *               a TODO / FIXME / TBD / XXX marker.
  *   length      more than MAX_PRECONDITION_LENGTH characters.
  *
- * WHERE THE LENGTH COMES FROM. A precondition is a state, stated in a sentence or two. The schema
- * caps a test case's one-line `summary` at 200 characters; 250 leaves a precondition a quarter more
- * room than that line, which is two ordinary sentences, and anything longer is explaining the state
- * rather than stating it.
+ * WHERE THE LENGTH COMES FROM. A precondition is a state, stated in a sentence or two. 250
+ * characters fits two ordinary sentences; anything longer is explaining the state rather than
+ * stating it.
  *
  * WARNING, NOT ERROR. The model is valid either way, and the text may be right where it is in a
  * model nobody reads as a test plan. The rule reports; the author decides.

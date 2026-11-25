@@ -1,0 +1,15 @@
+{
+  "maximumUnstructuredCharacters": 400,
+  "narrativeFields": [
+    "description",
+    "definition",
+    "rationale",
+    "statement",
+    "intent",
+    "purpose",
+    "summary",
+    "context",
+    "consequences",
+    "notes"
+  ]
+}

@@ -1,5 +1,5 @@
 /**
- * Apply entity-level migration changes: add, modify, deprecate, remove, split, merge, move.
+ * Apply entity-level migration changes: add, modify, rename, deprecate, remove, split, merge, move.
  *
  * A change's `placement` names where the entity it adds or moves is declared. It is recorded on the
  * entity as `_written_in`, the key every reader of a migration-added entity already takes its file
@@ -401,6 +401,36 @@ export function applyEntityChanges(
         if (after.summary != null) entity.summary = String(after.summary);
         if (after.definition != null) entity.description = String(after.definition);
         else if (after.description != null) entity.description = String(after.description);
+        break;
+      }
+      case 'rename': {
+        const entity = findEntityByRef(target, model.entities);
+        if (!entity) throw new MigrationError(`Entity rename: target not found: ${target}`);
+        const after = change.after as Record<string, unknown> | undefined;
+        const key = KEYED_ARCH_TYPES.has(entityType) ? 'name' : 'id';
+        const newKey = after?.[key];
+        if (typeof newKey !== 'string' || newKey.trim() !== newKey || !newKey) {
+          throw new MigrationError(`Entity rename: missing or invalid 'after.${key}' for target ${target}`);
+        }
+        // Renames mutate declarations without changing the array, so resolver caches can be stale.
+        // An id is the whole string: `CN003` and `orders.CN003` are different ids.
+        const destinationOccupied = model.entities.some((other) => other !== entity
+          && [other.displayId, other.data?.id].some((declaration) => declaration === newKey));
+        if (destinationOccupied) {
+          throw new MigrationError(`Entity rename: destination already exists: ${newKey}`);
+        }
+        const previousName = entity.displayId;
+        entity.displayId = newKey;
+        entity.data = { ...entity.data, [key]: newKey };
+        if (entityType === 'context') {
+          for (const child of model.entities) {
+            if (child.data?._context === previousName
+              && (child.data?._party ?? null) === (entity.data?._party ?? null)
+              && writtenFileOf(child) === writtenFileOf(entity)) {
+              child.data._context = newKey;
+            }
+          }
+        }
         break;
       }
       case 'deprecate': {

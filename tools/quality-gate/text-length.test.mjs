@@ -183,19 +183,261 @@ test('worst limits the longest field list while JSON retains every offender', ()
   });
 });
 
-test('ships the four field defaults with calibrated limits and one-sentence summaries', () => {
-  const defaults = config.loadSpec().spec.text_length;
+test('ships the four field defaults and per-field-kind limits with one-sentence summaries and exempt rows', () => {
+  const spec = config.loadSpec().spec;
+  const defaults = spec.text_length;
+  const resolved = config.resolveTextLength(spec, {});
 
-  assert.deepEqual(Object.keys(defaults), ['description', 'summary', 'rationale', 'context']);
+  for (const fallback of ['description', 'summary', 'rationale', 'context']) {
+    assert.ok(Object.hasOwn(defaults, fallback), `missing fallback ${fallback}`);
+    assert.equal(typeof defaults[fallback].calibration, 'string');
+    assert.ok(defaults[fallback].calibration.length > 20);
+  }
   assert.equal(defaults.description.max_chars, 400);
+  assert.equal(resolved.description.hard_chars, 600);
   assert.equal(defaults.summary.max_chars, 240);
   assert.equal(defaults.summary.max_sentences, 1);
+  assert.equal(resolved.summary.hard_chars, 360);
   assert.equal(defaults.rationale.max_chars, 600);
+  assert.equal(resolved.rationale.hard_chars, 900);
   assert.equal(defaults.context.max_chars, 600);
-  for (const field of Object.values(defaults)) {
-    assert.equal(typeof field.calibration, 'string');
-    assert.ok(field.calibration.length > 20);
+  assert.equal(resolved.context.hard_chars, 900);
+
+  assert.equal(Object.keys(defaults).length, 493);
+  assert.equal(resolved['operation / description'].max_chars, 400);
+  assert.equal(resolved['operation / description'].hard_chars, 600);
+  assert.equal(resolved['model_property / description'].max_chars, 140);
+  assert.equal(resolved['model_property / description'].hard_chars, 210);
+  assert.equal(resolved['register_change / description'].max_chars, 280);
+  assert.equal(resolved['register_change / description'].hard_chars, 420);
+  assert.equal(resolved['finding / statement'].max_chars, 400);
+  assert.equal(resolved['finding / statement'].hard_chars, 600);
+  assert.equal(resolved['service / description'].max_chars, 800);
+  assert.equal(resolved['service / description'].hard_chars, 1200);
+  assert.equal(resolved['evidence / [].summary'].max_chars, 280);
+  assert.equal(resolved['evidence / [].summary'].max_sentences, 1);
+  assert.equal(resolved['evidence / [].summary'].hard_chars, 420);
+  assert.equal(resolved['concept_attribute / example'].off, true);
+  assert.equal(resolved['design/domain: (root) / description'].max_chars, 800);
+  assert.equal(resolved['governance/roadmap: (root) / description'].max_chars, 280);
+});
+
+test('computes 1.5x rounded hard limits, accepts hard_chars overrides and rejects invalid hard limits', () => {
+  assert.equal(config.defaultHardChars(140), 210);
+  assert.equal(config.defaultHardChars(280), 420);
+  assert.equal(config.defaultHardChars(400), 600);
+  assert.equal(config.defaultHardChars(600), 900);
+  assert.equal(config.defaultHardChars(800), 1200);
+  assert.equal(config.defaultHardChars(2), 3);
+
+  const overridden = config.resolveTextLength(
+    { text_length: { 'operation / description': { max_chars: 400 } } },
+    { text_length: { 'operation / description': { hard_chars: 550 } } },
+  );
+  assert.equal(overridden['operation / description'].max_chars, 400);
+  assert.equal(overridden['operation / description'].hard_chars, 550);
+
+  const recomputed = config.resolveTextLength(
+    { text_length: { description: { max_chars: 400 } } },
+    { text_length: { description: { max_chars: 280 } } },
+  );
+  assert.equal(recomputed.description.hard_chars, 420);
+
+  for (const bad of [
+    { description: { max_chars: 400, hard_chars: 300 } },
+    { description: { max_chars: 400, hard_chars: 0 } },
+    { description: { max_chars: 400, hard_chars: 450.5 } },
+    { description: { max_chars: 400, hard_chars: '600' } },
+  ]) {
+    assert.throws(() => config.resolveTextLength({}, { text_length: bad }), /text_length/);
   }
+});
+
+test('resolves rules by schema-qualified field kind, definition/property, then bare field fallback, honoring off', () => {
+  const resolvedLimits = config.resolveTextLength({
+    text_length: {
+      description: { max_chars: 400 },
+      example: { max_chars: 20 },
+      'operation / description': { max_chars: 280 },
+      'design/domain: (root) / description': { max_chars: 800 },
+      '(root) / description': { max_chars: 600 },
+      'concept_attribute / example': { off: true },
+    },
+  }, {});
+
+  const qualified = config.resolveTextLengthRule(resolvedLimits, {
+    schemaName: 'design/domain',
+    definition: '(root)',
+    propertyPath: 'description',
+    field: 'description',
+  });
+  assert.equal(qualified?.key, 'design/domain: (root) / description');
+  assert.equal(qualified?.rule.max_chars, 800);
+
+  const defProp = config.resolveTextLengthRule(resolvedLimits, {
+    schemaName: 'design/domain',
+    definition: 'operation',
+    propertyPath: 'description',
+    field: 'description',
+  });
+  assert.equal(defProp?.key, 'operation / description');
+  assert.equal(defProp?.rule.max_chars, 280);
+
+  const fallback = config.resolveTextLengthRule(resolvedLimits, {
+    schemaName: 'design/domain',
+    definition: 'unlisted_def',
+    propertyPath: 'description',
+    field: 'description',
+  });
+  assert.equal(fallback?.key, 'description');
+  assert.equal(fallback?.rule.max_chars, 400);
+
+  const exempt = config.resolveTextLengthRule(resolvedLimits, {
+    schemaName: 'design/concepts',
+    definition: 'concept_attribute',
+    propertyPath: 'example',
+    field: 'example',
+  });
+  assert.equal(exempt?.key, 'concept_attribute / example');
+  assert.equal(exempt?.rule.off, true);
+
+  assert.equal(config.resolveTextLengthRule(resolvedLimits, { field: 'unknown_field' }), null);
+});
+
+test('measures per-field-kind limits from schemas across refs, arrays and exempt rows with soft and hard totals', () => {
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'text-length-schema-'));
+  try {
+    const schemaDir = path.join(tmpRoot, 'schema');
+    fs.mkdirSync(path.join(schemaDir, 'design'), { recursive: true });
+    fs.writeFileSync(path.join(schemaDir, 'metamodel.schema.yaml'), YAML.stringify({
+      $defs: {
+        code_ref_entry: {
+          type: 'object',
+          properties: {
+            description: { type: 'string' },
+          },
+        },
+      },
+    }));
+    fs.writeFileSync(path.join(schemaDir, 'design', 'domain.schema.yaml'), YAML.stringify({
+      type: 'object',
+      properties: {
+        operations: {
+          type: 'object',
+          additionalProperties: { $ref: '#/$defs/operation' },
+        },
+      },
+      $defs: {
+        operation: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            description: { type: 'string' },
+            example: { type: 'string' },
+            invariants: { type: 'array', items: { type: 'string' } },
+            code_refs: {
+              type: 'array',
+              items: { $ref: '../metamodel.schema.yaml#/$defs/code_ref_entry' },
+            },
+          },
+        },
+      },
+    }));
+
+    const file = path.join(tmpRoot, 'shop', 'domain.yaml');
+    const entity = { key: `${file}\u0000CMD001`, entityId: 'CMD001', name: 'Place Order', file };
+    const documents = [{
+      file,
+      doc: {
+        operations: {
+          placeOrder: {
+            id: 'CMD001',
+            description: 'a'.repeat(25),
+            example: 'e'.repeat(80),
+            invariants: ['i'.repeat(25)],
+            code_refs: [{ description: 'c'.repeat(25) }],
+          },
+        },
+      },
+    }];
+    const resolvedLimits = config.resolveTextLength({
+      text_length: {
+        description: { max_chars: 100 },
+        example: { max_chars: 10 },
+        'operation / description': { max_chars: 20 },
+        'operation / example': { off: true },
+        'operation / invariants[]': { max_chars: 10 },
+        'code_ref_entry / description': { max_chars: 10 },
+      },
+    }, {});
+
+    const measured = structure.measureTextLength({
+      documents,
+      entities: [entity],
+      limits: resolvedLimits,
+      schemaRoot: tmpRoot,
+    });
+
+    assert.equal(measured.fields['operation / description'].measured, 1);
+    assert.equal(measured.fields['operation / description'].overLimit, 1);
+    assert.equal(measured.fields['operation / description'].overHardLimit, 0);
+    assert.equal(measured.fields['code_ref_entry / description'].overLimit, 1);
+    assert.equal(measured.fields['code_ref_entry / description'].overHardLimit, 1);
+    assert.equal(measured.fields['operation / invariants[]'].overLimit, 1);
+    assert.equal(measured.fields['operation / invariants[]'].overHardLimit, 1);
+    assert.equal(measured.fields['operation / example'].measured, 0);
+    assert.equal(measured.fields.example.measured, 0);
+    assert.equal(measured.fields.description.measured, 0);
+    assert.deepEqual(measured.totals, {
+      measured: 3,
+      overLimit: 3,
+      overHardLimit: 2,
+      overChars: 3,
+      overSentences: 0,
+    });
+
+    const hardRecords = entity.textLength.filter((item) => item.overHardLimit);
+    assert.equal(hardRecords.length, 2);
+    assert.equal(entity.textLength.find((item) => item.ruleKey === 'operation / description').hardLimit, 30);
+    assert.equal(entity.textLength.find((item) => item.ruleKey === 'operation / invariants[]').field, 'invariants[]');
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});
+
+test('reports over-hard-limit list before soft counts in text and exposes totals in JSON without failing strict', () => {
+  withFixture(({ root, run }) => {
+    fs.writeFileSync(path.join(root, '.blueprint-quality.yaml'), YAML.stringify({
+      text_length: {
+        description: { max_chars: 200, hard_chars: 300 },
+      },
+    }));
+
+    const jsonRes = run('--strict', '--json');
+    assert.equal(jsonRes.status, 0, jsonRes.stderr);
+    const runData = JSON.parse(jsonRes.stdout).runs[0];
+    assert.equal(runData.ok, true);
+    assert.equal(runData.textLength.totals.overLimit, 2);
+    assert.equal(runData.textLength.totals.overHardLimit, 1);
+    assert.equal(runData.textLength.fields.description.overLimit, 1);
+    assert.equal(runData.textLength.fields.description.overHardLimit, 1);
+    assert.equal(runData.textLength.fields.summary.overLimit, 1);
+    assert.equal(runData.textLength.fields.summary.overHardLimit, 0);
+    const descOffender = runData.entities[0].textLength.find((item) => item.field === 'description');
+    assert.equal(descOffender.limit, 200);
+    assert.equal(descOffender.hardLimit, 300);
+    assert.equal(descOffender.overLimit, true);
+    assert.equal(descOffender.overHardLimit, true);
+
+    const textRes = run('--strict');
+    assert.equal(textRes.status, 0, textRes.stderr);
+    const hardIdx = textRes.stdout.indexOf('Over the hard limit (1):');
+    const softIdx = textRes.stdout.indexOf('Soft limit counts (');
+    assert.ok(hardIdx !== -1, textRes.stdout);
+    assert.ok(softIdx !== -1, textRes.stdout);
+    assert.ok(hardIdx < softIdx, 'Over the hard limit list must appear before Soft limit counts');
+    assert.match(textRes.stdout, /shop\.CMD001 Place Order.*description \d+ chars, hard limit 300 \(soft 200\)/);
+  });
 });
 
 test('counts Unicode characters after trimming and warns only above the exact boundary', () => {
@@ -224,3 +466,68 @@ for (const source of ['project', 'spec']) {
     });
   });
 }
+
+test('450-character prose across all 12 v2.8 schema files produces over-hard advisories and never an error', () => {
+  const longProse = 'Long prose text '.repeat(28) + 'ok';
+  assert.equal(longProse.length, 450);
+  const v28Root = fileURLToPath(new URL('../../v2.8', import.meta.url));
+  const spec = config.loadSpec().spec;
+  const resolvedLimits = config.resolveTextLength(spec, {});
+
+  const cases = [
+    { rel: 'shop/arch.yaml', id: 'PRB001', ruleKey: 'probe / summary', doc: { name: 'demo', contexts: [], probes: [{ id: 'PRB001', name: 'Probe', question: 'Q?', summary: longProse }] } },
+    { rel: 'shop/concepts.yaml', id: 'CN001', ruleKey: 'concept / summary', doc: { version: '2.8.0', concepts: [{ id: 'CN001', name: 'Order', summary: longProse }] } },
+    { rel: 'shop/domain.yaml', ids: ['QN001', 'CMD001'], ruleKey: 'question / summary', doc: { name: 'shop', version: '2.8.0', operations: { placeOrder: { id: 'CMD001', kind: 'command', examples: [{ name: 'ex', description: longProse }] } }, questions: [{ id: 'QN001', statement: 'Q?', summary: longProse }] } },
+    { rel: 'shop/dynamics.yaml', ids: ['PAR001'], ruleKey: 'parallelism_opportunity / summary', doc: { version: '2.8.0', parallelism: [{ id: 'PAR001', name: 'Par', operations: ['CMD001'], relationship: 'independent', summary: longProse }] } },
+    { rel: 'shop/interactions.yaml', ids: ['SCR001'], ruleKey: 'screen / summary', doc: { version: '2.8.0', screens: [{ id: 'SCR001', name: 'Checkout', summary: longProse }] } },
+    { rel: 'shop/quality.yaml', ids: ['MT001'], ruleKey: 'metric / summary', doc: { version: '2.8.0', metrics: [{ id: 'MT001', name: 'Latency', type: 'latency', unit: 'ms', summary: longProse }] } },
+    { rel: 'shop/rules.yaml', ids: ['SR001'], ruleKey: 'rule / summary', doc: { version: '2.8.0', structural: [{ id: 'SR001', name: 'Rule', summary: longProse }] } },
+    { rel: 'shop/story.yaml', ids: ['US001'], ruleKey: 'user_story / summary', doc: { name: 'shop', version: '2.8.0', processes: [], user_stories: [{ id: 'US001', actor: 'ACT001', goal: 'Buy', summary: longProse }] } },
+    { rel: 'shop/decisions.yaml', ids: ['DC001'], ruleKey: 'decision / summary', doc: { version: '2.8.0', decisions: [{ id: 'DC001', title: 'Dec', summary: longProse, date: '2026-11-25', status: 'accepted', rationale: { problem: 'Load.', chosen: 'Async.' } }] } },
+    { rel: 'shop/leverage.yaml', ids: ['LP001'], ruleKey: 'leverage_point / summary', doc: { version: '2.8.0', leverage_points: [{ id: 'LP001', title: 'Lev', one_thing: 'Do X', summary: longProse }] } },
+    { rel: 'shop/motivation.yaml', ids: ['GL001', 'CNC001'], ruleKey: 'goal / summary', doc: { version: '2.8.0', goals: [{ id: 'GL001', statement: 'Fast', priority: 'high', summary: longProse }], concerns: [{ id: 'CNC001', title: longProse, statement: 'Predictable.' }] } },
+    { rel: 'shop/test-cases.yaml', ids: ['TC001'], ruleKey: 'test_case / summary', doc: { version: '2.8.0', happy_path: [{ id: 'TC001', name: 'Case', summary: longProse, validates: { operations: ['CMD001'] } }] } },
+  ];
+
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'text-length-v28-'));
+  try {
+    fs.mkdirSync(path.join(tmpRoot, 'shop'), { recursive: true });
+    const documents = [];
+    const entities = [];
+    for (const item of cases) {
+      const file = path.join(tmpRoot, item.rel);
+      fs.writeFileSync(file, YAML.stringify(item.doc));
+      documents.push({ file, doc: item.doc });
+      for (const id of item.ids ?? [item.id]) {
+        entities.push({ key: `${file}\u0000${id}`, entityId: id, name: id, file });
+      }
+    }
+    const measured = structure.measureTextLength({
+      documents,
+      entities,
+      limits: resolvedLimits,
+      schemaRoot: v28Root,
+    });
+    for (const item of cases) {
+      const bucket = measured.fields[item.ruleKey];
+      assert.ok(bucket, `missing measured bucket for ${item.ruleKey}`);
+      assert.equal(bucket.overLimit, 1, `${item.ruleKey} should exceed soft limit`);
+      assert.equal(bucket.overHardLimit, 1, `${item.ruleKey} should exceed hard limit`);
+    }
+    assert.equal(measured.fields['operation / examples[].description'].overHardLimit, 1);
+    assert.equal(measured.fields['concern / title'].overHardLimit, 1);
+
+    const zeroThresholdMetrics = Object.fromEntries(
+      Object.entries(spec.metrics ?? {}).map(([key, def]) => [key, { ...def, threshold: 0, patch_threshold: 0 }]),
+    );
+    const relaxedSpec = path.join(tmpRoot, 'spec.yaml');
+    fs.writeFileSync(relaxedSpec, YAML.stringify({ metrics: zeroThresholdMetrics, text_length: spec.text_length }));
+    const res = spawnSync(process.execPath, [cli, tmpRoot, '--spec', relaxedSpec, '--strict', '--json'], { encoding: 'utf8' });
+    assert.equal(res.status, 0, res.stderr);
+    const runData = JSON.parse(res.stdout).runs[0];
+    assert.equal(runData.ok, true);
+    assert.ok(runData.textLength.totals.overHardLimit >= 12, `expected >=12 overHardLimit, got ${runData.textLength.totals.overHardLimit}`);
+  } finally {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  }
+});

@@ -44,10 +44,11 @@ import { collectObservations } from './collect.mjs';
 import { evaluate, nextBaseline } from './evaluate.mjs';
 import { renderReport } from './report.mjs';
 import { changedFilesSince } from './git-changes.mjs';
-import { loadSpec, loadProjectConfig, writeBaseline, resolveTextLength, PROJECT_CONFIG_NAME } from './config.mjs';
+import { loadSpec, loadProjectConfig, writeBaseline, resolveTextLength, resolveTextAdvisory, PROJECT_CONFIG_NAME } from './config.mjs';
 import { normalizeSliceArg, observedSlices } from './slice.mjs';
 import { selectEntity, selectFile } from './entities.mjs';
 import { locateSchemaRoot, loadSchemaIndex, measureStructure, measureTextLength } from './structure.mjs';
+import { measureTextAdvisory } from './text-advisory.mjs';
 import { measureEvidence } from './evidence-census.mjs';
 import { fileSetIdentity, inventoryEvidence, loadEvidenceSchemas } from './evidence-documents.mjs';
 
@@ -150,6 +151,7 @@ function runOne(modelRoot, options, spec) {
 
   const { config, path: configPath } = loadProjectConfig(resolvedRoot, options.config);
   const textLengthLimits = resolveTextLength(spec, config);
+  const textAdvisoryConfig = resolveTextAdvisory(spec, config);
   const changedFiles = options.since ? changedFilesSince(resolvedRoot, options.since) : undefined;
 
   // Entity and file mode refuse an empty selection for the same reason slice mode does.
@@ -166,7 +168,19 @@ function runOne(modelRoot, options, spec) {
   const structure = measureStructure({ documents, schemaIndex, structureSpec: spec.structure });
 
   const result = evaluate({ observations, spec, config, changedFiles, slice: options.slice, selection, schemaVersion, structure });
-  result.textLength = measureTextLength({ documents, entities: result.entities, limits: textLengthLimits });
+  result.textLength = measureTextLength({
+    documents,
+    entities: result.entities,
+    limits: textLengthLimits,
+    schemaRoot: schema.root,
+  });
+  if (textAdvisoryConfig) {
+    result.textAdvisory = measureTextAdvisory({
+      documents,
+      entities: result.entities,
+      advisory: textAdvisoryConfig,
+    });
+  }
   const workProcessProvenance = measureWorkProcessProvenance(documents, { slice: options.slice, changedFiles, selection });
   const censusSelection = {
     slice: options.slice ?? null,
@@ -282,6 +296,17 @@ function main() {
         parseErrors: run.parseErrors,
         evidence: run.result.evidence,
         textLength: run.result.textLength,
+        ...(run.result.textAdvisory
+          ? {
+            textAdvisory: {
+              ...run.result.textAdvisory,
+              findings: run.result.textAdvisory.findings.map((finding) => ({
+                ...finding,
+                file: path.relative(run.modelRoot, finding.file),
+              })),
+            },
+          }
+          : {}),
         ...(run.result.workProcessProvenance ? { workProcessProvenance: run.result.workProcessProvenance } : {}),
         metrics: run.result.metrics,
         findings: run.result.findings.map((finding) => ({
@@ -300,6 +325,7 @@ function main() {
           ...(entity.ownedIds.length > 0 ? { ownedIds: entity.ownedIds } : {}),
           counts: entity.counts,
           textLength: entity.textLength,
+          ...(entity.textAdvisory !== undefined ? { textAdvisory: entity.textAdvisory } : {}),
           findings: entity.fields.filter((row) => row.status !== 'covered'),
           ...(entity.structure ? { structure: structureJson(entity.structure) } : {}),
         })),

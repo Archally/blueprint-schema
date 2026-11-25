@@ -129,7 +129,6 @@ $defs:
         description: "The goal as a clear, actionable statement (e.g. 'Reduce order processing time to under 2 seconds')."
       summary:
         type: string
-        maxLength: 200
         description: "One-line summary for listings."
       priority:
         $ref: "../metamodel.schema.yaml#/$defs/priority_scale"
@@ -344,7 +343,6 @@ $defs:
         description: "What could go wrong."
       summary:
         type: string
-        maxLength: 200
         description: "One-line summary for listings."
       likelihood:
         $ref: "../metamodel.schema.yaml#/$defs/likelihood_scale"
@@ -637,7 +635,6 @@ $defs:
         description: "The unresolved concern or question."
       summary:
         type: string
-        maxLength: 200
         description: "One-line summary for listings."
       description:
         type: string
@@ -952,7 +949,6 @@ $defs:
         description: "Unique concern identifier (CNC + 3+ digits, optional context prefix)."
       title:
         type: string
-        maxLength: 200
         description: "Short name for listings (e.g. 'Knows an order is on its way')."
       statement:
         type: string

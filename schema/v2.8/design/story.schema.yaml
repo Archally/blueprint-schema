@@ -653,7 +653,6 @@ $defs:
         description: "Why this matters - the 'So that...' clause."
       summary:
         type: string
-        maxLength: 200
         description: "One-line summary for listings and PRD tables."
       description:
         type: string
@@ -790,7 +789,6 @@ $defs:
         description: "Use case name (e.g., 'Place Order')."
       summary:
         type: string
-        maxLength: 200
         description: "One-line summary for listings."
       description:
         type: string

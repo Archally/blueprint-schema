@@ -1,0 +1,17 @@
+engineVersion: "0.1"
+rules:
+  - id: leverage-point-migration-back-reference
+    severity: warn
+    description: >-
+      A leverage point names migrations through the soft-deprecated `migration_refs`.
+      State the link once, by the migration in `leverage_refs`. Each warning names
+      the migration and whether to add the leverage point there before removing its entry here.
+      Override per project via .blueprint-lint.yaml
+      (e.g. `leverage-point-migration-back-reference: off`).
+    find:
+      entity_type: LeveragePoint
+    check:
+      custom:
+        module: ./leverage-point-migration-back-reference.mjs
+        export: leveragePointMigrationBackReference
+    message: 'Leverage point "{displayId}" ({name|''unnamed''}) names {count} migration(s) through the deprecated `migration_refs`: {migrations}.'

@@ -2071,7 +2071,6 @@ $defs:
           still returns an answer, and this field is what makes that visible.
       summary:
         type: string
-        maxLength: 200
         description: "Brief description of what the probe reads and what it reports."
       source_kind:
         type: string

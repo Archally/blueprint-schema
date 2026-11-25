@@ -1,3 +1,4 @@
+import { migrationEntityBodyFindings } from './migration-entity-bodies.mjs';
 import { documentCompanionProblems } from './link-provenance.mjs';
 import fs from "node:fs";
 import YAML from "yaml";
@@ -115,7 +116,7 @@ function atLeast(version, major, minor) {
 /**
  * The slices this model declares, from the root file's `layout.slices[].name`.
  *
- * The DECLARED list, deliberately — not the directories on disk. A contract naming a slice the
+ * The DECLARED list, deliberately - not the directories on disk. A contract naming a slice the
  * model never declared is the defect this rule reports; deriving the vocabulary from the filesystem
  * would make that case unreportable, because the typo'd directory would vote for itself.
  */
@@ -133,13 +134,13 @@ export function declaredSlices(parsedFiles) {
 /**
  * Check a contract's declared `output:` prefix against the slice vocabulary.
  *
- * `output:` is a contract's IDENTITY — the key `multi-service-merge` groups on, which is why two
+ * `output:` is a contract's IDENTITY - the key `multi-service-merge` groups on, which is why two
  * services may legitimately declare the same value. By convention its first segment may name the
  * slice the artifact belongs to; `_global/` marks it explicitly cross-cutting.
  *
  * Warning, never an error: `output:` has always permitted "a filename, optionally under clean
  * subdirs", and models predating this convention prefix with build folders such as `dist/`. Those
- * still render exactly as before — but a prefix that merely LOOKS like a slice and is not one would
+ * still render exactly as before - but a prefix that merely LOOKS like a slice and is not one would
  * otherwise be indistinguishable from correct placement, which is the whole failure this reports.
  */
 export function checkContractOutputSlice(relFile, serviceName, kind, output, slices) {
@@ -640,7 +641,7 @@ export function validateModelTexts(args) {
 
   // Rules are not uniform across schema versions, so behaviour follows the version the model
   // DECLARES rather than the newest one this validator knows. From v2.7, only invocable
-  // operations (commands and queries) need a wire binding — events are domain facts and are
+  // operations (commands and queries) need a wire binding - events are domain facts and are
   // exempt, and an operation whose `dispatch` says in-process is intentionally transport-less.
   // Both spellings of that value carry the exemption: `inprocess` is the current one and
   // `in-process` is accepted for the rest of the 2.8 line, and an exemption that recognised only
@@ -729,6 +730,10 @@ export function validateModelTexts(args) {
           nonDemotable.add(text);
         }
       }
+    }
+    if (schemaType === "migration") {
+      warnings.push(...migrationEntityBodyFindings(data, registry, ajv)
+        .map(message => `[${relFile}] migration entity body ${message}`));
     }
     filesValidated += 1;
   }
@@ -904,7 +909,7 @@ export function validateModelTexts(args) {
       for (const { key, kind, expected, re } of TYPED_ID) {
         if (!Array.isArray(data[key])) continue;
         for (const item of data[key]) {
-          // A string item under `environments` is a legacy env-NAME, not a typed entity — skip.
+          // A string item under `environments` is a legacy env-NAME, not a typed entity - skip.
           if (!item || typeof item !== "object") continue;
           if (typeof item.id === "string" && !re.test(item.id)) {
             warnings.push(
@@ -916,7 +921,7 @@ export function validateModelTexts(args) {
     }
   }
 
-  // Compat mode: demote schema errors to warnings — EXCEPT identity and reference violations,
+  // Compat mode: demote schema errors to warnings - EXCEPT identity and reference violations,
   // which stay fatal because a model missing them is not merely out of date, it is unusable.
   if (args.compat && schemaErrors.length > 0) {
     const retained = schemaErrors.filter((e) => nonDemotable.has(e));

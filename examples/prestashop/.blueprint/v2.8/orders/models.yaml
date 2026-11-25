@@ -680,6 +680,9 @@ components:
             76-77 require orderReturnStateId. Example 2 is
             STATE_WAITING_FOR_PACKAGE at
             tests/Integration/ApiPlatform/OrderReturnEndpointTest.php:35.
+      represents:
+        - concept: orders.CN008
+          kind: api
     OrderReturnResource:
       x-model-id: orders.MDL002
       purpose: dto
@@ -708,6 +711,9 @@ components:
           description: Lines 49-50 read back the updated resource; lines 63-79 declare its
             fields. The update result is asserted in
             tests/Integration/ApiPlatform/OrderReturnEndpointTest.php:97-101.
+      represents:
+        - concept: orders.CN007
+          kind: api
     OrderReturnIdentifier:
       x-model-id: orders.MDL003
       purpose: command-payload
@@ -718,3 +724,6 @@ components:
           role: schema
           description: Lines 46-47 require a numeric path parameter; lines 63-64 declare
             the integer identifier.
+      represents:
+        - concept: orders.CN007
+          kind: api

@@ -39,7 +39,7 @@ function bar(value) {
 /**
  * @param {object} options
  * @param {string} options.modelRoot
- * @param {ReturnType<import('./evaluate.mjs').evaluate> & {workProcessProvenance?: {covered: number, total: number}}} options.result
+ * @param {ReturnType<import('./evaluate.mjs').evaluate> & {workProcessProvenance?: {covered: number, total: number}, textAdvisory?: ReturnType<import('./text-advisory.mjs').measureTextAdvisory>}} options.result
  * @param {number} options.fileCount
  * @param {string[]} options.parseErrors
  * @param {number} [options.worstLimit]
@@ -167,6 +167,12 @@ export function renderReport({ modelRoot, result, fileCount, parseErrors, worstL
     lines.push(...renderTextLength(result, modelRoot, worstLimit));
   }
 
+  if (!selectionMode) {
+    if (result.textAdvisory) {
+      lines.push(...renderTextAdvisory(result.textAdvisory, modelRoot, worstLimit));
+    }
+  }
+
   if (parseErrors.length > 0) {
     lines.push('');
     lines.push(`  Parse errors (${parseErrors.length}) - these files were not measured`);
@@ -219,8 +225,18 @@ function renderEntityBlock(entity, modelRoot, focus, schemaNote) {
     const reason = row.reason ? `  - ${row.reason}` : '';
     lines.push(`   ${pointer}${FIELD_MARK[row.status]}  ${row.field.padEnd(fieldWidth)}  ${row.subject}${owned}${reason}`);
   }
-  for (const record of entity.textLength ?? []) {
+  const entityTextLengths = [...(entity.textLength ?? [])].sort((left, right) => {
+    const hardDiff = Number(Boolean(right.overHardLimit)) - Number(Boolean(left.overHardLimit));
+    if (hardDiff !== 0) {
+      return hardDiff;
+    }
+    return right.length - left.length;
+  });
+  for (const record of entityTextLengths) {
     lines.push(`    ${textLengthLine(record)} - ${record.path}`);
+  }
+  for (const record of entity.textAdvisory ?? []) {
+    lines.push(`    ${textAdvisoryLine(record)} - ${record.path}`);
   }
   if (entity.structure) lines.push(...renderEntityStructure(entity.structure, schemaNote));
   return lines;
@@ -319,26 +335,138 @@ function renderStructure(structure, modelRoot, limit) {
 /** One field exceeding its character or sentence limit. */
 function textLengthLine(record) {
   const chars = record.limit === null ? `${record.length} chars` : `${record.length} chars, limit ${record.limit}`;
+  const hard = record.overHardLimit ? `, over hard limit ${record.hardLimit}` : '';
   const sentences = record.sentences === undefined ? '' : `; ${record.sentences} sentences, limit ${record.sentenceLimit}`;
-  return `${record.field} ${chars} (advisory)${sentences}`;
+  return `${record.field} ${chars}${hard} (advisory)${sentences}`;
 }
 
-/** Whole-model and scoped text limits, counts and longest offenders. */
+/** Whole-model and scoped text limits, over-hard-limit list, soft counts and longest offenders. */
 function renderTextLength(result, modelRoot, limit) {
-  const lines = ['', '  Text length (advisory):',
-    '    field           char limit  sentence limit  source    measured  over limit  longest'];
-  for (const [field, row] of Object.entries(result.textLength.fields)) {
-    const chars = row.off ? 'off' : row.max_chars ?? '-';
-    const sentences = row.off ? 'off' : row.max_sentences ?? '-';
-    lines.push(`    ${field.padEnd(15)} ${String(chars).padStart(10)}  ${String(sentences).padStart(14)}`
-      + `  ${String(row.source).padEnd(8)}  ${String(row.measured).padStart(8)}  ${String(row.overLimit).padStart(10)}  ${row.longest}`);
+  const lines = ['', '  Text length (advisory):'];
+  const offenders = result.entities
+    .flatMap((entity) => (entity.textLength ?? []).map((record) => ({ entity, record })))
+    .sort((left, right) => {
+      const hardDiff = Number(Boolean(right.record.overHardLimit)) - Number(Boolean(left.record.overHardLimit));
+      if (hardDiff !== 0) {
+        return hardDiff;
+      }
+      return right.record.length - left.record.length;
+    });
+  const hardOffenders = offenders.filter(({ record }) => record.overHardLimit);
+
+  if (hardOffenders.length > 0) {
+    lines.push(`  Over the hard limit (${hardOffenders.length}):`);
+    for (const { entity, record } of hardOffenders.slice(0, limit)) {
+      const softNote = record.limit === null ? '' : ` (soft ${record.limit})`;
+      lines.push(
+        `    ${entityHeading(entity)} (${path.relative(modelRoot, entity.file)}): `
+        + `${record.field} ${record.length} chars, hard limit ${record.hardLimit}${softNote} - ${record.path}`,
+      );
+    }
+    if (hardOffenders.length > limit) {
+      lines.push(`    ... and ${hardOffenders.length - limit} more; --json lists every one`);
+    }
   }
-  const offenders = result.entities.flatMap(entity => (entity.textLength ?? []).map(record => ({ entity, record })))
-    .sort((a, b) => b.record.length - a.record.length);
+
+  const totals = result.textLength.totals ?? { measured: 0, overLimit: 0, overHardLimit: 0 };
+  lines.push(
+    `  Soft limit counts (${totals.measured} measured, ${totals.overLimit} over soft limit, `
+    + `${totals.overHardLimit} over hard limit):`,
+  );
+
+  const visibleRows = Object.entries(result.textLength.fields)
+    .filter(([field, row]) => row.measured > 0 || row.source === 'project' || !field.includes(' / '))
+    .sort(([, left], [, right]) => {
+      if (right.overHardLimit !== left.overHardLimit) {
+        return right.overHardLimit - left.overHardLimit;
+      }
+      if (right.overLimit !== left.overLimit) {
+        return right.overLimit - left.overLimit;
+      }
+      return right.measured - left.measured;
+    });
+
+  const fieldWidth = Math.max(15, ...visibleRows.map(([field]) => field.length));
+  lines.push(
+    `    ${'field'.padEnd(fieldWidth)}   soft   hard  sentences  source    measured  over hard  over soft  longest`,
+  );
+  for (const [field, row] of visibleRows) {
+    const soft = row.off ? 'off' : row.max_chars ?? '-';
+    const hard = row.off ? 'off' : row.hard_chars ?? '-';
+    const sentences = row.off ? 'off' : row.max_sentences ?? '-';
+    lines.push(
+      `    ${field.padEnd(fieldWidth)} ${String(soft).padStart(6)} ${String(hard).padStart(6)}`
+      + `  ${String(sentences).padStart(9)}  ${String(row.source).padEnd(8)}`
+      + `  ${String(row.measured).padStart(8)}  ${String(row.overHardLimit ?? 0).padStart(9)}`
+      + `  ${String(row.overLimit).padStart(9)}  ${row.longest}`,
+    );
+  }
   if (offenders.length > 0) {
     lines.push('  Longest text fields:');
     for (const { entity, record } of offenders.slice(0, limit)) {
       lines.push(`    ${entityHeading(entity)} (${path.relative(modelRoot, entity.file)}): ${textLengthLine(record)} - ${record.path}`);
+    }
+  }
+  lines.push('');
+  return lines;
+}
+
+/**
+ * Format one advisory label-echo or filler-phrase finding.
+ * @param {import('./text-advisory.mjs').EntityTextAdvisoryFinding} record
+ * @returns {string}
+ */
+function textAdvisoryLine(record) {
+  if (record.signal === 'label-echo') {
+    return `label-echo on ${record.field} restates ${record.labelField} "${record.label}" [${record.locale}] (advisory)`;
+  }
+  return `filler-phrase on ${record.field} matched "${record.phrase}" [${record.locale}] (advisory)`;
+}
+
+/**
+ * Render whole-model and scoped advisory text-echo and filler-phrase findings.
+ * @param {ReturnType<import('./text-advisory.mjs').measureTextAdvisory>} advisory
+ * @param {string} modelRoot
+ * @param {number} limit
+ * @returns {string[]}
+ */
+function renderTextAdvisory(advisory, modelRoot, limit) {
+  const lines = ['', '  Text advisory (advisory):'];
+  if (advisory.config.off) {
+    lines.push('    disabled by configuration');
+    lines.push('');
+    return lines;
+  }
+  if (advisory.config.labelEcho.off) {
+    lines.push('    label echo: off');
+  } else {
+    const echoStats = advisory.labelEcho;
+    lines.push(
+      `    label echo (${advisory.config.labelEcho.locale}): ${echoStats.measured} measured, `
+      + `${echoStats.matches} match(es), ${echoStats.protected} protected`,
+    );
+  }
+  if (advisory.config.fillerPhrases.off) {
+    lines.push('    filler phrases: off');
+  } else {
+    const fillerStats = advisory.fillerPhrases;
+    const localeLabel = advisory.config.fillerPhrases.locale ?? 'none';
+    const phraseCount = advisory.config.fillerPhrases.phraseCount;
+    lines.push(
+      `    filler phrases (${localeLabel}, ${phraseCount} phrase(s)): ${fillerStats.measured} measured, `
+      + `${fillerStats.matches} match(es), ${fillerStats.protected} protected`,
+    );
+  }
+  if (advisory.findings.length > 0) {
+    lines.push('  Text advisory findings:');
+    for (const finding of advisory.findings.slice(0, limit)) {
+      const heading = finding.entityId ? `${finding.entityId} ${finding.entityName}` : finding.entityName;
+      lines.push(
+        `    ${heading} (${path.relative(modelRoot, finding.file)}): ${textAdvisoryLine(finding)} - ${finding.path}`,
+      );
+    }
+    if (advisory.findings.length > limit) {
+      lines.push(`    ... and ${advisory.findings.length - limit} more; --json lists every one`);
     }
   }
   lines.push('');

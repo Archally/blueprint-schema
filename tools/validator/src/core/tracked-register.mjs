@@ -72,6 +72,7 @@ function entryReferences(entry) {
     if (typeof value === "string" && value !== "") refs.push({ value, field: `owned_by.${arm}` });
   }
   strings(entry.related_decisions).forEach((value, index) => refs.push({ value, field: `related_decisions[${index}]` }));
+  strings(entry.leverage_refs).forEach((value, index) => refs.push({ value, field: `leverage_refs[${index}]` }));
   const reach = asRecord(entry.reach);
   strings(reach?.bounded_context_refs).forEach((value, index) => {
     // The kebab-name form of a context reference is a name, not an id, as everywhere else.

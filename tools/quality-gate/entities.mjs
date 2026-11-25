@@ -58,6 +58,7 @@ export function entityKeyOf(observation) {
  * @property {EntityField[]} fields
  * @property {{fields: number, covered: number, filler: number, missing: number}} counts
  * @property {import('./structure.mjs').StructureRecord} [structure] the structure signals, when its kind is measured
+ * @property {import('./text-advisory.mjs').EntityTextAdvisoryFinding[]} [textAdvisory] advisory label-echo and filler-phrase findings, when configured
  */
 
 /**

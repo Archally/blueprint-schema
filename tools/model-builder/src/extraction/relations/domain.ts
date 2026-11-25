@@ -1,7 +1,8 @@
 import type { Entity, Relation } from '../../model/types.js';
 import { ENTITY_TYPE } from '../../model/entityTypes.js';
 import { RELATION_TYPE } from '../../model/relationTypes.js';
-import { entityDomain, resolveOrPlaceholder } from './resolver.js';
+import { buildOperationKeyIndex, isDomainKeyRef } from './operationRef.js';
+import { entityDomain, resolveOrPlaceholder, resolveRef } from './resolver.js';
 
 /**
  * Extract relations from domain-layer operation and error entities:
@@ -12,6 +13,7 @@ import { entityDomain, resolveOrPlaceholder } from './resolver.js';
  * - Operation.produces.operations[] → produces (command → event)
  * - Operation.reacts_to[].operation → reacts_to (operation → triggering operation)
  * - Operation.translates[] → translates (integration event → domain event it publishes)
+ * - Operation.supersedes[] -> operation_supersedes (successor -> replaced operation in this state)
  * - Operation.initiated_by[] → initiated_by (operation → actor)
  * - Operation.materializes[].concept → materializes (operation → concept)
  * - Operation.responses[].error → raises_error (operation → error)
@@ -22,6 +24,9 @@ export function extractDomainRelations(
   placeholders: Map<string, Entity>
 ): Relation[] {
   const relations: Relation[] = [];
+  const operationKeyIndex = buildOperationKeyIndex(entities);
+  const operationsById = new Map(entities.filter((entity) => entity.type === ENTITY_TYPE.Operation)
+    .map((entity) => [entity.id, entity]));
 
   for (const entity of entities) {
     if (entity.type === ENTITY_TYPE.Error) {
@@ -144,6 +149,25 @@ export function extractDomainRelations(
           source_entity_id: entity.id,
           target_entity_id: targetId,
           type: RELATION_TYPE.Translates,
+        });
+      }
+    }
+
+    // Succession may cross states, so an absent target creates neither an edge nor a placeholder.
+    if (Array.isArray(data.supersedes)) {
+      const seenTargets = new Set<string>();
+      for (const reference of data.supersedes) {
+        if (typeof reference !== 'string' || !reference) continue;
+        const targetId = isDomainKeyRef(reference)
+          ? operationKeyIndex.get(reference)
+          : resolveRef(reference, domain, entities);
+        if (!targetId || !operationsById.has(targetId) || seenTargets.has(targetId)) continue;
+        seenTargets.add(targetId);
+        relations.push({
+          id: `${entity.id}--${RELATION_TYPE.OperationSupersedes}--${targetId}`,
+          source_entity_id: entity.id,
+          target_entity_id: targetId,
+          type: RELATION_TYPE.OperationSupersedes,
         });
       }
     }

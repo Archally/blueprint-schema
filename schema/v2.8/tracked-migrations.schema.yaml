@@ -359,6 +359,23 @@ $defs:
         description: "Decisions (DC###) that motivated this migration, each listed once. An id no decisions file of the model declares is a cross-reference error. Without the list, the entry records no decision for this migration; it does not state that none was taken."
         examples:
           - [DC001]
+      leverage_refs:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/leverage_ref"
+        description: >
+          Leverage points (LP###) whose change this migration carries out, wholly or in part, each
+          listed once. The link is stated here, beside the decisions that motivated the migration; the
+          migrations that carry out a leverage point are this list read from the other end. Naming a
+          leverage point records what the migration is for, not that anything is done: whether a
+          finding is resolved is the finding's own `status`. An id no leverage file of the model declares
+          is a cross-reference error. A leverage point cannot name a staged migration, because this
+          register numbers its own migrations, so this list is where a staged migration's leverage
+          points are stated.
+        examples:
+          - [LP001]
+          - [LP001, platform.LP004]
       owned_by:
         $ref: "metamodel.schema.yaml#/$defs/owned_by"
         description: "The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct from `author`, who staged the record."

@@ -40,6 +40,10 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/design/arch.schema.yaml#/$defs/service/properties/routes_to/examples/1`: `["orders.SVC001","catalog.SVC002"]`
 
+- `schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties/supersedes/examples/0`: `["billing.QRY001"]`
+
+- `schema/v2.8/design/domain.schema.yaml#/$defs/operation/properties/supersedes/examples/1`: `["billing.CMD001","billing.CMD002"]`
+
 - `schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/owner/examples/0`: `"ACT001"`
 
 - `schema/v2.8/design/domain.schema.yaml#/$defs/question/properties/owner/examples/1`: `"TM002"`
@@ -102,11 +106,7 @@ Examples are illustrative projections, **not validation authority**. Schema-nati
 
 - `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/owner/examples/1`: `"TM002"`
 
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects/properties/bounded_context_refs/examples/0`: `["BC001","shop.BC002"]`
-
-- `schema/v2.8/governance/motivation.schema.yaml#/$defs/risk/properties/affects/properties/service_refs/examples/0`: `["SVC001"]`
-
-_… and 139 more (listed first 50 for readability)._
+_… and 147 more (listed first 50 for readability)._
 
 ## Reference example models
 

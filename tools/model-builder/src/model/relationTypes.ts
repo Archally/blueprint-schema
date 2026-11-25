@@ -40,7 +40,7 @@ export const RELATION_TYPE = {
   // The command→event→command backbone. Absent from this builder until 2026-07-25, which made
   // `bp neighbors`/`subgraph`/`impact` and MCP get_neighbors/get_relations/get_impact_report
   // silently omit causality; the public model-builder always had them. Values match the public
-  // builder exactly — the two feed one shared semantic-rule pack.
+  // builder exactly - the two feed one shared semantic-rule pack.
   // domain.schema: command produces events (operation.produces.operations[])
   Produces: 'produces',
   // domain.schema: operation reacts to a triggering operation (operation.reacts_to[].operation)
@@ -50,6 +50,8 @@ export const RELATION_TYPE = {
   // is drawn by the event-storming boards and checked by `translation-target-not-internal`, and it
   // never changes an event's `_event_reach`.
   Translates: 'translates',
+  // Successor operation -> the operation it replaces, when both exist in the built state.
+  OperationSupersedes: 'operation_supersedes',
   // domain.schema: actors that can trigger this operation (operation.initiated_by[])
   InitiatedBy: 'initiated_by',
   // domain.schema: operation's lifecycle effect on a concept (operation.materializes[].concept)
@@ -308,7 +310,7 @@ export const RELATION_TYPE = {
   FindingRisk: 'finding_risk',
   FindingDecision: 'finding_decision',
   FindingMigration: 'finding_migration',
-  // motivation.schema (v2.7.7 vision CR, D045): the singular vision's forward-links — the
+  // motivation.schema (v2.7.7 vision CR, D045): the singular vision's forward-links - the
   // "identity → objectives → competencies → delivery" chain, made queryable.
   // vision → goal (vision.advances_goals[])
   VisionAdvancesGoal: 'vision_advances_goal',
@@ -377,12 +379,12 @@ export const RELATION_TYPE = {
   // standard it quotes.
   ContextDependsOn: 'context_depends_on',
   // v2.7.6 (D15): operation handled/produced by a bounded context. Materialized (not
-  // authored) — derived from arch service contracts (expose ∪ send = provide, PRIMARY,
+  // authored) - derived from arch service contracts (expose ∪ send = provide, PRIMARY,
   // many-to-many) with the deprecated file name/scope heuristic as FALLBACK. Carries
   // data.resolution: 'contract' | 'legacy'. The context map reads this edge (step-12).
   HandledBy: 'handled_by',
   // v2.7.6 (D17): competency question scoped to the bounded context whose knowledge
-  // boundary it defines. Materialized — SINGLE-VALUED, from the question's explicit
+  // boundary it defines. Materialized - SINGLE-VALUED, from the question's explicit
   // bounded_context_ref (PRIMARY) with name/scope as FALLBACK. data.resolution: 'ref' | 'legacy'.
   ScopedTo: 'scoped_to',
   // BCC v5 (v2.6.3): cross-context business-decision policy linkage (BD.linked_contexts[])
@@ -451,7 +453,7 @@ export const RELATION_TYPE = {
   // rg.schema (Step 01 / D26): arch service deployed in deployment tier (topology.tiers[].services[] → Service).
   DeployedInTier: 'deployed_in_tier',
   // infrastructure.schema (v2.7.7 CR-1): TOSCA-derived inter-resource relations
-  // (resource.relations[] — InfraResource → InfraResource). `hosted_on` is the canonical
+  // (resource.relations[] - InfraResource → InfraResource). `hosted_on` is the canonical
   // placement edge (distinct from the DeploymentTier `contains` grouping VIEW, so the two
   // never double-count, G8). connects_to/routes_to may cross environments/substrates for a
   // hybrid `network-link` interconnect.
@@ -487,18 +489,18 @@ export const RELATION_TYPE = {
   // realizes_type: InfraResource/Binding → ResourceType (resource.type_ref / binding.type_ref).
   RealizesType: 'realizes_type',
   // binds: Binding → Environment (binding.environment_ref) and Binding → InfraResource
-  // (binding.resource_ref) — the (type × environment) → concrete-resource bridge.
+  // (binding.resource_ref) - the (type × environment) → concrete-resource bridge.
   Binds: 'binds',
-  // infrastructure.schema (v2.7.7 DeploymentScope CR): management-grouping edges — the
+  // infrastructure.schema (v2.7.7 DeploymentScope CR): management-grouping edges - the
   // NON-TOSCA counterpart to `hosted_on` (runtime placement). Extraction-emitted from ref
   // fields, so the five TOSCA verbs stay frozen (SD4). A resource may be BOTH `grouped_in`
-  // a scope (who manages it) and `hosted_on` a host (what it runs on) — distinct, not
+  // a scope (who manages it) and `hosted_on` a host (what it runs on) - distinct, not
   // double-counted (the RG-vs-pool distinction, SD2).
   // grouped_in: InfraResource → DeploymentScope (resource.scope_ref).
   GroupedIn: 'grouped_in',
-  // nested_in: DeploymentScope → DeploymentScope (scope.parent — subscription→resource-group).
+  // nested_in: DeploymentScope → DeploymentScope (scope.parent - subscription→resource-group).
   NestedIn: 'nested_in',
-  // targets_scope: Environment → DeploymentScope (environment.target_scope.ref — promoted inline scope).
+  // targets_scope: Environment → DeploymentScope (environment.target_scope.ref - promoted inline scope).
   TargetsScope: 'targets_scope',
   // arch.schema (2.8.2): arch Service → Environment, from `service.servers[].environment` where the
   // server names the environment by its typed id. A NAME builds no edge, because a name is not a
@@ -534,8 +536,8 @@ export const RELATION_TYPE = {
   LeverageDecision: 'leverage_decision',
   // leverage.schema (v2.7.4): leverage point establishes / relies on fitness function (fitness_function_refs[])
   LeverageFitnessFunction: 'leverage_fitness_function',
-  // leverage.schema (v2.7.4): leverage point implemented by migration (migration_refs[])
-  LeverageMigration: 'leverage_migration',
+  // Migration serves a leverage point, read from either authored end.
+  MigrationServesLeverage: 'migration_serves_leverage',
   // leverage.schema (v2.7.4): leverage point delivered/sequenced by roadmap work item (realized_by[])
   LeverageRealizedBy: 'leverage_realized_by',
   // leverage.schema (v2.7.4): leverage point advances goal (advances_goals[])

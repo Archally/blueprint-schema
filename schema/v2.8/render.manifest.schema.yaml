@@ -69,6 +69,24 @@ properties:
       new set of files. Replacement works by comparing the date in a filename against the run's
       stamp, so under false there is no such date: re-rendering overwrites the same names, and
       `--clean` is what removes an artifact the manifest no longer produces.
+  omission_text:
+    type: string
+    enum: [hidden, drawn]
+    default: hidden
+    description: >
+      Whether renderers draw omission text inside SVG, PNG and PDF pictures. `hidden` (default)
+      keeps omission text off the canvas while leaving the full omission list reachable outside the
+      picture (in an HTML disclosure or side panel, a report section, SVG description metadata, or
+      an image-only sidecar). `drawn` draws the bounded omission note inside the picture.
+  omission_sections:
+    type: string
+    enum: [hidden, included]
+    default: hidden
+    description: >
+      Whether document renderers include omission list sections in report HTML and PDF documents.
+      `hidden` (default) leaves omission list sections out of the document while keeping the full
+      list reachable in the interactive page or `.omissions.txt` sidecar. `included` emits the
+      omission list sections inside the document.
   archive:
     type: boolean
     default: false

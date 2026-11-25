@@ -61,6 +61,22 @@ properties:
         items:
           $ref: "metamodel.schema.yaml#/$defs/decision_ref"
         description: "Architectural decisions that motivated this migration."
+      leverage_refs:
+        type: array
+        uniqueItems: true
+        items:
+          $ref: "metamodel.schema.yaml#/$defs/leverage_ref"
+        description: >
+          Leverage points (LP###) whose change this migration carries out, wholly or in part, each
+          listed once. The link is stated here, beside the decisions that motivated the migration; the
+          migrations that carry out a leverage point are this list read from the other end. Naming a
+          leverage point records what the migration is for, not that anything is done: whether a
+          finding is resolved is the finding's own `status`. An id no leverage file declares is a
+          cross-reference error. Without the list, the migration records no leverage point; it does not
+          state that it serves none.
+        examples:
+          - [LP001]
+          - [LP001, platform.LP004]
       owned_by:
         $ref: "metamodel.schema.yaml#/$defs/owned_by"
         description: "The team that carries out this migration, as one release. Exactly one: a change too large for one team is several migrations joined by `depends_on`. Distinct from `author`, who wrote the record."
@@ -548,7 +564,10 @@ x-gdsm:
     migration's team, change stream and reasons for waiting in the same place.
   designed_for:
     - { id: T1, name: "A migration map grouped by change stream", mfs_target: 80 }
+    - { id: T2, name: "Migration remediation evidence", mfs_target: 80 }
   competency_questions:
+    - "Which leverage points does migration M serve, and which end states each link?"
+    - "Which migrations carry out leverage point L?"
     - "Which team carries out migration M, and which change stream does it belong to?"
     - "Which migrations wait for a migration carried out by another team or in another change stream, and why?"
     - "Which bounded contexts and domains does migration M reach, and is that derived from its changes or stated by hand?"
@@ -556,6 +575,7 @@ x-gdsm:
     - "Which entities does migration M move, and from where to where?"
     - "At a point in time after migration M, which file is entity E read from?"
   non_goals:
+    - "Recording that a leverage point or finding is done: completion is its own authored status."
     - "Placing migrations in time: dates, durations and sprints belong to a roadmap, and a migration states only what it waits for."
     - "Naming a lead team for a change stream: a stream's teams are the owners of its migrations."
   modeling_guidance:

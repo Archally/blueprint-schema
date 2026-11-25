@@ -167,12 +167,27 @@ per-entity rollup, including operations, events, models, inquiries and migration
 Nested parts belong to their observed owner; a separately observed child is measured
 under its own entity. Only strings within observed entities are counted.
 
-| Field | Maximum characters | Maximum sentences |
-|---|---|---|
-| `description` | 400 | - |
-| `summary` | 240 | 1 |
-| `rationale` | 600 | - |
-| `context` | 600 | - |
+Limits resolve in specificity order when a schema is available:
+
+1. `<schema>: <definition> / <property>` (for example `design/domain: (root) / description`)
+2. `<definition> / <property>` (for example `operation / description`, `model_property / description`, `evidence / [].summary`)
+3. Bare field name fallback (`description`, `summary`, `rationale`, `context`)
+
+An exempt field kind sets `off: true`, which stops fallback to a bare field name.
+`quality-spec.yaml` ships per-field-kind limits for every Blueprint v2.8 authored text
+property beside the four bare field-name fallbacks:
+
+| Fallback field | Soft limit | Hard limit | Maximum sentences |
+|---|---|---|---|
+| `description` | 400 | 600 | - |
+| `summary` | 240 | 360 | 1 |
+| `rationale` | 600 | 900 | - |
+| `context` | 600 | 900 | - |
+
+Each numeric soft limit (`max_chars`) has a second, stronger advisory threshold, the
+**hard limit** (`hard_chars`), computed by default as `1.5` times `max_chars` rounded to
+the nearest 10 (210 at 140, 420 at 280, 600 at 400, 900 at 600, 1,200 at 800) and
+overridable per entry with `hard_chars`.
 
 Characters are Unicode code points after trimming surrounding whitespace; Markdown
 markers count. A string exactly at its limit passes. Sentence counting ignores full
@@ -180,33 +195,101 @@ stops inside numbers, inline code, URLs and the abbreviations `e.g.`, `i.e.`, `e
 and `vs.`. Each exception has a false-positive guard fixture with a two-sentence
 counterpart. These are deterministic text heuristics.
 
-The whole-model, patch and slice reports show a table per field: limits, their source
-(`spec` or `project`), measured strings, offenders and longest length. The longest
-offending fields follow, capped by `--worst`. Entity and file reports list each offending
-field under its entity, for example `description 812 chars, limit 400 (advisory)`.
+The whole-model, patch and slice reports list strings **over the hard limit** first
+(entity id, field, length, hard and soft limits, path, capped by `--worst`), followed by
+the soft limit counts and a per-field table (soft limit, hard limit, sentence limit,
+source, measured, over hard, over soft, longest) and the longest offending fields.
+Entity and file reports list each offending field under its entity, hard-limit offenders
+first, for example `description 812 chars, limit 400, over hard limit 600 (advisory)`.
 A sentence-only offender also shows its sentence count and limit.
 
-JSON carries `runs[].entities[].textLength[]` for offenders, each with `field`, `path`,
-`length`, `limit`, and, when counted, `sentences` and `sentenceLimit`. Paths are document
-paths with slash-separated, JSON Pointer-escaped segments. `runs[].textLength` carries
-`limits` and `fields`: the effective settings and source, measured counts, combined
-`overLimit` counts, separate `overChars` and `overSentences` counts, and `longest`.
-A field exceeding both limits counts once in `overLimit`. Disabled fields show zero
-measured strings; an enabled field absent from the selected entities also measures zero.
+JSON carries `runs[].entities[].textLength[]` for offenders, each with `field`, `ruleKey`,
+`path`, `length`, `limit`, `hardLimit`, `overLimit`, `overHardLimit`, and, when counted,
+`sentences` and `sentenceLimit`. Paths are document paths with slash-separated,
+JSON Pointer-escaped segments. `runs[].textLength` carries `limits`, `totals` (`measured`,
+`overLimit`, `overHardLimit`, `overChars`, `overSentences`), and `fields`: the effective
+settings and source, measured counts, combined `overLimit` counts, `overHardLimit` counts,
+separate `overChars` and `overSentences` counts, and `longest`. A field exceeding both
+limits counts once in `overLimit`. Disabled fields show zero measured strings; an enabled
+field absent from the selected entities also measures zero.
 
 A project overrides individual settings or adds fields in `.blueprint-quality.yaml`:
 
 ```yaml
 text_length:
   description: { max_chars: 500 }
+  "operation / description": { max_chars: 500, hard_chars: 800 }
   summary: { off: true }
   note: { max_chars: 120 }
+  name:
+    max_chars: 80
+    exclude_containers: [validation, structural]
+    protected_names:
+      - "General Data Protection Regulation (EU) 2016/679"
 ```
 
-Omitted settings inherit the spec. Limits must be positive integers; `off` must be a
-boolean. Malformed blocks, unknown settings and enabled fields without any limit are
-configuration errors (exit 2). Text warnings never change a metric, score, baseline,
-verdict or exit code, including under `--strict`.
+Omitted settings inherit the spec. Limits (`max_chars`, `hard_chars`, `max_sentences`)
+must be positive integers, with `hard_chars >= max_chars`; `off` must be a boolean.
+Optional `exclude_containers`, `protected_paths` and `protected_names` lists
+deterministically protect rule statements, explicit document paths and official proper names.
+Malformed blocks, unknown settings and enabled fields without any limit are
+configuration errors (exit 2). Both soft and hard text warnings are strictly advisory and
+never change a metric, score, baseline, verdict or exit code, including under `--strict`.
+
+## Text advisory: label echoes and filler phrases (advisory)
+
+Projects can enable two additional advisory checks in `.blueprint-quality.yaml` under
+`text_advisory`. Both are strictly advisory: they never alter coverage metrics, baselines,
+verdicts or strict exit codes, and the scored checker in `heuristics.mjs` stays intact.
+
+- **Label-to-prose echo (`label_echo`)**: checks whether a record's own `description` or
+  `summary` merely restates its own `name` or `title`. Pairs strictly within the same
+  record object so nested attributes or properties compare against their own label, not
+  their parent's. Uses `heuristics.mjs` only for ASCII-only English inputs (with a negation
+  asymmetry guard), and Unicode-aware tokenization with diacritic preservation and
+  locale-specific stop words for Polish (`pl`) and non-ASCII text.
+- **Locale-scoped filler phrases (`filler_phrases`)**: matches configured whole phrases at
+  Unicode word boundaries (`(?<![\p{L}\p{N}_])` ... `(?![\p{L}\p{N}_])`) for one explicitly
+  declared `locale` per run. Separate runs should be used for English (`en`) and Polish (`pl`).
+- **Deterministic context protection (`protect`)**:
+  - `quotes: true` (default) excludes text inside deterministically identifiable quoted
+    spans (`"..."`, `“...”`, `„...”`, `«...»`) and Markdown blockquotes (`> ...`) from
+    filler-phrase matching, and protects entirely quoted strings from echo checks.
+  - `evidence_fields` (default includes `evidence`, `quotes`, `quote`, `excerpt`, `excerpts`,
+    `citation`, `citations`, `source_text`, `verbatim`, `transcript`, `attribution`) skips
+    strings under attributed evidence fields.
+  - `protected_paths`, `protected_names` and `protected_containers` skip explicit document
+    paths, official proper names and protected containers (such as rule statements).
+  - Ambiguous context without a deterministic marker (for example an unquoted paraphrase)
+    is flagged as an advisory finding for human or agent review.
+
+```yaml
+text_advisory:
+  locale: en
+  label_echo:
+    label_fields: [name, title]
+    prose_fields: [description, summary]
+  filler_phrases:
+    fields: [description, summary, rationale, context, statement, note]
+    phrases:
+      en:
+        - "it is useful to point out that"
+        - "it bears mentioning that"
+        - "one thing to mention is that"
+      pl:
+        - "warto tu zaznaczyć, że"
+        - "należy w tym miejscu wspomnieć, że"
+        - "trzeba przy tym zauważyć, że"
+  protect:
+    quotes: true
+    protected_names:
+      - "General Data Protection Regulation (EU) 2016/679"
+```
+
+When `text_advisory` is configured, JSON carries `runs[].textAdvisory` (with `config`,
+`labelEcho`, `fillerPhrases` and `findings[]`) and `runs[].entities[].textAdvisory[]`.
+Each finding reports entity identity, field name, JSON Pointer-escaped document path,
+observed signal (`label-echo` or `filler-phrase`), locale, and the matched label or phrase.
 
 ## Structure: facts in fields or only in prose
 
@@ -414,7 +497,9 @@ lets one copy serve every version.
 | `slice.mjs` | `--slice` scoping — derives a file's slice from its path |
 | `entities.mjs` | `--entity` and `--file` selection; the per-entity rollup |
 | `structure.mjs` | advisory text limits and structure signals: schema lookup, references held only in prose, fields used |
+| `text-advisory.mjs` | advisory label-to-prose echo, locale-scoped filler phrases and deterministic context protection |
 | `text-length.test.mjs` | text limit configuration, sentence guards, nested measurement and CLI advisory contracts |
+| `text-advisory.test.mjs` | name/title length overrides, Unicode label echoes, locale-scoped filler phrases and protection contracts |
 | `config.mjs` | spec + project-config loading, baseline writing (flat + per-slice) |
 | `quality-spec.yaml` | metric definitions, content rules, calibrated thresholds |
 
