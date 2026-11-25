@@ -1,57 +1,32 @@
 # Archally Blueprint Schema
 
-YAML-based schema for digital system modeling — a domain-first multi-method specification format covering domain design, business rules, value streams, governance, and organizational alignment in a single machine-readable format.
+Archally Blueprint Schema is a domain-first YAML specification for digital systems.
+It brings architecture knowledge scattered across code, documents, and workshops into one
+validated, version-controlled model.
 
-[![npm version](https://img.shields.io/npm/v/@archally/blueprint-schema)](https://www.npmjs.com/package/@archally/blueprint-schema)
+A blueprint connects what the system does, why it works that way, and what proves it.
+Teams can trace rules, operations, and decisions in the same model and generate contracts,
+diagrams, and other documents from it.
+
+**Current version: 2.8.108** · [Changelog](CHANGELOG.md) · [v2.8 changes](changelog/v2.8.yaml)
+
+[![version](https://img.shields.io/badge/version-2.8.108-blue)](./CHANGELOG.md)
 [![license](https://img.shields.io/badge/license-Apache--2.0%20%2B%20FSL--1.1-blue)](./LICENSE)
 [![CI](https://github.com/archally/blueprint-schema/actions/workflows/validate.yml/badge.svg)](https://github.com/archally/blueprint-schema/actions)
 
-## The Problem
+## Why
 
-Architecture knowledge fragments across wikis, slide decks, whiteboard photos, Confluence pages, and tribal memory. When a team needs to make a change decision — split a service, add a new context, evaluate a migration — they spend days reconstructing context that should already be explicit. Documentation drifts from code within weeks. New team members spend months absorbing knowledge that could be structured and navigable.
+Architecture knowledge is scattered across wikis, slide decks, whiteboard photos and people's memory.
+Before a change (splitting a service, adding a context, planning a migration) a team spends days
+rebuilding context that should already be explicit, and the documents drift from the code within weeks.
+The cost is not missing documentation; it is fragmented truth. A blueprint keeps that truth in one
+model that tools can check. The full argument is in [docs/architecture.md](docs/architecture.md).
 
-The cost is not missing documentation. It is fragmented truth.
-
-## The Approach: System Cartography
-
-Archally treats software architecture the way cartographers treat territory — by surveying it methodically, representing it at multiple scales, layering concerns into separate planes, and marking what remains unknown.
-
-| Cartography | Blueprint equivalent |
-|---|---|
-| **Map layers** (topographic, political, transport) | **Design Plane** and **Governance Plane** — toggle layers over the same bounded context |
-| **Legend and symbology** | **Metamodel** — typed IDs (`CN001`, `CMD001`, `EVT001`) make the model machine-readable and learnable |
-| **Survey and triangulation** | **Evidence chains** and **cross-layer validation** — claims are triangulated, not asserted |
-| **Terra incognita** | **Unanswered questions** (`QN001` with `answered_by: []`) — the model is honest about what is not yet mapped |
-| **Scale / zoom levels** | **Abstraction levels** — from system context down to individual operations and rules |
-| **Nautical charts** (hazard markers) | **Governance artifacts** — risks, pending migrations, and unresolved decisions surfaced before they cause damage |
-
-## What is a Blueprint?
-
-A blueprint is a **single formal model** of a digital system — one source that captures what the system does, why it exists, and how it's proven. It replaces scattered artifacts with a structured, validated, version-controlled specification:
-
-- **Design Plane** (what and how): bounded contexts, aggregates, commands, events, queries, business rules, data models, stories, UI screens, quality attributes
-- **Governance Plane** (why and proof): goals, risks, decisions, test cases, capabilities, value streams, milestones, organizational ownership
-- **Metamodel** (shared vocabulary): typed ID references, versioning, cross-layer traceability
-
-### One model, many outputs
-
-A single blueprint can drive multiple generated artifacts — OpenAPI specs, AsyncAPI contracts, PRD documents, Event Storming boards, capability maps, context diagrams — all from the same source. When the model changes, every output stays consistent. No semantic drift between your documentation, your contracts, and your architecture diagrams.
-
-### Built for humans and AI agents
-
-Every schema field carries a machine-readable `description`. AI agents consume blueprints as structured domain context via MCP servers — not retrieval over documents, but deterministic graph queries against a validated formal model. The same blueprint that onboards a new team member also grounds an AI agent's reasoning about the system.
-
-### Local-first, version-controlled
-
-Blueprints are plain YAML files in your Git repository. No cloud upload required, no vendor platform, no infrastructure. Your domain models — which encode your bounded contexts, business rules, competitive decisions, and organizational structure — stay under your control. Validate locally, review in pull requests, deploy with your existing workflow.
-
-## Quick Start
-
-Use your own agent in Claude Code, Codex or Cursor to build a model of your system with Archally. The public repository supplies the Blueprint schema, local checking tools, a modeling agent, commands and method skills. Together they help you capture a shared vocabulary, flows, rules and decisions in YAML that you and your agent can read and refine. You can also write the model by hand and validate it locally. Archally Pro renderers run locally on an offline licence under separate commercial terms.
+## Quick start
 
 ### 1. Prepare the repository
 
-With Node 22 or later installed, clone the public repository and prepare its tools:
+With Node 22 or later, clone the repository, install dependencies, and build the local tools.
 
 ```bash
 git clone https://github.com/Archally/blueprint-schema.git
@@ -60,62 +35,39 @@ npm install
 npm run build
 ```
 
-Open the cloned repository folder itself in your agent environment. Installation fetches dependencies; the build compiles the local tools. These are preparation steps, not a packaged installer or a one-command bootstrap.
-
 ### 2. Start with your own agent
 
-The source kit contains the [blueprint-modeler agent](.agents/agents/blueprint-modeler.md), the [blueprint-new command](.agents/commands/blueprint-new.md), the [blueprint-check-all command](.agents/commands/blueprint-check-all.md), and method skills such as [ddd-modeling](.agents/skills/ddd-modeling/SKILL.md), [event-storming-modeler](.agents/skills/event-storming-modeler/SKILL.md), and [capability-mapping](.agents/skills/capability-mapping/SKILL.md). <!-- public-docs-scan:allow Codex and Cursor read this path -->
-
-The `.agents/` tree is the source kit. Generated consumer projections provide the agent and commands in `.claude/` and `.cursor/`, and the Codex custom agent in [.codex/agents/blueprint-modeler.toml](.codex/agents/blueprint-modeler.toml). Codex and Cursor read skills directly from `.agents/skills/`; Codex reads command files from `.agents/commands/`. Codex loads its custom agent after you trust the project. See the [host instructions](docs/ai-agent-kit.md#how-each-host-finds-the-kit). <!-- public-docs-scan:allow Codex and Cursor read this path -->
-
-From the cloned repository, create an empty project directory:
+Open the cloned repository itself in Claude Code, Codex, or Cursor. Create an empty project
+directory from the repository root.
 
 ```bash
 mkdir my-training-model
 ```
 
-Keep the cloned repository open in your agent environment and give the agent this request:
+Give your agent this request.
 
 ```text
 Run /blueprint-new my-training-model Training model.
 Use blueprint-modeler to ask about the core flow before expanding the model.
 ```
 
-In Claude Code or Cursor, you can invoke `/blueprint-new my-training-model Training model` directly. In Codex, ask it to follow the linked command file as in the request above. The first argument is the project directory; the command creates `.blueprint/v2.8/` beneath it and checks the seed. It stops if the project already contains a model.
+The command creates and checks a seed under `my-training-model/.blueprint/v2.8/`.
+It stops if the project already contains a model. The kit runs the repository's local checks.
+It works without the Archally Pro CLI or an MCP server.
 
-After growing the model, request:
+For host-specific instructions and the two-file YAML seed you can write yourself, see
+[Model setup](docs/2026-11-25-model-setup.md). For a project outside the clone, see
+[Use the kit in another project](docs/ai-agent-kit.md#use-the-kit-in-another-project).
+
+### 3. Check locally
+
+After expanding the model, ask your agent to run the checks.
 
 ```text
 Run /blueprint-check-all my-training-model/.blueprint/v2.8
 ```
 
-Review the reported schema, semantic and quality findings with your agent. The kit runs this repository's local checks; it needs neither the commercial `bp` CLI nor an MCP server. For another project outside this clone, follow [Use the kit in another project](docs/ai-agent-kit.md#use-the-kit-in-another-project).
-
-### Alternative: write two files yourself
-
-From the cloned repository, create `my-training-model/.blueprint/v2.8/blueprint.yaml`:
-
-```yaml
-version: "1.0.0"
-name: "Training model"
-```
-
-Create `my-training-model/.blueprint/v2.8/training/concepts.yaml`:
-
-```yaml
-version: "1.0.0"
-concepts:
-  - id: CN001
-    name: "Workshop"
-    stereotype: aggregate-root
-    description: "A scheduled learning session with a defined capacity."
-```
-
-This two-file seed introduces CN001 (Workshop); add detail as you learn. It is separate from the worked Training business example below.
-
-### 3. Check locally
-
-From the prepared repository root, run the same checks manually on your model:
+You can run the same checks from the prepared repository root.
 
 ```bash
 npm run validate -- my-training-model/.blueprint/v2.8 --schemas schema
@@ -123,497 +75,110 @@ npm run check -- my-training-model/.blueprint/v2.8
 npm run quality -- my-training-model/.blueprint/v2.8
 ```
 
-The validator checks schema conformance and references. Confirm that its `Schemas:` line selects v2.8 and its `Files:` line reports files validated (two for the seed above). The semantic checker reports structural issues; the quality gate reports missing or weak descriptions. A small seed can pass validation while still needing detail. The default quality command reports coverage; exit 0 alone does not mean the model is complete.
+| Check | What to review |
+| --- | --- |
+| Validate | Schema conformance and references. Confirm that `Schemas:` selects v2.8 and `Files:` reports the number of files validated. The two-file seed reports two. |
+| Check | Structural and semantic findings. |
+| Quality | Missing or weak descriptions and overall coverage. A small seed can pass validation while still needing detail. The default quality command can exit 0 while coverage is incomplete. |
+
+Review the schema, semantic, and quality findings with your agent.
 
 ### Inspect the worked example
 
-[Training business](examples/training-business/.blueprint/v2.8/) is one fictional business with paid workshops online and in a room, plus the recording of a video course and subscription access to it. Run the same three checks on `examples/training-business/.blueprint/v2.8` to see a model that passes them.
+[Training business](examples/training-business/.blueprint/v2.8/) models a fictional business
+that runs paid workshops online and in a room, records a video course, and offers subscription
+access to it. Run the same three checks on `examples/training-business/.blueprint/v2.8` to
+see a model that passes them.
 
-### Licence boundaries
+## What goes in a blueprint?
 
-The schema, examples, documentation, reference validator and agent kit use Apache 2.0. The model builder, semantic checker and quality gate use FSL-1.1-ALv2, permitting internal use, non-commercial education and research, and professional services, subject to its terms and restriction on Competing Use. See the authoritative [licence map](LICENSE) and [full FSL terms](LICENSE-FSL). Archally Pro renderers run locally on an offline licence under separate commercial terms.
+| Layer | What it captures |
+| --- | --- |
+| Design Plane | Bounded contexts, aggregates, operations, rules, data models, stories, screens, and quality attributes. |
+| Governance Plane | Goals, risks, decisions, test cases, capabilities, value streams, milestones, and ownership. |
+| Metamodel | Typed IDs, versioning, and traceability across both planes. |
 
-## Architecture
+Blueprints are plain YAML files in your Git repository. You can validate locally, review in pull
+requests, and keep your existing deployment workflow. Every schema field has a machine-readable
+`description`.
 
-> **METAMODEL** (cross-cutting) — typed IDs · versioning · evidence chains · ownership · code references
-
-```mermaid
-block-beta
-  columns 2
-
-  block:design
-    columns 1
-    dh["DESIGN PLANE — What & How"]
-    dp["Slower change · concrete · higher epistemic completeness"]
-
-    block:cs
-      columns 1
-      cs_h["concepts.yaml"]
-      block:cs_e
-        Concept
-        Actor
-        Enumeration
-        Association
-      end
-    end
-
-    block:ds
-      columns 1
-      ds_h["domain.yaml"]
-      block:ds_e
-        Command
-        Event
-        Query
-        Document
-        Error
-        Question
-      end
-    end
-
-    block:rs
-      columns 1
-      rs_h["rules.yaml"]
-      block:rs_e
-        Rule
-        Transition
-      end
-    end
-
-    block:ss
-      columns 1
-      ss_h["story.yaml"]
-      block:ss_e
-        Story
-        Activity
-        us2["User Story"]
-        uc2["Use Case"]
-      end
-    end
-
-    block:as2
-      columns 1
-      as_h["arch.yaml"]
-      block:as_e
-        Context
-        Service
-        Contract
-        Dependency
-      end
-    end
-
-    block:ms
-      columns 1
-      ms_h["models.yaml"]
-      block:ms_e
-        Model
-      end
-    end
-
-    block:qs
-      columns 1
-      qs_h["quality.yaml"]
-      block:qs_e
-        Metric
-        KPI
-        SLO
-        SLA
-        Security
-        Compliance
-        Resilience
-      end
-    end
-
-    block:uis
-      columns 1
-      us_h["interactions.yaml"]
-      block:us_e
-        Screen
-        Action
-        Navigation
-      end
-    end
-
-    block:dys
-      columns 1
-      dy_h["dynamics.yaml"]
-      block:dy_e
-        Parallelism
-        Ordering
-        rc2["Race Condition"]
-      end
-    end
-
-    block:rgs
-      columns 1
-      rg_h["infrastructure.yaml"]
-      block:rg_e
-        Resource
-      end
-    end
-  end
-
-  block:governance
-    columns 1
-    gh["GOVERNANCE PLANE — Why & Proof"]
-    gp["Faster change · exploratory · lower epistemic completeness"]
-
-    block:mos
-      columns 1
-      mo_h["motivation.yaml"]
-      block:mo_e
-        Goal
-        ng2["Non-Goal"]
-        Risk
-        Assumption
-        to2["Trade-Off"]
-        Inquiry
-      end
-    end
-
-    block:des
-      columns 1
-      de_h["decisions.yaml"]
-      block:de_e
-        Decision
-        bd2["Business Decision"]
-      end
-    end
-
-    block:cas
-      columns 1
-      ca_h["capability.yaml"]
-      block:ca_e
-        Capability
-      end
-    end
-
-    block:tcs
-      columns 1
-      tc_h["test-cases.yaml"]
-      block:tc_e
-        tc2["Test Case"]
-        ff2["Fitness Function"]
-      end
-    end
-
-    block:ors
-      columns 1
-      or_h["organization.yaml"]
-      block:or_e
-        Party
-        Department
-        Team
-      end
-    end
-
-    block:ros
-      columns 1
-      ro_h["roadmap.yaml"]
-      block:ro_e
-        Milestone
-      end
-    end
-
-    block:vss
-      columns 1
-      vs_h["value-stream.yaml"]
-      block:vs_e
-        vs2["Value Stream"]
-      end
-    end
-  end
-
-  style dh fill:#2b6cb0,color:#fff,stroke:none
-  style dp fill:#2b6cb0,color:#cbd5e0,stroke:none
-  style gh fill:#2f855a,color:#fff,stroke:none
-  style gp fill:#2f855a,color:#c6f6d5,stroke:none
-  style cs_h fill:#1e4e8c,color:#fff,stroke:none
-  style ds_h fill:#1e4e8c,color:#fff,stroke:none
-  style rs_h fill:#1e4e8c,color:#fff,stroke:none
-  style ss_h fill:#1e4e8c,color:#fff,stroke:none
-  style as_h fill:#1e4e8c,color:#fff,stroke:none
-  style ms_h fill:#1e4e8c,color:#fff,stroke:none
-  style qs_h fill:#1e4e8c,color:#fff,stroke:none
-  style us_h fill:#1e4e8c,color:#fff,stroke:none
-  style dy_h fill:#1e4e8c,color:#fff,stroke:none
-  style rg_h fill:#1e4e8c,color:#fff,stroke:none
-  style mo_h fill:#1a5c35,color:#fff,stroke:none
-  style de_h fill:#1a5c35,color:#fff,stroke:none
-  style ca_h fill:#1a5c35,color:#fff,stroke:none
-  style tc_h fill:#1a5c35,color:#fff,stroke:none
-  style or_h fill:#1a5c35,color:#fff,stroke:none
-  style ro_h fill:#1a5c35,color:#fff,stroke:none
-  style vs_h fill:#1a5c35,color:#fff,stroke:none
-```
-
-The Design Plane captures established knowledge — domain vocabulary, rules, operations, and architecture that changes deliberately. The Governance Plane captures evolving knowledge — goals, risks, assumptions, and decisions that shift as understanding deepens. Evidence chains (`discovery_stage`, `certainty`, `evidence[]`) track how governance entities mature from hypothesis to confirmed.
-
-See the [full schema reference](docs/schema-reference.md) for ID patterns, traceability map, and schema evolution history.
-
-## Usage Modes
-
-Blueprint Schema supports different modeling approaches depending on your situation:
-
-### Greenfield — New System
-
-Start from scratch with a Minimal Viable Blueprint (MVB):
-
-1. Identify bounded contexts and aggregate roots
-2. Model the primary command → event causal chains
-3. Add rules, stories, and test cases for the happy path
-4. Iterate: extend with value objects, error paths, governance, quality
-
-Start small (5-20 entities), validate, then grow through phases. See the [Modeling Guide](docs/modeling-guide.md) for phase details, decision trees, and anti-patterns. If you need a **non-technical capture guide** for workshops, business users, or AI handoff, start with the [Blueprint Handoff Atlas](docs/handoff-guides/markdown/README.md) and its [umbrella PDF](docs/handoff-guides/pdf/blueprint-handoff-atlas.pdf).
-
-### Brownfield — Existing System
-
-Model an existing codebase by analyzing what's already built:
-
-1. Enumerate domain aggregates from code directories
-2. Assign DDD roles (aggregate root, entity, value object) from behavioral signals
-3. Group CRUD variants into semantic operations
-4. Model the discovered structure, linking entities to source via `code_refs`
-
-The code is the source of truth for the design plane. Specs describe intent; code describes reality. See the [Modeling Guide](docs/modeling-guide.md#phase-0--knowledge-analysis-existing-systems-only) for the full Phase 0 protocol.
-
-### Iterative Modeling
-
-Blueprints grow through four phases:
-
-| Phase | Focus | Entity count |
-|-------|-------|-------------|
-| **Phase 1** | MVB: aggregate roots, key commands/events, 1 story per context | 5-20 |
-| **Phase 2** | Detail: value objects, error catalog, models, decisions, questions | 20-80 |
-| **Phase 3** | Governance: architecture, quality (SLOs), UI, org, value streams, milestones | 80-200 |
-| **Phase 4+** | Dynamics: parallelism, race conditions, migrations, full test coverage | 200+ |
-
-Each phase has entrance criteria and reports which generators (OpenAPI, AsyncAPI, PRD, Event Storming) can produce useful output from the current model.
-
-```mermaid
-graph LR
-    P1["Phase 1\nMVB\n5-20 entities"]
-    P2["Phase 2\nDetail\n20-80 entities"]
-    P3["Phase 3\nGovernance\n80-200 entities"]
-    P4["Phase 4+\nDynamics\n200+ entities"]
-
-    P1 -->|"+ value objects\n+ error catalog\n+ models"| P2
-    P2 -->|"+ arch contracts\n+ quality SLOs\n+ value streams"| P3
-    P3 -->|"+ parallelism\n+ migrations\n+ full tests"| P4
-
-    style P1 fill:#2b6cb0,color:#fff
-    style P2 fill:#2b6cb0,color:#fff
-    style P3 fill:#2f855a,color:#fff
-    style P4 fill:#4a5568,color:#fff
-```
-
-### Knowledge Gathering
-
-Use blueprints as a discovery tool:
-
-- **Questions** (`QN001`) model what knowledge a domain slice should provide. Unanswered questions (`answered_by: []`) reveal domain gaps — the most valuable artifact for backlog prioritization.
-- **Inquiries** (`INQ001`) capture temporary governance concerns during analysis.
-- **Evidence chains** on goals, risks, and decisions link assertions to supporting data — so governance claims are substantiated, not asserted.
-
-## Best Practices
-
-1. **MVB-first, not completeness-first.** Capture intent, produce a small coherent blueprint, iterate. A focused 15-entity model that validates cleanly beats a 200-entity hairball.
-
-2. **Multiple small files over monoliths.** The loader merges all files of the same schema type within a slice. Seven 100-line files reveal structure better than one 700-line file.
-
-3. **Single authoritative location.** Every fact has one source: causal links live in `domain.yaml` (produces/reacts_to), story steps are a convenience view validated against domain links.
-
-4. **Business names in the model, technical names in `code_refs`.** Blueprint operations use business language; `code_refs` bridge to the implementation.
-
-5. **Defer aggressively.** Explicitly note what's deferred and why. Quality metrics, UI screens, and org hierarchy are Phase 3 — don't model them before the domain skeleton is stable.
-
-6. **Convention over enforcement.** Prefer documented conventions with validator warnings over hard schema constraints for emergent patterns.
-
-For the full set of practices, anti-patterns, decision trees, and reference direction rules, see the [Modeling Guide](docs/modeling-guide.md). For file naming, ID conventions, and directory layout, see [File Conventions](docs/file-conventions.md).
-
-## Schema Files
-
-| Layer | Schema | Entity types |
-|-------|--------|-------------|
-| Cross-cutting | `metamodel.schema.yaml` | Typed ID patterns, versioning, shared definitions |
-| Cross-cutting | `migration.schema.yaml` | Model evolution: entity, property, relationship, meta changes |
-| Design | `domain.schema.yaml` | Commands (CMD), Events (EVT), Queries (QRY), Documents (DOC), Errors (ERR), Questions (QN) |
-| Design | `concepts.schema.yaml` | Concepts (CN), Actors (ACT), Enumerations (EN), Associations (AS) |
-| Design | `rules.schema.yaml` | Rules (SR/CR/DR/EQ/VR), Transitions (TR) |
-| Design | `arch.schema.yaml` | Parties, Contexts, Services, Contracts, Dependencies |
-| Design | `models.schema.yaml` | Data models (MDL) with OpenAPI/AsyncAPI-compatible schemas |
-| Design | `story.schema.yaml` | Stories (STR), Activities (SA), User Stories (US), Use Cases (UC) |
-| Design | `quality.schema.yaml` | Metrics (MT), KPIs (KPI), SLOs (SLO), SLAs (SLA), Security (SEC) |
-| Design | `interactions.schema.yaml` | Screens (SCR), Actions (UAC), Navigation (UNV) |
-| Design | `dynamics.schema.yaml` | Parallelism (PAR), Ordering (ORD), Race Conditions (RC) |
-| Design | `infrastructure.schema.yaml` | Resources (IR), Environments (ENV), Resource Types (RT), Bindings (BND), Deployment Scopes (DSC) — TOSCA relations + IaC refs; `scope_ref` (who owns/bills it) is orthogonal to `hosted_on` (what it runs on) |
-| Governance | `motivation.schema.yaml` | Vision, Goals (G), Non-goals (NG), Risks (R), Assumptions (A), Trade-offs (T) |
-| Governance | `decisions.schema.yaml` | Decisions (D), Business Decisions (BD) |
-| Governance | `capability.schema.yaml` | Capabilities (CAP) |
-| Governance | `test-cases.schema.yaml` | Test cases (TC/EC/ER), Fitness functions (FF) |
-| Governance | `organization.schema.yaml` | Parties (PRT), Departments (DPT), Teams (TM) |
-| Governance | `roadmap.schema.yaml` | Milestones (MS) |
-| Governance | `value-stream.schema.yaml` | Value Streams (VS) |
-
-Full entity ID patterns, traceability map, and schema evolution history: [Schema Reference](docs/schema-reference.md). File naming and layout rules: [File Conventions](docs/file-conventions.md).
-
-**Browse the schemas by version** — each [`schema/`](schema/) version folder has its own README index (Design / Governance planes + the cross-cutting metamodel and migration schemas).
-
-**Read the schema without the JSON** — the generated [**Blueprint Schema Atlas**](docs/schema-atlas/) projects the schema into a human-readable layer map, entity catalog, relationship map, and a structural changelog. It is regenerated from schema truth (never hand-edited), so it cannot drift from the metamodel.
-
-**Capture blueprint knowledge without reading the schema** — the [**Blueprint Handoff Atlas**](docs/handoff-guides/markdown/README.md) explains how non-technical contributors should describe entities, relations, processes, screens, risks, and other layer knowledge so a technical person or AI agent can transform it into YAML. For workshop/offline use, see the committed [PDF set](docs/handoff-guides/pdf/).
+| Read more | What you'll find |
+| --- | --- |
+| [Architecture](docs/architecture.md) | System cartography, the two planes, their entity types, and the schema file map. |
+| [Modeling approaches](docs/2026-11-25-modeling-approaches.md) | Greenfield and brownfield workflows, modeling phases, knowledge gathering, and best practices. |
+| [Schema reference](docs/schema-reference.md) | ID patterns, traceability, and schema evolution. |
+| [Blueprint Schema Atlas](docs/schema-atlas/) | A generated layer map, entity catalog, relationship map, and structural changelog. |
+| [Blueprint Handoff Atlas](docs/handoff-guides/markdown/README.md) | Plain-language capture guides for workshops and handoffs. |
 
 ## Tools
 
-Three tools ship with the schema — validate, build models, and check semantics:
+Run the reference tools from the clone. The validator runs after `npm install`. Build the model
+builder and semantic checker with `npm run build`.
 
-They run from a clone of this repository. `npm install` is enough for the validator, which is plain
-JavaScript and carries the schemas with it; the model builder and the semantic checker are
-TypeScript and need `npm run build` first.
+| Tool | What it does |
+| --- | --- |
+| [Validator](tools/validator/README.md) | Checks schema conformance, cross-file references, and gaps. |
+| [Model builder](tools/model-builder/README.md) | Loads YAML into a typed graph or writes `model.json`. |
+| [Semantic checker](tools/semantic-checker/README.md) | Runs configurable rules for modeling issues beyond schema validation. |
+| [Quality gate](tools/quality-gate/) | Measures how well the model describes itself. |
+| [Schema Atlas generator](tools/schema-atlas/README.md) | Builds and checks the human-readable reference from the schema. |
+| [Guide publisher](tools/guide-publisher/) | Builds and checks PDFs for the Blueprint Handoff Atlas. |
+| [AI agent kit](docs/ai-agent-kit.md) | Supplies a modeling agent, fifteen method skills, and two commands for Claude Code, Codex, and Cursor. |
+| [VS Code setup](docs/2026-11-25-vs-code-setup.md) | Enables schema validation and file icons, including in a multi-root workspace. |
 
-### Validator
-
-Schema validation (Ajv, draft-2020-12) + cross-file reference integrity + gap warnings.
-
-```bash
-npm run validate -- .blueprint/v2.8
-```
-
-See [tools/validator/README.md](tools/validator/README.md) for options and exit codes.
-
-### Model Builder
-
-Loads blueprint YAML files and produces a typed in-memory graph — 55 entity types and 43 relation types. Available as a library and as a CLI that writes `model.json`.
-
-```bash
-# CLI - produce model.json
-node tools/model-builder/dist/cli.js .blueprint/v2.8 --output model.json --pretty
-
-# Library - import in TypeScript, from a workspace or a `file:` dependency on this clone
-import { buildBlueprintModel, loadFromDirectory } from '@archally/blueprint-schema/model';
-```
-
-See [tools/model-builder/README.md](tools/model-builder/README.md) for API, type definitions, and architecture.
-
-### Semantic Checker
-
-Configurable rule engine that catches modeling issues schema validation cannot detect. Extensible via custom `RuleDefinition` functions and `.blueprint-lint.yaml` configuration.
-
-```bash
-npm run check -- .blueprint/v2.8
-```
-
-<!-- BEGIN GENERATED: semantic-rules — generated from the rule pack; do not hand-edit -->
-Ships with **116 built-in rules** (7 error, 77 warn, 32 info):
-
-`activity-fork-without-gateway` · `activity-in-two-lanes` · `activity-item-key-repeated` · `activity-steps-reverse-causal-edge` · `activity-steps-without-causal-edge` · `activity-tool-party-not-system` · `aggregate-root-signals` · `anemic-event-candidate` · `assumption-unplaced` · `broker-ref-target-not-a-broker` · `capability-kind` · `capability-nested-deeper-than-two-levels` · `capability-realized-nowhere` · `contract-broker-id-superseded` · `contract-operation-missing-channel-address` · `contract-operation-missing-exchange` · `dangling-relation-endpoint` · `decision-asserted-without-evidence` · `decision-option-without-pros-cons` · `dependency-direction-disagreement` · `dispatch-with-exchange` · `empty-context` · `environment-config-key-not-declared` · `environment-named-not-declared` · `event-placed-with-producer-capability` · `event-transport-without-contract` · `events-with-produces` · `evidence-source-credentials` · `exchange-missing-payload` · `feature-user-stories-exclusive` · `feature-user-stories-mismatch` · `fitness-function-unattached` · `gate-on-fail-not-a-successor` · `gateway-without-route` · `goal-not-advanced` · `goal-requires-cycle` · `governed-command-without-event` · `hotspot-statement-empty` · `implementation-as-is-without-code-refs` · `implementation-to-be-with-code-refs` · `imports-cycle` · `imports-target-not-library` · `inprocess-consume-without-provide` · `inprocess-dispatch-without-provider` · `inprocess-provide-without-consume` · `inprocess-reaction-unreached` · `inquiry-passed-on-without-addressee` · `inquiry-pin-ambiguous` · `inquiry-pin-named-twice` · `inquiry-pins-itself` · `kpi-without-metric` · `lane-team-differs-from-staffing` · `leverage-point-migration-back-reference` · `leverage-point-no-address` · `leverage-point-no-strategic-intent` · `link-provenance-correspondence` · `message-channel-mismatch` · `message-queue-unread` · `messaging-command-receiver` · `migration-dependency-reason-unlisted` · `migration-reach-disagrees` · `migration-without-team-owner` · `missing-causal-links` · `missing-exchange-binding` · `model-without-purpose` · `model-without-represents` · `nav-via-action-screen-disagrees` · `objective-without-measurement` · `operation-exposed-by-many` · `operation-outside-every-contract` · `operation-realizes-two-capabilities` · `operation-supersedes-cycle` · `org-interaction-diverges-from-architecture` · `org-interaction-underived` · `org-interaction-unverifiable` · `orphan-entities` · `owner-name-matches-declared-unit` · `party-parts-disagree` · `payload-model-unbound` · `payload-schema-unresolved` · `process-end-state-unattached` · `process-end-state-unreachable` · `process-listed-order-against-causality` · `process-starts` · `requirement-confirmed-without-evidence` · `requirement-unverified` · `requirement-without-objective` · `restated-coupling` · `routes-restates-uses` · `routes-target-is-library` · `sent-event-without-receiver` · `service-system-is-an-organization` · `service-without-system` · `shared-document-read-without-writer` · `shared-document-write-without-reader` · `shared-store-without-common-resource` · `slo-without-metric` · `story-without-event` · `test-case-act-not-validated` · `test-case-given-carries-notes` · `translation-target-not-internal` · `unanswered-questions` · `unbound-operation` · `unbound-question` · `undeclared-exchange` · `undescribed-event` · `unevidenced-dependency` · `untested-rules` · `use-case-step-action-operation-disagrees` · `use-case-step-action-screen-disagrees` · `use-case-step-order` · `user-story-use-case-back-reference` · `user-story-without-acceptance-criteria` · `uses-restates-contract` · `uses-target-is-library` · `work-activity-without-lane`
-<!-- END GENERATED: semantic-rules -->
-
-See [tools/semantic-checker/README.md](tools/semantic-checker/README.md) for rule reference, configuration, and custom rule API.
-
-### Schema Atlas
-
-Generates the [Blueprint Schema Atlas](docs/schema-atlas/) — a human-readable, regenerable projection of the JSON Schema (layer map, entity catalog, relationships, examples, structural changelog) with provenance on every page.
-
-```bash
-npm run atlas          # regenerate docs/schema-atlas/**
-npm run atlas:check    # drift check (CI-friendly)
-```
-
-See [tools/schema-atlas/README.md](tools/schema-atlas/README.md) for the overlay contract, fail/warn/skip policy, and governance.
-
-### Blueprint Handoff Atlas
-
-Non-technical handoff guides for capturing Blueprint knowledge in plain language before it is transformed into YAML.
-
-```bash
-npm run guides:pdf      # regenerate docs/handoff-guides/pdf/**
-npm run guides:check    # drift check for committed PDFs
-```
-
-Start with the [umbrella guide](docs/handoff-guides/markdown/README.md), the [umbrella PDF](docs/handoff-guides/pdf/blueprint-handoff-atlas.pdf), or browse the full [PDF directory](docs/handoff-guides/pdf/).
-
-## Editor setup
-
-Opened as a folder in VS Code, this repository's `.vscode/` settings give every blueprint file kind
-and every contract kind its own icon ([Material Icon Theme](https://marketplace.visualstudio.com/items?itemName=PKief.material-icon-theme))
-and validate blueprint files against the schema ([YAML](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)).
-VS Code offers to install both extensions.
-
-To work on your own model beside this repository in one window, start from the workspace template
-[`.vscode/blueprint-schema.code-workspace`](.vscode/blueprint-schema.code-workspace). In a
-multi-root window VS Code reads the icon settings and `yaml.schemas` from the workspace file, not
-from each folder's `.vscode/settings.json`, so the template carries them.
-
-1. Set the second folder's `path` to the repository that holds your product's `.blueprint/` model.
-   A relative path resolves against the workspace file's location: the placeholder `../../my-project`
-   is a `my-project` clone beside this one, as in the Quick Start. To keep this clone unchanged, copy
-   the template elsewhere first and set both folders' paths.
-2. Open it with **File > Open Workspace from File**.
-
-If your team already has a `.code-workspace` file, copy the template's `settings` entries
-(`workbench.iconTheme`, `yaml.schemas` and the two `material-icon-theme.*` keys) into it and name this
-repository's folder `blueprint-schema`, because the `yaml.schemas` paths start with that name.
-
-An entry for the same file name in your user `material-icon-theme.files.associations` wins over the
-workspace one, so keep such an entry identical or remove it.
-
-## AI agent kit
-
-The repository carries a blueprint-modeling kit for AI coding agents: a `blueprint-modeler` agent,
-fifteen method skills and two commands, `/blueprint-new` and `/blueprint-check-all`, for Claude
-Code, Codex and Cursor. It needs no Archally CLI and no MCP server. Open this folder in your agent's
-host after `npm install` and `npm run build`; [docs/ai-agent-kit.md](docs/ai-agent-kit.md) has the
-quick start for each host, how to check that it works, and how to use the kit in another project.
-
-## Example
-
-A working e-commerce example with 3 bounded contexts (catalog, orders, payments) is included in [`examples/ecommerce/`](examples/ecommerce/). Run `npm run validate:examples` to verify it.
-
-Two v2.8 models sit beside it. [`examples/ecommerce/.blueprint/v2.8/`](examples/ecommerce/.blueprint/v2.8/) is a larger, separate ecommerce teaching model with migrations; [`examples/eshop/.blueprint/v2.8/`](examples/eshop/.blueprint/v2.8/) models one order journey through dotnet/eShop. Run `npm run validate:ecommerce:v28` and `npm run validate:eshop:v28` to validate them, and `npm run check:ecommerce:v28` and `npm run check:eshop:v28` for the semantic checker. [docs/2026-11-12-ecommerce-and-eshop-examples.md](docs/2026-11-12-ecommerce-and-eshop-examples.md) lists all three.
-
-## Versioning
-
-This package follows [SemVer](https://semver.org/):
-- **Major** (3.0.0): breaking schema changes
-- **Minor** (2.7.0): new optional fields or entity types
-- **Patch** (2.6.1): documentation, clarification, validator fixes
-
-## Ecosystem
-
-Blueprint Schema is the open foundation of the [Archally](https://archally.pro) platform.
-
-**Archally's approach:** One formal model drives everything. Instead of maintaining separate documents for architecture, contracts, governance, and onboarding — teams build one blueprint that generators consume to produce OpenAPI specs, AsyncAPI contracts, PRD documents, Event Storming views, and more. The model is the single source of truth; generated artifacts never drift because they're derived, not hand-maintained.
-
-**For AI-augmented teams:** Archally MCP servers expose blueprint models as structured grounding for AI agents — deterministic graph queries against a validated domain model, not retrieval over unstructured documents. Agents get typed entities, traced relationships, and governance constraints at inference time. The same model that serves human understanding serves machine reasoning.
-
-The schema itself is Apache 2.0-licensed and can be used independently of Archally tooling. The value-add reference tooling (model-builder, semantic-checker, renderer, schema-update) is source-available under the Functional Source License - free for internal, educational, and professional-services use, but not for building a competing product. See [License](#license).
+See [Tools and Archally Pro](docs/tools.md) for commands, the semantic rule catalog, and the
+commercial tool capabilities.
 
 ### Archally Pro
 
-Commercial tools that consume this schema — available at [archally.pro](https://archally.pro):
+[Archally Pro](https://archally.pro) offers a Blueprint CLI and MCP server, change impact
+analysis, interactive viewers, deterministic renderers, specification and document generators,
+and Confluence publishing. Archally Pro renderers run locally on an offline licence.
 
-| Category | Capabilities |
-|----------|-------------|
-| **Change Impact Analysis** | The blast radius *before* you commit: which services, resources, contracts and tests a change touches directly vs transitively, and which teams must coordinate. Available as `bp impact` on the CLI and `get_impact_report` over MCP. |
-| **Blueprint MCP Server** | Structured grounding for Claude, Cursor and other AI agents — deterministic graph queries against a validated domain model at inference time, not retrieval over prose. Entity/relation queries, subgraphs, neighbours, layer views, impact reports, typed-id allocation, and live validation. |
-| **Blueprint CLI (`bp`)** | Query, mutate, validate and migrate models from the terminal. Semantic checks, quality gates, coverage checks, typed-id allocation, and a tracked migration lifecycle with dry-run, rollback, variant comparison and dependency resolution. |
-| **Interactive Viewers** | Architecture Viewer — entity graph with multiple layouts, search, layer filtering and a relation inspector. Blueprint Studio — read-only project navigation with migration-chapter scrubbing and a validation dock. |
-| **Deterministic Renderers** | Standalone artifact generators over a canonical model: roadmap Gantt, leverage map, risk map, infrastructure map, topic impact dossier, API-contract tree, and a test-case coverage PDF. Same model in, reproducible artifact out. |
-| **Specification Generators** | OpenAPI 3.1, AsyncAPI 2.6, Arazzo 1.0, OpenRPC, Pact and Mermaid — generated from blueprint operations, models and contracts, so they cannot drift from the model. |
-| **PRD & Documentation** | Product Requirements Documents, Event Storming boards (big-picture, process and software-design levels), and architecture decision exports — generated from the governance and story layers. |
-| **Confluence Mirror** | Publish model-derived pages into Atlassian Confluence so non-technical stakeholders read the same source of truth. |
+## More examples
+
+| Model | Contents |
+| --- | --- |
+| [E-commerce](examples/ecommerce/) | A working example with three bounded contexts: catalog, orders, and payments. |
+| [E-commerce v2.8](examples/ecommerce/.blueprint/v2.8/) | A larger, separate teaching model with migrations. |
+| [dotnet/eShop v2.8](examples/eshop/.blueprint/v2.8/) | One order journey through dotnet/eShop. |
+
+```bash
+npm run validate:examples
+npm run validate:ecommerce:v28
+npm run validate:eshop:v28
+npm run check:ecommerce:v28
+npm run check:eshop:v28
+```
+
+The [e-commerce example guide](docs/2026-11-12-ecommerce-and-eshop-examples.md) lists all three.
+
+## Versioning
+
+Archally Blueprint Schema follows [SemVer](https://semver.org/).
+
+| Change | Example | Scope |
+| --- | --- | --- |
+| Major | 3.0.0 | Breaking schema changes |
+| Minor | 2.7.0 | New optional fields or entity types |
+| Patch | 2.6.1 | Documentation, clarification, and validator fixes |
 
 ## Contributing
 
-Issues and discussions are welcome. For schema change proposals, please open an issue describing the use case before submitting a PR — schema changes affect all downstream consumers. Contributions require a DCO sign-off (`git commit -s`) and are accepted under the terms in [CONTRIBUTING.md](./CONTRIBUTING.md).
+Issues and discussions are welcome. For a schema change, open an issue describing the use case
+before submitting a pull request. Schema changes affect downstream consumers. Contributions
+require a DCO sign-off (`git commit -s`) and follow the terms in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## License
 
-This repository is **dual-licensed** — see [LICENSE](./LICENSE) for the authoritative map. Copyright 2026 Adam Walkowski.
+Copyright 2026 Adam Walkowski. The repository uses two licences. See the authoritative
+[licence map](./LICENSE) for the complete list.
 
-| Part | License | You may |
+| Part | Licence | Terms |
 | --- | --- | --- |
-| Schema, examples, docs, Schema Atlas generator, reference validator, VS Code extension, AI agent kit | [Apache 2.0](./LICENSE-APACHE) | Use freely, including in commercial and proprietary products. The format is meant to be adopted. |
-| Tooling - `model-builder`, `semantic-checker`, `renderer`, `schema-update` | [FSL-1.1-ALv2](./LICENSE-FSL) | Use for any Permitted Purpose (internal use, non-commercial education/research, professional services). **Not** for a Competing Use. Each version converts to Apache 2.0 two years after its release. |
+| Schema, examples, docs, Schema Atlas generator, reference validator, VS Code extension, AI agent kit | [Apache 2.0](./LICENSE-APACHE) | Allows commercial and proprietary use. The schema can be used independently of Archally tooling. |
+| Source-available tools including `model-builder`, `semantic-checker`, `quality-gate`, `renderer`, and `schema-update` | [FSL-1.1-ALv2](./LICENSE-FSL) | Allows Permitted Purposes, including internal use, non-commercial education and research, and professional services. The terms restrict Competing Use. Each version converts to Apache 2.0 two years after release. |
+| Archally Pro renderers | Separate commercial terms | Run locally on an offline licence. |
 
-For a commercial license covering a Competing Use, contact adam.walkowski@inperceptic.com. "Archally" and "Blueprint" are trademarks — see [TRADEMARKS.md](./TRADEMARKS.md).
+For a commercial licence covering a Competing Use, contact adam.walkowski@inperceptic.com.
+"Archally" and "Blueprint" are trademarks. See [TRADEMARKS.md](./TRADEMARKS.md).
